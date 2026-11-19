@@ -4,6 +4,24 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ## [Unreleased]
 
+## v2026.11.19-2
+
+### Fixed
+
+- The cited-docs check no longer crashes the suite when a tracked file has been deleted but the deletion isn't committed yet.
+- A fork whose name matches one of `spec/bin/fork_spec.rb`'s sample names, `my_app` or `acmegarden`, can push again: the spec no longer counts the fork's own module as a taken name, so `bin/fork` stops aborting the suite mid-run.
+
+### Security
+
+- Thruster 0.1.28 is built on Go 1.27.4 and x/net 0.62.0, which clears the five Go CVEs the image scan ignored for its binary; `.trivyignore` drops them.
+- Ruby 4.0.10, a security release for Regexp and String case conversion: `.tool-versions`, both Dockerfiles and the devcontainer image move to it. Run `mise install` after pulling.
+
+### Changed
+
+- Gems update within their constraints, including Puma 8.1, OmniAuth 2.4, Tailwind 4.3.4 and ViewComponent 4.24.
+- i18n-tasks 1.2 reports keys reached only through a dynamic key, such as `t("a11y_sim.modes.#{mode}")`, as unused. `config/i18n-tasks.yml` sets `search.strict: false` to count them as used again.
+- Lexxy 1.0.4 names the image ALT button with the word it shows (WCAG 2.5.3), so the app's `lexxy_label_in_name.js` workaround and its importmap pin are gone. A fork that copied the workaround can delete it too.
+
 ## v2026.11.19
 
 ### Changed
