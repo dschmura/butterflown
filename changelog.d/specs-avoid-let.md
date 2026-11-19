@@ -1,0 +1,1 @@
+- Specs build their own setup instead of using `let` or `let!` (Getting Started, "Spec conventions"). The suite's `let!` calls come out over the next releases, so a fork that edited one of those specs should expect a merge conflict there.
