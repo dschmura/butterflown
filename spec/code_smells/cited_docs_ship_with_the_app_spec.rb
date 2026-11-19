@@ -14,7 +14,7 @@ RSpec.describe "Docs cited from tracked files" do
   end
 
   let(:citations) do
-    tracked.grep(/\.(rb|erb|css|js|yml|md|rake)\z/).flat_map do |path|
+    tracked.grep(/\.(rb|erb|css|js|yml|md|rake)\z/).select { |path| Rails.root.join(path).file? }.flat_map do |path|
       lines = Rails.root.join(path).read.lines(chomp: true)
       lines.each_with_index.flat_map do |line, index|
         context = "#{line} #{lines[index + 1]}"
@@ -27,6 +27,14 @@ RSpec.describe "Docs cited from tracked files" do
     return true if tracked.include?(citation[:cited])
 
     citation[:context].include?("modelrails_ui") && gem_docs_root.join(citation[:cited]).file?
+  end
+
+  context "with a tracked file deleted but not yet committed" do
+    let(:tracked) { super() + [ "app/models/deleted_before_commit.rb" ] }
+
+    it "scans what is on disk" do
+      expect { citations }.not_to raise_error
+    end
   end
 
   it "scans the component headers that cite modelrails_ui's docs (floor)" do
