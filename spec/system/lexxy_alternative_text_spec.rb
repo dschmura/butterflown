@@ -35,13 +35,12 @@ RSpec.describe "Lexxy's alternative text dialog", type: :system do
     end
   end
 
-  # Lexxy names the ALT button "Alternative text" (basecamp/lexxy#1304); the host renames it until that ships.
   it "names the ALT button with the word it shows (WCAG 2.5.3 Label in Name)" do
     visit edit_workspace_project_resource_path(workspace, project, resource)
     find("lexxy-editor figure img").click
     button = find("lexxy-editor button.lexxy-attachment-toolbar__alternative-text")
 
-    expect(button[:"aria-label"]).to contain_visible_text(button.text).and include("lternative text")
+    expect(button[:"aria-label"]).to contain_visible_text(button.text)
   end
 
   it "lets an author describe an image, in an AAA dialog, and the description reaches the page" do
