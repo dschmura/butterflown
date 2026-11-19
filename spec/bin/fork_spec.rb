@@ -101,6 +101,14 @@ RSpec.describe ForkFlow do
 
   let(:printed) { StringIO.new }
 
+  # bin/fork runs without the app loaded, so the app's own module must not count as taken here,
+  # or a fork named my_app aborts every example that forks a sample my_app.
+  before do
+    allow(Object).to receive(:const_defined?).and_wrap_original do |original, name, *rest|
+      name.to_s != Rails.application.class.module_parent_name && original.call(name, *rest)
+    end
+  end
+
   def terminal(typed = "") = StringIO.new(typed).tap { |io| io.define_singleton_method(:tty?) { true } }
 
   def run_fork(opts = {}, input = StringIO.new)
@@ -311,6 +319,14 @@ RSpec.describe ForkFlow do
 
     it "refuses the template's own name" do
       expect { run_fork(name: "modelrails_base", yes: true) }.to raise_error(SystemExit)
+    end
+
+    it "accepts a name whose module only the app running this suite defines, as bin/fork's own process does" do
+      stub_const("SampleHost", Module.new)
+      allow(Rails.application.class).to receive(:module_parent_name).and_return("SampleHost")
+
+      expect { run_fork(name: "sample_host", yes: true) }.not_to raise_error
+      expect(repo.join("config/application.rb").read).to include("module SampleHost")
     end
 
     it "normalizes punctuation and case into a snake_case name" do
