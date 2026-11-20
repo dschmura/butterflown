@@ -23,6 +23,10 @@ RSpec.describe "The releasing guide" do
     expect(source).to include("| `next_release.yml` | CI finishes on a push to `next` |")
   end
 
+  it "says a release PR merged on GitHub is shipped by the workflow, not left unpublished" do
+    expect(source).to include("| `next_release.yml` | a release PR merges into `main` | `bin/release ship` on that PR at the commit that merged")
+  end
+
   it "names every setting .release_flow.yml takes, so a repository with other names can use the flow" do
     section = source[/^## Changing the flow\n.*\z/m].to_s
 

@@ -445,7 +445,9 @@ when the PR is already merged, skips publishing when `v<name>` exists, and
 reuses a merge-back branch and PR that are already open.
 
 If the PR was merged on GitHub instead, `ship` still checks the merge. It
-refuses to publish when the merged branch wasn't at the commit it ships.
+refuses to publish when the merged branch wasn't at the commit it ships. With
+`AUTO_RELEASE` on, the workflow runs it for you; otherwise run it by hand, and
+`cut` reminds you, with the command, until you do.
 
 ## Merge main back into next
 
@@ -485,7 +487,9 @@ the `AUTO_RELEASE` repository variable to `true`, and
    once CI passes.
 
 Reviewers hear about it once, from the release PR. Shipping stays a person's
-call: `bin/release ship` asks before it ships the commit staging ran.
+call: `bin/release ship` asks before it ships the commit staging ran. Merging
+the release PR on GitHub ships it too: the workflow then publishes the tag and
+merges `main` back.
 PRs from forks of this repository start nothing, since GitHub withholds the
 token from them; the next merge from a branch here, or `prepare` by hand,
 starts the release.
@@ -614,6 +618,7 @@ event that starts it:
 | `deploy.yml` | a push to `release/**` or `main` | deploys: release branches to staging, `main` to production |
 | `next_release.yml` | a PR merges into `next` | `bin/release prepare --if-needed` |
 | `next_release.yml` | CI finishes on a push to `next` | `bin/release cut --if-needed`, which fails loudly if CI failed |
+| `next_release.yml` | a release PR merges into `main` | `bin/release ship` on that PR at the commit that merged, which publishes the tag and merges `main` back |
 
 One step's output is the next one's event. `cut` pushing a release branch is
 what deploys staging, and the changelog PR merging is a push to `next`, which
