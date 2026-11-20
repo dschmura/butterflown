@@ -89,11 +89,7 @@ RSpec.describe "Client invitations (team side)", type: :request do
   context "as a viewer (no manage_members permission)" do
     def sign_in_viewer_of(project)
       viewer = create(:user)
-      viewer_role = Role.find_or_create_by!(slug: "viewer", workspace_id: nil) do |r|
-        r.name = "Viewer"
-        r.permissions = {}
-      end
-      create(:membership, user: viewer, workspace: project.workspace, role: viewer_role)
+      create(:membership, :viewer, user: viewer, workspace: project.workspace)
       create(:project_membership, :viewer, user: viewer, project: project)
       sign_in(viewer)
     end

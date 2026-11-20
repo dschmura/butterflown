@@ -49,11 +49,7 @@ RSpec.describe "Project Clientside settings", type: :request do
       project = own_project
       workspace = project.workspace
       viewer = create(:user)
-      viewer_role = Role.find_or_create_by!(slug: "viewer", workspace_id: nil) do |r|
-        r.name = "Viewer"
-        r.permissions = {}
-      end
-      create(:membership, user: viewer, workspace: workspace, role: viewer_role)
+      create(:membership, :viewer, user: viewer, workspace: workspace)
       create(:project_membership, :viewer, user: viewer, project: project)
       sign_in(viewer)
       patch workspace_project_clientside_path(workspace, project),
