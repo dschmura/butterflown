@@ -1,6 +1,13 @@
 require "rails_helper"
 
 RSpec.describe "Project Invitations", type: :request do
+  def signed_in_project_owner
+    membership = create(:membership, :owner)
+    Current.workspace = membership.workspace
+    sign_in(membership.user)
+    create(:project, workspace: membership.workspace, created_by: membership.user)
+  end
+
   describe "unauthenticated access" do
     it "redirects GET /workspaces/:slug/projects/:project_slug/invitations/new to sign in" do
       get new_workspace_project_invitation_path(workspace_slug: "any-slug", project_slug: "any-project")
@@ -9,19 +16,10 @@ RSpec.describe "Project Invitations", type: :request do
   end
 
   context "authenticated" do
-    let(:workspace) { create(:workspace) }
-    let(:user) { create(:user) }
-    let!(:ws_membership) { create(:membership, :owner, user: user, workspace: workspace) }
-    let(:project) { create(:project, workspace: workspace, created_by: user) }
-    let!(:creator_pm) { project.project_memberships.find_by!(user: user) }
-
-    before do
-      Current.workspace = workspace
-      sign_in(user)
-    end
-
     describe "GET new project invitation" do
       it "renders the invitation form" do
+        project = signed_in_project_owner
+        workspace = project.workspace
         get new_workspace_project_invitation_path(workspace, project)
         expect(response).to have_http_status(:ok)
       end
@@ -29,6 +27,8 @@ RSpec.describe "Project Invitations", type: :request do
 
     describe "POST create project invitation" do
       it "creates an invitation for a non-workspace member" do
+        project = signed_in_project_owner
+        workspace = project.workspace
         expect {
           post workspace_project_invitations_path(workspace, project), params: {
             invitation: { email: "outsider@example.com", project_role: "editor" }
@@ -41,6 +41,8 @@ RSpec.describe "Project Invitations", type: :request do
       end
 
       it "rejects creator role in project_role" do
+        project = signed_in_project_owner
+        workspace = project.workspace
         post workspace_project_invitations_path(workspace, project), params: {
           invitation: { email: "outsider@example.com", project_role: "creator" }
         }
@@ -48,6 +50,8 @@ RSpec.describe "Project Invitations", type: :request do
       end
 
       it "rejects invalid email" do
+        project = signed_in_project_owner
+        workspace = project.workspace
         post workspace_project_invitations_path(workspace, project), params: {
           invitation: { email: "not-an-email", project_role: "editor" }
         }
@@ -57,6 +61,8 @@ RSpec.describe "Project Invitations", type: :request do
       # A blank field is invalid input, not "no address": a nil email is a
       # bearer (magic-link) invitation, and a form submission must never mint one.
       it "rejects a blank email instead of creating a bearer invitation" do
+        project = signed_in_project_owner
+        workspace = project.workspace
         expect {
           post workspace_project_invitations_path(workspace, project), params: {
             invitation: { email: "  ", project_role: "editor" }
@@ -72,7 +78,7 @@ RSpec.describe "Project Invitations", type: :request do
       describe "a blocked re-invite is refused exactly like an unblocked one" do
         include ActiveJob::TestHelper
 
-        def re_invite_outcome(email)
+        def re_invite_outcome(workspace, project, email)
           2.times do |attempt|
             post workspace_project_invitations_path(workspace, project), params: {
               invitation: { email: email, project_role: "editor" }
@@ -85,10 +91,12 @@ RSpec.describe "Project Invitations", type: :request do
         end
 
         it "returns the same status, flash and record count either way" do
-          create(:invitation_block, inviter: user, email: "blocked@example.com")
+          project = signed_in_project_owner
+          workspace = project.workspace
+          create(:invitation_block, inviter: project.created_by, email: "blocked@example.com")
 
-          blocked = re_invite_outcome("blocked@example.com")
-          unblocked = re_invite_outcome("open@example.com")
+          blocked = re_invite_outcome(workspace, project, "blocked@example.com")
+          unblocked = re_invite_outcome(workspace, project, "open@example.com")
 
           expect(blocked).to eq(unblocked)
           expect(blocked).to eq(
@@ -99,18 +107,21 @@ RSpec.describe "Project Invitations", type: :request do
     end
 
     describe "accepting a project invitation" do
-      let(:viewer_role) { Role.find_or_create_by!(slug: "viewer", workspace_id: nil) { |r| r.name = "Viewer" } }
-      let!(:invitation) do
+      def invite_invitee(project, email: "invitee@example.com")
+        viewer_role = Role.find_or_create_by!(slug: "viewer", workspace_id: nil) { |r| r.name = "Viewer" }
         project.invitations.create!(
-          email: "invitee@example.com",
+          email: email,
           role: viewer_role,
           project_role: "editor",
-          invited_by: user,
+          invited_by: project.created_by,
           expires_at: 7.days.from_now
         )
       end
 
       it "auto-adds invitee to workspace and project" do
+        project = signed_in_project_owner
+        workspace = project.workspace
+        invitation = invite_invitee(project)
         invitee = create(:user, email_address: "invitee@example.com")
         sign_in(invitee)
         post accept_invitation_path(token: invitation.token)
@@ -119,6 +130,8 @@ RSpec.describe "Project Invitations", type: :request do
       end
 
       it "assigns the correct project role" do
+        project = signed_in_project_owner
+        invitation = invite_invitee(project)
         invitee = create(:user, email_address: "invitee@example.com")
         sign_in(invitee)
         post accept_invitation_path(token: invitation.token)
@@ -127,15 +140,11 @@ RSpec.describe "Project Invitations", type: :request do
       end
 
       it "rejects acceptance of archived project invitation" do
+        project = signed_in_project_owner
+        invite_invitee(project)
         project.discard!
         invitee = create(:user, email_address: "invitee2@example.com")
-        invitation2 = project.invitations.create!(
-          email: "invitee2@example.com",
-          role: viewer_role,
-          project_role: "editor",
-          invited_by: user,
-          expires_at: 7.days.from_now
-        )
+        invitation2 = invite_invitee(project, email: "invitee2@example.com")
         sign_in(invitee)
         post accept_invitation_path(token: invitation2.token)
         expect(response).to redirect_to(root_path)
@@ -143,11 +152,12 @@ RSpec.describe "Project Invitations", type: :request do
     end
 
     describe "authorization" do
-      let(:editor) { create(:user) }
-      let!(:editor_ws) { create(:membership, user: editor, workspace: workspace) }
-      let!(:editor_pm) { create(:project_membership, project: project, user: editor) }
-
       it "denies editor from creating project invitations" do
+        project = signed_in_project_owner
+        workspace = project.workspace
+        editor = create(:user)
+        create(:membership, user: editor, workspace: workspace)
+        create(:project_membership, project: project, user: editor)
         sign_in(editor)
         post workspace_project_invitations_path(workspace, project), params: {
           invitation: { email: "denied@example.com", project_role: "viewer" }
