@@ -3,23 +3,26 @@
 require "rails_helper"
 
 RSpec.describe "Lexxy's alternative text dialog", type: :system do
-  let(:user) { create(:user) }
-  let(:workspace) { user.workspaces.sole }
-  let(:project) { create(:project, workspace: workspace, created_by: user) }
-  let(:blob) do
-    ActiveStorage::Blob.create_and_upload!(io: Rails.root.join("spec/fixtures/files/avatar.png").open,
-      filename: "canoe.png", content_type: "image/png")
-  end
   # Lexxy saves the image's `url` on the tag and builds the editor image from it, so the seed does too.
-  let(:document) do
+  def image_resource(project, user)
+    blob = ActiveStorage::Blob.create_and_upload!(io: Rails.root.join("spec/fixtures/files/avatar.png").open,
+      filename: "canoe.png", content_type: "image/png")
     url = Rails.application.routes.url_helpers.rails_blob_path(blob, only_path: true)
-    create(:document, body: "<p>Trip</p>#{ActionText::Attachment.from_attachable(blob, url: url).to_html}")
+    document = create(:document, body: "<p>Trip</p>#{ActionText::Attachment.from_attachable(blob, url: url).to_html}")
+    create(:resource, project: project, resourceable: document, created_by: user)
   end
-  let!(:resource) { create(:resource, project: project, resourceable: document, created_by: user) }
 
-  before { sign_in_via_form(user) }
+  def signed_in_image_resource
+    user = create(:user)
+    workspace = user.workspaces.sole
+    project = create(:project, workspace: workspace, created_by: user)
+    resource = image_resource(project, user)
+    sign_in_via_form(user)
+    [ workspace, project, resource ]
+  end
 
   it "takes the workspace's colours, with Save as the one filled button, in both themes" do
+    workspace, project, resource = signed_in_image_resource
     expect(workspace).to be_personal
     visit edit_workspace_project_resource_path(workspace, project, resource)
     find("lexxy-editor figure img").click
@@ -36,6 +39,7 @@ RSpec.describe "Lexxy's alternative text dialog", type: :system do
   end
 
   it "names the ALT button with the word it shows (WCAG 2.5.3 Label in Name)" do
+    workspace, project, resource = signed_in_image_resource
     visit edit_workspace_project_resource_path(workspace, project, resource)
     find("lexxy-editor figure img").click
     button = find("lexxy-editor button.lexxy-attachment-toolbar__alternative-text")
@@ -44,6 +48,7 @@ RSpec.describe "Lexxy's alternative text dialog", type: :system do
   end
 
   it "lets an author describe an image, in an AAA dialog, and the description reaches the page" do
+    workspace, project, resource = signed_in_image_resource
     visit edit_workspace_project_resource_path(workspace, project, resource)
     find("lexxy-editor figure img").click
     find("lexxy-editor button.lexxy-attachment-toolbar__alternative-text").click
@@ -64,6 +69,7 @@ RSpec.describe "Lexxy's alternative text dialog", type: :system do
   end
 
   it "reaches the dialog from the keyboard alone, through Alt+F10, and hands focus back to ALT" do
+    workspace, project, resource = signed_in_image_resource
     visit edit_workspace_project_resource_path(workspace, project, resource)
     expect(page).to have_css("lexxy-editor figure img")
     find_field(I18n.t("workspaces.projects.resources.edit.title_label")).send_keys(:tab, :tab)
