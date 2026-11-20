@@ -566,6 +566,11 @@ module AxeAccessibility
     Object.new
   end
 
+  # The options every AAA audit passes: axe's wcag2aaa tag set.
+  def axe_options
+    { runOnly: { type: "tag", values: [ "wcag2aaa" ] } }
+  end
+
   # Stores the violations so the paired message reports this audit (#1189).
   def axe_clean?(options = {}, exclude: [], include: nil)
     violations = axe_violations_now(options, exclude: exclude, include: include)
