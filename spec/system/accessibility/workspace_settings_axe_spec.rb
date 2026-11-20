@@ -19,7 +19,6 @@ RSpec.describe "Workspace settings section — AAA", type: :system do
   end
 
   it "Profile settings page is axe-clean at AAA (both themes)" do
-    axe_options = { runOnly: { type: "tag", values: [ "wcag2aaa" ] } }
     workspace = create(:workspace, name: "Acme", max_members: 50)
     sign_in_new_owner_of(workspace)
     visit edit_workspace_path(workspace)
@@ -28,7 +27,6 @@ RSpec.describe "Workspace settings section — AAA", type: :system do
   end
 
   it "Members page is axe-clean at AAA (both themes)" do
-    axe_options = { runOnly: { type: "tag", values: [ "wcag2aaa" ] } }
     workspace = create(:workspace, name: "Acme", max_members: 50)
     sign_in_new_owner_of(workspace)
     visit workspace_members_path(workspace)
@@ -37,7 +35,6 @@ RSpec.describe "Workspace settings section — AAA", type: :system do
   end
 
   it "Limits & Plan page is axe-clean at AAA (both themes)" do
-    axe_options = { runOnly: { type: "tag", values: [ "wcag2aaa" ] } }
     workspace = create(:workspace, name: "Acme", max_members: 50)
     sign_in_new_owner_of(workspace)
     visit edit_workspace_settings_path(workspace)
@@ -46,7 +43,6 @@ RSpec.describe "Workspace settings section — AAA", type: :system do
   end
 
   it "Invite screen is axe-clean at AAA (both themes)" do
-    axe_options = { runOnly: { type: "tag", values: [ "wcag2aaa" ] } }
     workspace = create(:workspace, name: "Acme", max_members: 50)
     sign_in_new_owner_of(workspace)
     visit new_workspace_invitation_path(workspace)
@@ -58,7 +54,6 @@ RSpec.describe "Workspace settings section — AAA", type: :system do
     before { permit_open_join_links }
 
     it "show-once reveal state is axe-clean at AAA (both themes)" do
-      axe_options = { runOnly: { type: "tag", values: [ "wcag2aaa" ] } }
       workspace = create(:workspace, :open_link, name: "Acme", max_members: 50)
       sign_in_new_owner_of(workspace)
       visit edit_workspace_settings_path(workspace)
@@ -69,7 +64,6 @@ RSpec.describe "Workspace settings section — AAA", type: :system do
     end
 
     it "masked steady state is axe-clean at AAA (both themes)" do
-      axe_options = { runOnly: { type: "tag", values: [ "wcag2aaa" ] } }
       workspace = create(:workspace, :open_link, name: "Acme", max_members: 50)
       user = sign_in_new_owner_of(workspace)
       create(:workspace_join_link, workspace: workspace, created_by: user)
@@ -83,7 +77,6 @@ RSpec.describe "Workspace settings section — AAA", type: :system do
     # alone, and the expiry paragraph is the aria-describedby target for both
     # the rotate button and the masked stub.
     it "shows the live link's expiry in a time[datetime], wired to the rotate button and masked stub, and is axe-clean at AAA (both themes)" do
-      axe_options = { runOnly: { type: "tag", values: [ "wcag2aaa" ] } }
       workspace = create(:workspace, :open_link, name: "Acme", max_members: 50)
       user = sign_in_new_owner_of(workspace)
       link = create(:workspace_join_link, workspace: workspace, created_by: user)
@@ -102,7 +95,6 @@ RSpec.describe "Workspace settings section — AAA", type: :system do
     end
 
     it "shows the expired message in words (no colour cue) for a lapsed link, and is axe-clean at AAA (both themes)" do
-      axe_options = { runOnly: { type: "tag", values: [ "wcag2aaa" ] } }
       workspace = create(:workspace, :open_link, name: "Acme", max_members: 50)
       user = sign_in_new_owner_of(workspace)
       create(:workspace_join_link, workspace: workspace, created_by: user)
