@@ -16,7 +16,7 @@ RSpec.describe "Invitation row actions escape the members frame", type: :system 
   it "shows the refreshed magic link and its notice after Resend" do
     workspace = create(:workspace, name: "Acme")
     owner = signed_in_owner_of(workspace)
-    role = Role.find_or_create_by!(slug: "member", workspace_id: nil) { |r| r.name = "Member" } # seed-agnostic
+    role = Role.system_default!("member")
     create(:invitation, :magic_link, invitable: workspace, role: role, invited_by: owner)
     visit workspace_members_path(workspace)
 
@@ -32,7 +32,7 @@ RSpec.describe "Invitation row actions escape the members frame", type: :system 
   it "shows the resent notice after Resend on an email invitation" do
     workspace = create(:workspace, name: "Acme")
     owner = signed_in_owner_of(workspace)
-    role = Role.find_or_create_by!(slug: "member", workspace_id: nil) { |r| r.name = "Member" } # seed-agnostic
+    role = Role.system_default!("member")
     create(:invitation, invitable: workspace, role: role, email: "invitee@example.com",
                         invited_by: owner)
     visit workspace_members_path(workspace)
@@ -45,7 +45,7 @@ RSpec.describe "Invitation row actions escape the members frame", type: :system 
   it "shows the revoked notice after Revoke" do
     workspace = create(:workspace, name: "Acme")
     owner = signed_in_owner_of(workspace)
-    role = Role.find_or_create_by!(slug: "member", workspace_id: nil) { |r| r.name = "Member" } # seed-agnostic
+    role = Role.system_default!("member")
     create(:invitation, invitable: workspace, role: role, email: "invitee@example.com",
                         invited_by: owner)
     visit workspace_members_path(workspace)

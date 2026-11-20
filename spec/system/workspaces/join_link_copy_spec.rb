@@ -18,8 +18,8 @@ RSpec.describe "Join link copy control", type: :system do
   JS
 
   def reveal_join_link
-    allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link])
-    workspace = create(:workspace, name: "Acme", join_policy: "open_link")
+    permit_open_join_links
+    workspace = create(:workspace, :open_link, name: "Acme")
     sign_in_via_form(create(:membership, :owner, workspace: workspace).user)
     visit edit_workspace_settings_path(workspace)
     click_button I18n.t("workspaces.settings.join_policy.generate")

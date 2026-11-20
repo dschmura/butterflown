@@ -14,7 +14,7 @@ require "rails_helper"
 # radios with no group name survived this long.
 RSpec.describe "Workspace settings — join-policy picker", type: :request do
   def signed_in_owner_workspace
-    create(:workspace).tap { |workspace| sign_in(create(:membership, :owner, workspace: workspace).user) }
+    create(:workspace).tap { |workspace| sign_in_as_owner_of(workspace) }
   end
 
   def doc(workspace)

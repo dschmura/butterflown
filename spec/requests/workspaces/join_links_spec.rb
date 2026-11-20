@@ -11,7 +11,7 @@ RSpec.describe "Workspaces::JoinLinks", type: :request do
     context "as an admin/owner" do
       it "creates a new active join link" do
         workspace = team_workspace
-        sign_in(owner_of(workspace))
+        sign_in_as_owner_of(workspace)
         member_of(workspace)
 
         expect {
@@ -24,8 +24,7 @@ RSpec.describe "Workspaces::JoinLinks", type: :request do
 
       it "atomically rotates — revokes any existing active link and creates a new one" do
         workspace = team_workspace
-        owner = owner_of(workspace)
-        sign_in(owner)
+        owner = sign_in_as_owner_of(workspace)
         member_of(workspace)
         existing = create(:workspace_join_link, workspace: workspace, created_by: owner)
         original_digest = existing.token_digest
@@ -41,8 +40,7 @@ RSpec.describe "Workspaces::JoinLinks", type: :request do
       # rotation must revoke it first or create! collides (#952).
       it "rotates an expired current link without colliding, leaving exactly one current, active link" do
         workspace = team_workspace
-        owner = owner_of(workspace)
-        sign_in(owner)
+        owner = sign_in_as_owner_of(workspace)
         member_of(workspace)
         expired = create(:workspace_join_link, workspace: workspace, created_by: owner)
         travel_to 8.days.from_now do
@@ -57,9 +55,9 @@ RSpec.describe "Workspaces::JoinLinks", type: :request do
 
       describe "show-once reveal (the token is hashed at rest)" do
         it "reveals the full join URL exactly once after generating, then masks it" do
-          allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link])
+          permit_open_join_links
           workspace = team_workspace
-          sign_in(owner_of(workspace))
+          sign_in_as_owner_of(workspace)
           member_of(workspace)
           workspace.update!(join_policy: "open_link")
 

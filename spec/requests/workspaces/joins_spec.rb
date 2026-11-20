@@ -4,7 +4,7 @@ RSpec.describe "Workspaces::Joins (Flow A: authenticated user joins via link)", 
   # Pinned apostrophe name: Faker's intermittently produced HTML-special chars, which broke
   # the raw response.body match below. Keeps the escaping path always exercised.
   def open_workspace_with_owner
-    workspace = create(:workspace, personal: false, join_policy: "open_link", name: "O'Brien Logistics")
+    workspace = create(:workspace, :open_link, name: "O'Brien Logistics")
     [ workspace, create(:membership, :owner, workspace: workspace).user ]
   end
 
@@ -12,21 +12,12 @@ RSpec.describe "Workspaces::Joins (Flow A: authenticated user joins via link)", 
     create(:user).tap { |newcomer| sign_in(newcomer) }
   end
 
-  def member_role
-    Role.find_or_create_by!(slug: "member", workspace_id: nil) { |r|
-      r.name = "Member"
-      r.permissions = { manage_projects: true }
-    }
-  end
-
-  before do
-    allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link])
-  end
+  before { permit_open_join_links }
 
   describe "POST /workspaces/:slug/joins/:token" do
     it "admits the user as a Member and redirects to the workspace" do
       workspace, owner = open_workspace_with_owner
-      role = member_role
+      role = Role.system_default!("member")
       newcomer = signed_in_newcomer
       link = create(:workspace_join_link, workspace: workspace, created_by: owner)
 
@@ -43,7 +34,7 @@ RSpec.describe "Workspaces::Joins (Flow A: authenticated user joins via link)", 
     # A revoke inside the last guard is refused by admit's re-check (#1061).
     it "refuses a link revoked between the posture check and the write" do
       workspace, owner = open_workspace_with_owner
-      member_role
+      Role.system_default!("member")
       signed_in_newcomer
       link = create(:workspace_join_link, workspace: workspace, created_by: owner)
       allow_any_instance_of(Workspace).to receive(:accepting_open_joins?).and_wrap_original do |original|
@@ -60,7 +51,7 @@ RSpec.describe "Workspaces::Joins (Flow A: authenticated user joins via link)", 
     # WorkspaceJoinedNotifier instead.
     it "leaves the joiner out of member-added, notifies the owner, and orients the joiner" do
       workspace, owner = open_workspace_with_owner
-      member_role
+      Role.system_default!("member")
       newcomer = signed_in_newcomer
       link = create(:workspace_join_link, workspace: workspace, created_by: owner)
       Noticed::Notification.delete_all
@@ -77,7 +68,7 @@ RSpec.describe "Workspaces::Joins (Flow A: authenticated user joins via link)", 
 
     it "rejects a revoked link" do
       workspace, owner = open_workspace_with_owner
-      member_role
+      Role.system_default!("member")
       signed_in_newcomer
       link = create(:workspace_join_link, workspace: workspace, created_by: owner)
       link.revoke!
@@ -89,7 +80,7 @@ RSpec.describe "Workspaces::Joins (Flow A: authenticated user joins via link)", 
 
     it "rejects an expired (but unrevoked) link with the same neutral error" do
       workspace, owner = open_workspace_with_owner
-      member_role
+      Role.system_default!("member")
       signed_in_newcomer
       token = create(:workspace_join_link, workspace: workspace, created_by: owner).plaintext_token
       travel_to 8.days.from_now do
@@ -103,7 +94,7 @@ RSpec.describe "Workspaces::Joins (Flow A: authenticated user joins via link)", 
 
     it "rejects when the workspace's join_policy is not open_link" do
       workspace, owner = open_workspace_with_owner
-      member_role
+      Role.system_default!("member")
       signed_in_newcomer
       link = create(:workspace_join_link, workspace: workspace, created_by: owner)
       workspace.update!(join_policy: "invite")
@@ -115,7 +106,7 @@ RSpec.describe "Workspaces::Joins (Flow A: authenticated user joins via link)", 
 
     it "rejects when the instance allowlist excludes :open_link" do
       workspace, owner = open_workspace_with_owner
-      member_role
+      Role.system_default!("member")
       signed_in_newcomer
       link = create(:workspace_join_link, workspace: workspace, created_by: owner)
       allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite])
@@ -127,7 +118,7 @@ RSpec.describe "Workspaces::Joins (Flow A: authenticated user joins via link)", 
 
     it "surfaces a clean message when the workspace is at capacity" do
       workspace, owner = open_workspace_with_owner
-      member_role
+      Role.system_default!("member")
       newcomer = signed_in_newcomer
       link = create(:workspace_join_link, workspace: workspace, created_by: owner)
       workspace.update!(max_members: 1)  # owner already fills capacity
@@ -150,7 +141,7 @@ RSpec.describe "Workspaces::Joins (Flow A: authenticated user joins via link)", 
 
     it "returns the same neutral error for invalid + unauthorized cases (no info leak)" do
       workspace, owner = open_workspace_with_owner
-      member_role
+      Role.system_default!("member")
       signed_in_newcomer
       link = create(:workspace_join_link, workspace: workspace, created_by: owner)
       # Confirms that "link doesn't exist" and "policy isn't open_link" surface
@@ -206,13 +197,11 @@ end
 # verification, claim_pending_join_link! admits them to the workspace.
 RSpec.describe "Workspaces::Joins (Flow B: unauthenticated user via link)", type: :request do
   def open_workspace_with_owner
-    workspace = create(:workspace, personal: false, join_policy: "open_link", name: "O'Brien Logistics")
+    workspace = create(:workspace, :open_link, name: "O'Brien Logistics")
     [ workspace, create(:membership, :owner, workspace: workspace).user ]
   end
 
-  before do
-    allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link])
-  end
+  before { permit_open_join_links }
 
   it "POST stashes the join token in the session and redirects to sign-in" do
     workspace, owner = open_workspace_with_owner
