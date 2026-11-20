@@ -10,15 +10,9 @@ require "rails_helper"
 # meta through the shared head's yield :head hook; a plain application page
 # with no active workspace does not.
 RSpec.describe "Shared layout chrome", type: :request do
-  def signed_in_user
-    user = create(:user)
-    sign_in(user)
-    user
-  end
-
   shared_examples "shared layout chrome" do |page_path|
     it "renders the shared head, skip link, and notifications live region" do
-      signed_in_user
+      sign_in(create(:user))
       get send(page_path)
       doc = Nokogiri::HTML(response.body)
       expect(doc.at_css('meta[name="description"]')).not_to be_nil
@@ -28,7 +22,8 @@ RSpec.describe "Shared layout chrome", type: :request do
     end
 
     it "subscribes to the stream NotificationBroadcaster sends the user's refreshes to" do
-      user = signed_in_user
+      user = create(:user)
+      sign_in(user)
       get send(page_path)
       streams = []
       allow(Turbo::StreamsChannel).to receive(:broadcast_update_to) { |stream, **| streams << stream }
@@ -45,7 +40,7 @@ RSpec.describe "Shared layout chrome", type: :request do
     include_examples "shared layout chrome", :workspaces_path
 
     it "does not enable Turbo morph (no refresh-method meta)" do
-      signed_in_user
+      sign_in(create(:user))
       get workspaces_path
       doc = Nokogiri::HTML(response.body)
       expect(doc.at_css('meta[name="turbo-refresh-method"]')).to be_nil
@@ -68,7 +63,7 @@ RSpec.describe "Shared layout chrome", type: :request do
     include_examples "shared layout chrome", :edit_settings_theme_preference_path
 
     it "enables Turbo morph for the settings hub (#327)" do
-      signed_in_user
+      sign_in(create(:user))
       get edit_settings_theme_preference_path
       doc = Nokogiri::HTML(response.body)
       meta = doc.at_css('meta[name="turbo-refresh-method"]')
