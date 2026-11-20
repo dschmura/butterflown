@@ -6,10 +6,6 @@ RSpec.describe ProjectMembershipChangedNotifier, type: :notifier do
   include ActiveJob::TestHelper
   include ActionMailer::TestHelper
 
-  def add_member(workspace, user: create(:user))
-    create(:membership, user: user, workspace: workspace)
-  end
-
   def editor_on(project, user)
     ProjectMembership.create!(project: project, user: user, role: "editor")
   end
