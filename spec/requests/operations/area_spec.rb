@@ -1,10 +1,11 @@
 require "rails_helper"
 
 RSpec.describe "Operations area", type: :request do
-  let(:operator) { create(:user).tap { |u| Operatorship.grant!(user: u) } }
-  let(:member) { create(:user) }
-  let!(:workspace) { create(:workspace, name: "Acme") }
-  let!(:suspended) { create(:workspace, name: "Frozen Co").tap(&:suspend!) }
+  def signed_in_operator
+    operator = create(:user).tap { |user| Operatorship.grant!(user: user) }
+    sign_in(operator)
+    operator
+  end
 
   it "redirects anonymous visitors to sign in" do
     get operations_root_path
@@ -18,7 +19,9 @@ RSpec.describe "Operations area", type: :request do
   # added under operations/ without an operator check is caught here without
   # anyone remembering to extend this example.
   it "answers 404 to a signed-in non-operator on every operations route" do
+    workspace = create(:workspace, name: "Acme")
     other_operatorship = Operatorship.grant!(user: create(:user))
+    member = create(:user)
     sign_in(member)
 
     operations_routes = Rails.application.routes.routes.select do |route|
@@ -65,9 +68,10 @@ RSpec.describe "Operations area", type: :request do
   end
 
   context "as an operator" do
-    before { sign_in(operator) }
-
     it "lists every kept workspace, suspended ones included and labelled" do
+      create(:workspace, name: "Acme")
+      create(:workspace, name: "Frozen Co").suspend!
+      signed_in_operator
       get operations_workspaces_path
       expect(response).to have_http_status(:ok)
       html = Capybara.string(response.body)
@@ -84,6 +88,7 @@ RSpec.describe "Operations area", type: :request do
     end
 
     it "never establishes a workspace context" do
+      signed_in_operator
       # A spy on the setter, not a post-hoc read:
       # ActiveSupport::CurrentAttributes is reset by the executor at the end
       # of every request, so Current.workspace already reads nil after ANY
@@ -97,6 +102,7 @@ RSpec.describe "Operations area", type: :request do
     end
 
     it "reaches the area with onboarding incomplete rather than being funneled into the wizard" do
+      operator = signed_in_operator
       # RequiresOnboarding#require_onboarding only funnels under the :none
       # preset (config/initializers/tenancy.rb) — the default :personal
       # preset makes this guard inert regardless of skip_onboarding_requirement,
@@ -109,6 +115,7 @@ RSpec.describe "Operations area", type: :request do
     end
 
     it "lets an un-onboarded operator finish reauthentication and land back on /operations" do
+      operator = signed_in_operator
       allow(TenancyConfig).to receive(:onboarding).and_return(:none)
       operator.update!(onboarded_at: nil)
       operator.sessions.update_all(reauthenticated_at: nil)
@@ -124,6 +131,7 @@ RSpec.describe "Operations area", type: :request do
     end
 
     it "requires a fresh reauthentication" do
+      operator = signed_in_operator
       operator.sessions.update_all(reauthenticated_at: nil)
       get operations_workspaces_path
       expect(response).to redirect_to(new_settings_reauthentication_path)
@@ -146,6 +154,7 @@ RSpec.describe "Operations area", type: :request do
       end
 
       it "still requires a fresh factor to enter the area when reauth_enabled is false" do
+        operator = signed_in_operator
         operator.sessions.update_all(reauthenticated_at: nil)
         get operations_workspaces_path
         expect(response).to redirect_to(new_settings_reauthentication_path)
@@ -157,6 +166,7 @@ RSpec.describe "Operations area", type: :request do
     # branch instead of the GET-correct one. Brakeman's VerbConfusion check
     # is what catches that shape; it is not an rspec-visible bug.
     it "treats a HEAD request like the GET it is routed as" do
+      operator = signed_in_operator
       operator.sessions.update_all(reauthenticated_at: nil)
       head operations_workspaces_path
       expect(session[:return_to_after_reauthentication]).to eq(operations_workspaces_path)
@@ -167,6 +177,7 @@ RSpec.describe "Operations area", type: :request do
     # to "where am I" without reading the nav. Both halves asserted: a <p> that
     # lost role=region would still pass a text-only check.
     it "renders the operations banner as a named landmark so the area is unmistakable" do
+      signed_in_operator
       get operations_workspaces_path
       html = Capybara.string(response.body)
       expect(html).to have_text(I18n.t("operations.area.banner"))
@@ -177,6 +188,7 @@ RSpec.describe "Operations area", type: :request do
     # The same preflight list-style:none trap as the activity feed's <ol> —
     # this <ul> is the area's other raw list.
     it "restores list semantics on the nav's raw <ul>" do
+      signed_in_operator
       get operations_workspaces_path
       expect(Capybara.string(response.body)).to have_css('nav ul[role="list"]')
     end
@@ -184,6 +196,7 @@ RSpec.describe "Operations area", type: :request do
     # The fork seam: a fork's pages join the nav after the template's, with the same current-page cue.
     # allow_any_instance_of because the view context is built per request.
     it "appends the fork's nav items after the template's" do
+      signed_in_operator
       allow_any_instance_of(Operations::ForkNavHelper)
         .to receive(:operations_fork_nav_items).and_return([ [ "Fork page", operations_users_path ] ])
 
@@ -195,6 +208,7 @@ RSpec.describe "Operations area", type: :request do
     end
 
     it "adds no nav items of its own when the fork lists none" do
+      signed_in_operator
       get operations_workspaces_path
 
       expect(Capybara.string(response.body).all("nav ul li").size).to eq(4)
@@ -207,6 +221,7 @@ RSpec.describe "Operations area", type: :request do
     # 14px is a weak signal on its own. text-text-heading on bg-surface-sunken
     # is a proven AAA pairing (tokens/_semantic.css, ~21:1).
     it "marks the current page in the nav with aria-current and the house visible cue" do
+      signed_in_operator
       get operations_workspaces_path
       html = Capybara.string(response.body)
 
@@ -226,6 +241,7 @@ RSpec.describe "Operations area", type: :request do
     # current page's colour — verified against the compiled stylesheet, not
     # asserted here since cascade order isn't request-spec-observable.
     it "keeps the link colour on every nav item, current page included" do
+      signed_in_operator
       get operations_workspaces_path
       html = Capybara.string(response.body)
       operations_nav = html.find("nav[aria-label='#{I18n.t('operations.area.nav_label')}']")
