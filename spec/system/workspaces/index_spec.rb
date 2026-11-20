@@ -123,6 +123,7 @@ RSpec.describe "Strong workspaces index", type: :system, js: true do
       user, = signed_in_user_with_two_workspaces
       personal = create(:workspace, name: "Personal")
       create(:membership, :owner, user: user, workspace: personal, last_accessed_at: 1.year.ago)
+      create(:membership, :owner, user: create(:user), workspace: personal)
       user.update!(personal_workspace_id: personal.id)
       visit workspaces_path
 
