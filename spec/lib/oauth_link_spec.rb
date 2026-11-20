@@ -272,9 +272,8 @@ RSpec.describe OauthLink do
 
     it "leaves a still-valid join token parked for a pre-existing user (drive-by guard)" do
       create(:user, email_address: "person@example.com")
-      allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies)
-        .and_return(%i[invite open_link])
-      workspace = create(:workspace, personal: false, join_policy: "open_link")
+      permit_open_join_links
+      workspace = create(:workspace, :open_link)
       link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
       Role.find_or_create_by!(slug: "member", workspace_id: nil) { |r| r.name = "Member" }
 

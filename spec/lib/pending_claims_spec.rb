@@ -67,14 +67,13 @@ RSpec.describe PendingClaims do
 
     describe "join-link token" do
       before do
-        allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies)
-          .and_return(%i[invite open_link])
+        permit_open_join_links
       end
 
       it "admits a newly registered user through an active link and spends the token" do
         user = create(:user)
         ensure_member_role
-        workspace = create(:workspace, personal: false, join_policy: "open_link")
+        workspace = create(:workspace, :open_link)
         link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
         claims = described_class.new(join_token: link.plaintext_token)
 
@@ -88,7 +87,7 @@ RSpec.describe PendingClaims do
       it "leaves a still-valid token unspent for a pre-existing user (re-consent guard)" do
         user = create(:user)
         ensure_member_role
-        workspace = create(:workspace, personal: false, join_policy: "open_link")
+        workspace = create(:workspace, :open_link)
         link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
         claims = described_class.new(join_token: link.plaintext_token)
 
@@ -101,7 +100,7 @@ RSpec.describe PendingClaims do
       it "spends a revoked link's token silently, even for a pre-existing user" do
         user = create(:user)
         ensure_member_role
-        workspace = create(:workspace, personal: false, join_policy: "open_link")
+        workspace = create(:workspace, :open_link)
         link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
         link.revoke!
         claims = described_class.new(join_token: link.plaintext_token)
@@ -116,7 +115,7 @@ RSpec.describe PendingClaims do
       it "treats Workspace::AlreadyMember as benign: spent, no problem, no raise" do
         user = create(:user)
         member_role = ensure_member_role
-        workspace = create(:workspace, personal: false, join_policy: "open_link")
+        workspace = create(:workspace, :open_link)
         link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
         workspace.admit(user, role: member_role)
         claims = described_class.new(join_token: link.plaintext_token)
@@ -130,7 +129,7 @@ RSpec.describe PendingClaims do
       it "raises Workspace::AtCapacity and still spends the token" do
         user = create(:user)
         member_role = ensure_member_role
-        workspace = create(:workspace, personal: false, join_policy: "open_link")
+        workspace = create(:workspace, :open_link)
         link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
         workspace.update!(max_members: 1)
         create(:membership, workspace: workspace, user: create(:user), role: member_role)
@@ -192,14 +191,13 @@ RSpec.describe PendingClaims do
 
     describe "join-link digest" do
       before do
-        allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies)
-          .and_return(%i[invite open_link])
+        permit_open_join_links
       end
 
       it "admits the user through an active link and spends the digest" do
         user = create(:user)
         ensure_member_role
-        workspace = create(:workspace, personal: false, join_policy: "open_link")
+        workspace = create(:workspace, :open_link)
         link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
         digest = WorkspaceJoinLink.digest(link.plaintext_token)
         claims = described_class.new(join_digest: digest)
@@ -214,7 +212,7 @@ RSpec.describe PendingClaims do
       it "silently spends a revoked link's digest" do
         user = create(:user)
         ensure_member_role
-        workspace = create(:workspace, personal: false, join_policy: "open_link")
+        workspace = create(:workspace, :open_link)
         link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
         digest = WorkspaceJoinLink.digest(link.plaintext_token)
         link.revoke!
@@ -232,7 +230,7 @@ RSpec.describe PendingClaims do
       it "silently spends an expired link's digest, same as a revoked one" do
         user = create(:user)
         ensure_member_role
-        workspace = create(:workspace, personal: false, join_policy: "open_link")
+        workspace = create(:workspace, :open_link)
         link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
         digest = WorkspaceJoinLink.digest(link.plaintext_token)
         claims = described_class.new(join_digest: digest)
@@ -249,7 +247,7 @@ RSpec.describe PendingClaims do
       it "records :join_link_at_capacity without raising when the workspace is full" do
         user = create(:user)
         member_role = ensure_member_role
-        workspace = create(:workspace, personal: false, join_policy: "open_link")
+        workspace = create(:workspace, :open_link)
         link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
         digest = WorkspaceJoinLink.digest(link.plaintext_token)
         workspace.update!(max_members: 1)

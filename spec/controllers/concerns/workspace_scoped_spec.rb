@@ -2,9 +2,9 @@ require "rails_helper"
 
 RSpec.describe WorkspaceScoped, type: :request do
   def sign_in_workspace_owner
-    membership = create(:membership, :owner, user: create(:user), workspace: create(:workspace))
-    sign_in(membership.user)
-    membership
+    workspace = create(:workspace)
+    owner = sign_in_as_owner_of(workspace)
+    owner.memberships.find_by!(workspace: workspace)
   end
 
   describe "touch_membership_last_accessed" do
