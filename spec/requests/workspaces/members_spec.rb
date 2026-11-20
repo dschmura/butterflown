@@ -1,10 +1,6 @@
 require "rails_helper"
 
 RSpec.describe "Workspace Members", type: :request do
-  def add_member(workspace, role: nil, user: create(:user))
-    create(:membership, *[ role ].compact, user: user, workspace: workspace)
-  end
-
   def sign_in_as(membership)
     sign_in(membership.user)
     membership
