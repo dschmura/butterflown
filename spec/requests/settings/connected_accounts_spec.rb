@@ -614,10 +614,6 @@ RSpec.describe "Account Connected Accounts", type: :request do
       Role.find_or_create_by!(slug: "member", workspace_id: nil) { |r| r.name = "Member" }
     end
 
-    def open_link_workspace
-      create(:workspace, personal: false, join_policy: "open_link")
-    end
-
     def join_link_for(workspace)
       create(:workspace_join_link, workspace: workspace, created_by: create(:user))
     end
@@ -636,15 +632,12 @@ RSpec.describe "Account Connected Accounts", type: :request do
       )
     end
 
-    before do
-      allow(Rails.configuration.x.signup)
-        .to receive(:permitted_join_strategies).and_return(%i[invite open_link])
-    end
+    before { permit_open_join_links }
 
     context "when the user is already a member of the link's workspace" do
       it "verifies and signs in without surfacing the raw 'already a member' error" do
         member_role = ensure_member_role
-        workspace = open_link_workspace
+        workspace = create(:workspace, :open_link)
         user = joiner
         workspace.admit(user, role: member_role)
         pending_auth = parked_join_auth(user, join_link_for(workspace))
@@ -661,7 +654,7 @@ RSpec.describe "Account Connected Accounts", type: :request do
     context "when the link's workspace is at capacity" do
       it "verifies but surfaces a localized capacity message, not the raw model string" do
         member_role = ensure_member_role
-        workspace = open_link_workspace
+        workspace = create(:workspace, :open_link)
         workspace.update!(max_members: 1)
         create(:membership, workspace: workspace, user: create(:user), role: member_role)
         pending_auth = parked_join_auth(joiner, join_link_for(workspace))
@@ -679,7 +672,7 @@ RSpec.describe "Account Connected Accounts", type: :request do
       it "verifies, signs in, admits the user as Member, and clears the token" do
         ensure_member_role
         user = joiner
-        workspace = open_link_workspace
+        workspace = create(:workspace, :open_link)
         pending_auth = parked_join_auth(user, join_link_for(workspace))
 
         post settings_connected_account_verification_path, params: { token: pending_auth.generate_token_for(:email_verification) }
@@ -698,7 +691,7 @@ RSpec.describe "Account Connected Accounts", type: :request do
     context "when the link was revoked between parking and verification" do
       it "silently no-ops: verifies, clears the token, grants no membership" do
         ensure_member_role
-        workspace = open_link_workspace
+        workspace = create(:workspace, :open_link)
         link = join_link_for(workspace)
         link.revoke!
         user = joiner
@@ -718,7 +711,7 @@ RSpec.describe "Account Connected Accounts", type: :request do
     context "when the workspace was suspended between parking and verification" do
       it "silently no-ops: verifies, clears the token, grants no membership" do
         ensure_member_role
-        workspace = open_link_workspace
+        workspace = create(:workspace, :open_link)
         workspace.suspend!
         user = joiner
         pending_auth = parked_join_auth(user, join_link_for(workspace))
@@ -741,7 +734,7 @@ RSpec.describe "Account Connected Accounts", type: :request do
       context "when the workspace was #{lifecycle_name} between parking and verification" do
         it "silently no-ops: verifies, clears the token, grants no membership" do
           ensure_member_role
-          workspace = open_link_workspace
+          workspace = create(:workspace, :open_link)
           workspace.public_send("#{lifecycle_action}!")
           user = joiner
           pending_auth = parked_join_auth(user, join_link_for(workspace))
@@ -760,7 +753,7 @@ RSpec.describe "Account Connected Accounts", type: :request do
     context "when the workspace's join policy reverted to invite-only mid-flight" do
       it "silently no-ops: verifies, clears the token, grants no membership" do
         ensure_member_role
-        workspace = open_link_workspace
+        workspace = create(:workspace, :open_link)
         workspace.update!(join_policy: "invite")
         user = joiner
         pending_auth = parked_join_auth(user, join_link_for(workspace))
