@@ -11,7 +11,7 @@ RSpec.describe Invitation, type: :model do
   end
 
   def invite_to_project(project, inviter:, email:, project_role: "editor")
-    viewer_role = Role.find_or_create_by!(slug: "viewer", workspace_id: nil) { |r| r.name = "Viewer" }
+    viewer_role = Role.system_default!("viewer")
     project.invitations.create!(
       email: email,
       role: viewer_role,
@@ -383,18 +383,12 @@ RSpec.describe Invitation, type: :model do
   end
 
   describe "client invitations" do
-    def ensure_owner_role
-      Role.find_or_create_by!(slug: "owner", workspace_id: nil) do |r|
-        r.name = "Owner"; r.permissions = { manage_workspace: true }
-      end
-    end
-
     def clientside_project
       create(:project, clientside_enabled: true)
     end
 
     it "is a client invite when company_name is present" do
-      ensure_owner_role
+      Role.system_default!("owner")
       project = clientside_project
       inv = build(:invitation, :client, invitable: project)
       expect(inv.client_invite?).to be(true)
@@ -402,14 +396,14 @@ RSpec.describe Invitation, type: :model do
     end
 
     it "allows a nil role only for client invites" do
-      ensure_owner_role
+      Role.system_default!("owner")
       member = build(:invitation, role: nil, company_name: nil)
       expect(member).not_to be_valid
       expect(member.errors[:role]).to be_present
     end
 
     it ".invite_client! creates the invite and enqueues the client mailer" do
-      ensure_owner_role
+      Role.system_default!("owner")
       project = clientside_project
       inviter = create(:user)
       expect {
@@ -423,7 +417,7 @@ RSpec.describe Invitation, type: :model do
     end
 
     it "accept! creates a ClientAccess and stamps onboarded_at" do
-      ensure_owner_role
+      Role.system_default!("owner")
       project = clientside_project
       inviter = create(:user)
       inv = Invitation.invite_client!(project: project, email: "dana@bigco.com",
@@ -436,7 +430,7 @@ RSpec.describe Invitation, type: :model do
     end
 
     it "consume! still guards against a mismatched email (bearer protection)" do
-      ensure_owner_role
+      Role.system_default!("owner")
       project = clientside_project
       inviter = create(:user)
       inv = Invitation.invite_client!(project: project, email: "dana@bigco.com",
@@ -447,7 +441,7 @@ RSpec.describe Invitation, type: :model do
     end
 
     it "accept! raises NotAcceptable when Clientside is disabled (undiscard bypass)" do
-      ensure_owner_role
+      Role.system_default!("owner")
       project = clientside_project
       inviter = create(:user)
       inv = Invitation.invite_client!(project: project, email: "dana@bigco.com",
@@ -460,7 +454,7 @@ RSpec.describe Invitation, type: :model do
     end
 
     it "accept! still succeeds when Clientside is enabled (happy path)" do
-      ensure_owner_role
+      Role.system_default!("owner")
       project = clientside_project
       inviter = create(:user)
       inv = Invitation.invite_client!(project: project, email: "happy@bigco.com",
@@ -471,14 +465,14 @@ RSpec.describe Invitation, type: :model do
     end
 
     it "is invalid when invitable is a Workspace, not a Project" do
-      ensure_owner_role
+      Role.system_default!("owner")
       inv = build(:invitation, :client, invitable: create(:workspace))
       expect(inv).not_to be_valid
       expect(inv.errors[:base]).to be_present
     end
 
     it "accept! for a client invitation to a discarded project raises NotAcceptable and creates no ClientAccess" do
-      ensure_owner_role
+      Role.system_default!("owner")
       project = clientside_project
       inviter = create(:user)
       inv = Invitation.invite_client!(project: project, email: "dana@bigco.com",
@@ -496,7 +490,7 @@ RSpec.describe Invitation, type: :model do
     # an archived (or deleted) workspace is blocked — new admission requires an
     # active workspace, even though archived KEEPS existing client access.
     it "accept! for a client invitation whose workspace is archived raises NotAcceptable and creates no ClientAccess" do
-      ensure_owner_role
+      Role.system_default!("owner")
       project = clientside_project
       inviter = create(:user)
       inv = Invitation.invite_client!(project: project, email: "arch@bigco.com",
@@ -516,14 +510,8 @@ RSpec.describe Invitation, type: :model do
   describe "#accept! reconciles role under :shared posture" do
     def shared_posture_cast
       shared_workspace = create(:workspace, slug: "acme", personal: false)
-      admin_role = Role.find_or_create_by!(slug: "admin", workspace_id: nil) do |r|
-        r.name = "Admin"
-        r.permissions = { manage_members: true, manage_projects: true, manage_settings: true }
-      end
-      member_role = Role.find_or_create_by!(slug: "member", workspace_id: nil) do |r|
-        r.name = "Member"
-        r.permissions = { manage_projects: true }
-      end
+      admin_role = Role.system_default!("admin")
+      member_role = Role.system_default!("member")
       [ shared_workspace, admin_role, member_role ]
     end
 

@@ -2,10 +2,10 @@ require "rails_helper"
 
 RSpec.describe "Project Invitations", type: :request do
   def signed_in_project_owner
-    membership = create(:membership, :owner)
-    Current.workspace = membership.workspace
-    sign_in(membership.user)
-    create(:project, workspace: membership.workspace, created_by: membership.user)
+    workspace = create(:workspace)
+    owner = sign_in_as_owner_of(workspace)
+    Current.workspace = workspace
+    create(:project, workspace: workspace, created_by: owner)
   end
 
   describe "unauthenticated access" do
@@ -108,7 +108,7 @@ RSpec.describe "Project Invitations", type: :request do
 
     describe "accepting a project invitation" do
       def invite_invitee(project, email: "invitee@example.com")
-        viewer_role = Role.find_or_create_by!(slug: "viewer", workspace_id: nil) { |r| r.name = "Viewer" }
+        viewer_role = Role.system_default!("viewer")
         project.invitations.create!(
           email: email,
           role: viewer_role,
