@@ -181,7 +181,7 @@ RSpec.describe Workspace, type: :model do
 
     it "can be set to 'open_link' when the instance permits it" do
       permit_open_join_links
-      workspace = build(:workspace, join_policy: "open_link", personal: false)
+      workspace = build(:workspace, :open_link)
       expect(workspace).to be_valid
       expect(workspace).to be_open_link
     end
@@ -189,7 +189,7 @@ RSpec.describe Workspace, type: :model do
 
   describe "personal-workspace hard guard validation" do
     it "rejects join_policy 'open_link' on a personal workspace" do
-      workspace = build(:workspace, personal: true, join_policy: "open_link")
+      workspace = build(:workspace, :open_link, personal: true)
       expect(workspace).not_to be_valid
       expect(workspace.errors[:join_policy]).to be_present
     end
@@ -203,14 +203,14 @@ RSpec.describe Workspace, type: :model do
   describe "instance allowlist validation" do
     it "rejects setting join_policy to a strategy the instance doesn't permit" do
       allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite])
-      workspace = build(:workspace, personal: false, join_policy: "open_link")
+      workspace = build(:workspace, :open_link)
       expect(workspace).not_to be_valid
       expect(workspace.errors[:join_policy]).to include(/not permitted/i)
     end
 
     it "permits setting join_policy to a strategy in the allowlist" do
       permit_open_join_links
-      workspace = build(:workspace, personal: false, join_policy: "open_link")
+      workspace = build(:workspace, :open_link)
       expect(workspace).to be_valid
     end
   end
