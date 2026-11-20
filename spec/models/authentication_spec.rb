@@ -362,7 +362,7 @@ RSpec.describe Authentication, type: :model do
       Role.system_default!("member")
       user = create(:user, :no_authentications)
       authentication = create(:authentication, user: user, pending_invitation_token: nil)
-      workspace = create(:workspace, personal: false, join_policy: "open_link")
+      workspace = create(:workspace, :open_link)
       link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
       authentication.update!(pending_join_link_digest: WorkspaceJoinLink.digest(link.plaintext_token))
 
@@ -377,7 +377,7 @@ RSpec.describe Authentication, type: :model do
     it "silently clears the join digest when the link has been revoked" do
       user = create(:user, :no_authentications)
       authentication = create(:authentication, user: user, pending_invitation_token: nil)
-      workspace = create(:workspace, personal: false, join_policy: "open_link")
+      workspace = create(:workspace, :open_link)
       link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
       link.revoke!
       authentication.update!(pending_join_link_digest: WorkspaceJoinLink.digest(link.plaintext_token))
@@ -393,7 +393,7 @@ RSpec.describe Authentication, type: :model do
     it "silently clears the join digest when the workspace's policy is no longer open_link" do
       user = create(:user, :no_authentications)
       authentication = create(:authentication, user: user, pending_invitation_token: nil)
-      workspace = create(:workspace, personal: false, join_policy: "open_link")
+      workspace = create(:workspace, :open_link)
       link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
       authentication.update!(pending_join_link_digest: WorkspaceJoinLink.digest(link.plaintext_token))
       workspace.update!(join_policy: "invite")
@@ -408,7 +408,7 @@ RSpec.describe Authentication, type: :model do
       Role.system_default!("member")
       user = create(:user, :no_authentications)
       authentication = create(:authentication, user: user, pending_invitation_token: nil)
-      workspace = create(:workspace, personal: false, join_policy: "open_link")
+      workspace = create(:workspace, :open_link)
       link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
       workspace.update!(max_members: 1)
       create(:membership, workspace: workspace, user: create(:user), role: Role.system_default!("member"))
