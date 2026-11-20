@@ -4,8 +4,7 @@ RSpec.describe "Global RecordNotFound handling", type: :request do
   def sign_in_workspace_owner
     owner = create(:user)
     workspace = create(:workspace)
-    create(:membership, :owner, user: owner, workspace: workspace)
-    sign_in(owner)
+    sign_in_as_owner_of(workspace, user: owner)
     workspace
   end
 

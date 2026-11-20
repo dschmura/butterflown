@@ -27,7 +27,7 @@ RSpec.describe "Operations activity ledger", type: :system do
   end
 
   def sign_in_operator
-    sign_in_via_form(create(:user, :with_zero_workspaces).tap { |user| Operatorship.grant!(user: user) })
+    sign_in_via_form(create(:user, :with_zero_workspaces, :operator))
   end
 
   def within_results(&) = within("turbo-frame#activity_results", &)
