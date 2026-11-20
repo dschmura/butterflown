@@ -12,12 +12,12 @@ RSpec.describe "Flow B: new user signs up via workspace join link", type: :reque
   before do
     # Tight posture for Flow B: invite_only instance with open_link permitted.
     allow(Rails.configuration.x.signup).to receive(:mode).and_return(:invite_only)
-    allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link])
+    permit_open_join_links
   end
 
   def open_link_workspace_with_join_link
     owner = create(:user)
-    workspace = create(:workspace, :open_link, personal: false)
+    workspace = create(:workspace, :open_link)
     create(:membership, :owner, user: owner, workspace: workspace)
     Role.system_default!("member")
     [ workspace, create(:workspace_join_link, workspace: workspace, created_by: owner) ]

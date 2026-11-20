@@ -4,9 +4,9 @@ require "rails_helper"
 # matching no rows, so these watch the stamp rather than counting queries.
 RSpec.describe "Workspace last-accessed touch", type: :request do
   def signed_in_owner_membership
-    membership = create(:membership, :owner, user: create(:user), workspace: create(:workspace))
-    sign_in(membership.user)
-    membership
+    workspace = create(:workspace)
+    owner = sign_in_as_owner_of(workspace)
+    owner.memberships.find_by!(workspace: workspace)
   end
 
   it "does not re-stamp inside the window" do
