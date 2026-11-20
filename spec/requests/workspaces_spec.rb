@@ -8,7 +8,10 @@ RSpec.describe "Workspaces", type: :request do
   end
 
   def signed_in_owned_workspace(*traits, **attrs)
-    owned_workspace(signed_in_user, *traits, **attrs)
+    user = create(:user)
+    workspace = create(:workspace, *traits, **attrs)
+    sign_in_as_owner_of(workspace, user: user)
+    workspace
   end
 
   def owned_workspace(user, *traits, **attrs)

@@ -100,22 +100,14 @@ RSpec.describe Workspace, type: :model do
   end
 
   describe "#owners" do
-    def owner_role
-      Role.find_or_create_by!(slug: "owner", workspace_id: nil) { |r| r.name = "Owner" }
-    end
-
-    def member_role
-      Role.find_or_create_by!(slug: "member", workspace_id: nil) { |r| r.name = "Member" }
-    end
-
     it "returns all kept users with owner role for the workspace" do
       workspace = create(:workspace)
       owner_a = create(:user)
       owner_b = create(:user)
       member  = create(:user)
-      create(:membership, user: owner_a, workspace: workspace, role: owner_role)
-      create(:membership, user: owner_b, workspace: workspace, role: owner_role)
-      create(:membership, user: member,  workspace: workspace, role: member_role)
+      create(:membership, :owner, user: owner_a, workspace: workspace)
+      create(:membership, :owner, user: owner_b, workspace: workspace)
+      create(:membership, user: member,  workspace: workspace)
 
       expect(workspace.owners).to match_array([ owner_a, owner_b ])
     end
@@ -124,8 +116,8 @@ RSpec.describe Workspace, type: :model do
       workspace = create(:workspace)
       owner_a = create(:user)
       owner_b = create(:user)
-      create(:membership, user: owner_a, workspace: workspace, role: owner_role)
-      m2 = create(:membership, user: owner_b, workspace: workspace, role: owner_role)
+      create(:membership, :owner, user: owner_a, workspace: workspace)
+      m2 = create(:membership, :owner, user: owner_b, workspace: workspace)
       m2.update!(discarded_at: Time.current)
 
       expect(workspace.owners).to match_array([ owner_a ])
@@ -134,14 +126,14 @@ RSpec.describe Workspace, type: :model do
     it "returns an empty collection when the workspace has no owner-role memberships" do
       workspace = create(:workspace)
       member = create(:user)
-      create(:membership, user: member, workspace: workspace, role: member_role)
+      create(:membership, user: member, workspace: workspace)
       expect(workspace.owners).to be_empty
     end
 
     it "returns fresh data even when a stale association is loaded" do
       workspace = create(:workspace)
-      first = create(:membership, user: create(:user), workspace: workspace, role: owner_role)
-      second = create(:membership, user: create(:user), workspace: workspace, role: owner_role)
+      first = create(:membership, :owner, user: create(:user), workspace: workspace)
+      second = create(:membership, :owner, user: create(:user), workspace: workspace)
       workspace.memberships.load
       Membership.find(second.id).update!(discarded_at: Time.current)
 
@@ -188,7 +180,7 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "can be set to 'open_link' when the instance permits it" do
-      allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link])
+      permit_open_join_links
       workspace = build(:workspace, join_policy: "open_link", personal: false)
       expect(workspace).to be_valid
       expect(workspace).to be_open_link
@@ -217,7 +209,7 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "permits setting join_policy to a strategy in the allowlist" do
-      allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link])
+      permit_open_join_links
       workspace = build(:workspace, personal: false, join_policy: "open_link")
       expect(workspace).to be_valid
     end
@@ -246,18 +238,10 @@ RSpec.describe Workspace, type: :model do
   end
 
   describe "#create_project" do
-    def project_member_role
-      Role.find_or_create_by!(slug: "member", workspace_id: nil) { |r|
-        r.name = "Member"
-        r.permissions = { manage_projects: true }
-      }
-    end
-
     def workspace_with_creator(**attrs)
-      member_role = project_member_role
       workspace = create(:workspace, personal: false, **attrs)
       creator = create(:user)
-      workspace.memberships.create!(user: creator, role: member_role)
+      create(:membership, user: creator, workspace: workspace)
       [ workspace, creator ]
     end
 
@@ -354,14 +338,14 @@ RSpec.describe Workspace, type: :model do
 
       expect { workspace.create_project({ name: "Atlas" }, creator: creator) }
         .to raise_error(Suspendable::SuspendedError)
-      expect { workspace.admit(create(:user), role: project_member_role) }
+      expect { workspace.admit(create(:user), role: Role.system_default!("member")) }
         .to raise_error(Workspace::NotAdmittableError)
     end
 
     it "works in a personal workspace" do
       workspace, creator = workspace_with_creator
       personal = create(:workspace, personal: true)
-      personal.memberships.create!(user: creator, role: project_member_role)
+      create(:membership, user: creator, workspace: personal)
 
       project = personal.create_project({ name: "Atlas" }, creator: creator)
 
