@@ -1,10 +1,6 @@
 require "rails_helper"
 
 RSpec.describe "Members table", type: :system do
-  def add_member(workspace, role: nil, user: create(:user))
-    create(:membership, *[ role ].compact, user: user, workspace: workspace)
-  end
-
   def signed_in_owner
     user = create(:user, first_name: "Owner", last_name: "User", password: "SecureP@ssw0rd123!")
     owner = add_member(create(:workspace, max_members: 50), role: :owner, user: user)
