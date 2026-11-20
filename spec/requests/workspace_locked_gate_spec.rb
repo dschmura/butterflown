@@ -4,8 +4,7 @@ RSpec.describe "Locked workspace gate", type: :request do
   def locked_workspace_of_signed_in_owner
     user = create(:user)
     workspace = create(:workspace)
-    create(:membership, :owner, user: user, workspace: workspace)
-    sign_in(user)
+    sign_in_as_owner_of(workspace, user: user)
     workspace.suspend!
     workspace
   end
@@ -49,9 +48,7 @@ RSpec.describe "Locked workspace gate", type: :request do
   # JoinsController skips WorkspaceScoped, so the lock is enforced separately;
   # outsiders get invalid_or_revoked, not locked_notice (privacy decision).
   describe "join links on a locked workspace" do
-    before do
-      allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link])
-    end
+    before { permit_open_join_links }
 
     def locked_join_link
       locked_workspace = create(:workspace, personal: false, join_policy: "open_link", name: "Locked Co")
@@ -95,7 +92,7 @@ RSpec.describe "Locked workspace gate", type: :request do
     it "does not admit a member via a pending PROJECT invitation, and redirects with the existing acceptance_failed copy" do
       locked_workspace, owner = workspace_with_owner
       invitee = create(:user)
-      viewer_role = Role.find_or_create_by!(slug: "viewer", workspace_id: nil) { |r| r.name = "Viewer" }
+      viewer_role = Role.system_default!("viewer")
       project = create(:project, workspace: locked_workspace, created_by: owner)
       invitation = project.invitations.create!(
         email: invitee.email_address,
@@ -118,7 +115,7 @@ RSpec.describe "Locked workspace gate", type: :request do
     it "does not admit a member via a pending WORKSPACE invitation, and redirects with the existing acceptance_failed copy" do
       locked_workspace, owner = workspace_with_owner
       invitee = create(:user)
-      viewer_role = Role.find_or_create_by!(slug: "viewer", workspace_id: nil) { |r| r.name = "Viewer" }
+      viewer_role = Role.system_default!("viewer")
       invitation = create(:invitation, invitable: locked_workspace, email: invitee.email_address, role: viewer_role, invited_by: owner)
       locked_workspace.suspend!
       sign_in(invitee)

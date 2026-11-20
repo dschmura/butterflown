@@ -4,7 +4,7 @@ require "rails_helper"
 # examples describe the model; this file is scoped by directory to the trait.
 RSpec.describe Workspace, type: :model do
   describe "#open_join?" do
-    before { allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link]) }
+    before { permit_open_join_links }
 
     it "is true for an org workspace with join_policy 'open_link' when instance permits it" do
       workspace = build(:workspace, join_policy: "open_link", personal: false)
@@ -35,9 +35,7 @@ RSpec.describe Workspace, type: :model do
   # open-link self-join path can share the same lock + capacity + discarded-
   # reactivation + role-reconciliation logic.
   describe "#accepting_open_joins?" do
-    before do
-      allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link])
-    end
+    before { permit_open_join_links }
 
     it "is true when the join policy is open and the workspace is admittable" do
       workspace = create(:workspace, personal: false, join_policy: "open_link")
@@ -102,8 +100,8 @@ RSpec.describe Workspace, type: :model do
       user = create(:user)
       member_role = Role.system_default!("member")
       other_owner = create(:user)
-      workspace.memberships.create!(user: other_owner, role: Role.system_default!("owner"))
-      discarded = workspace.memberships.create!(user: user, role: member_role)
+      create(:membership, :owner, user: other_owner, workspace: workspace)
+      discarded = create(:membership, user: user, workspace: workspace)
       discarded.deactivate!
 
       expect {
@@ -118,8 +116,8 @@ RSpec.describe Workspace, type: :model do
       user = create(:user)
       member_role = Role.system_default!("member")
       other_owner = create(:user)
-      workspace.memberships.create!(user: other_owner, role: Role.system_default!("owner"))
-      discarded = workspace.memberships.create!(user: user, role: member_role)
+      create(:membership, :owner, user: other_owner, workspace: workspace)
+      discarded = create(:membership, user: user, workspace: workspace)
       discarded.deactivate!
 
       result = nil
@@ -139,7 +137,7 @@ RSpec.describe Workspace, type: :model do
       user = create(:user)
       member_role = Role.system_default!("member")
       workspace.update!(max_members: 1)
-      workspace.memberships.create!(user: create(:user), role: Role.system_default!("owner"))
+      create(:membership, :owner, user: create(:user), workspace: workspace)
 
       expect {
         workspace.admit(user, role: member_role)
@@ -148,7 +146,7 @@ RSpec.describe Workspace, type: :model do
 
     context "when user is already a kept member" do
       def kept_member_of(workspace, user)
-        workspace.memberships.create!(user: user, role: Role.system_default!("member"))
+        create(:membership, user: user, workspace: workspace)
       end
 
       it "raises AlreadyMember under :personal (duplicate-accept error)" do
@@ -223,11 +221,10 @@ RSpec.describe Workspace, type: :model do
       # Users are created before `shared?` is stubbed: the stub must not reach
       # User#onboard_workspace, which reads TenancyConfig.onboarding.
       def two_owners_of(workspace)
-        owner_role = Role.system_default!("owner")
         owner_a = create(:user)
         owner_b = create(:user)
-        workspace.memberships.create!(user: owner_a, role: owner_role)
-        workspace.memberships.create!(user: owner_b, role: owner_role)
+        create(:membership, :owner, user: owner_a, workspace: workspace)
+        create(:membership, :owner, user: owner_b, workspace: workspace)
         allow(TenancyConfig).to receive(:shared?).and_return(true)
         Noticed::Notification.delete_all
         Noticed::Event.delete_all
@@ -275,7 +272,7 @@ RSpec.describe Workspace, type: :model do
         user = create(:user)
         owner_a, = two_owners_of(workspace)
         member_role = Role.system_default!("member")
-        workspace.memberships.create!(user: user, role: member_role)
+        create(:membership, user: user, workspace: workspace)
 
         result = workspace.admit(user, role: member_role, granted_by: owner_a, on_existing: :adopt)
 
@@ -287,7 +284,7 @@ RSpec.describe Workspace, type: :model do
         user = create(:user)
         two_owners_of(workspace)
         member_role = Role.system_default!("member")
-        workspace.memberships.create!(user: user, role: member_role)
+        create(:membership, user: user, workspace: workspace)
 
         result = workspace.admit(user, role: member_role, self_join: true, on_existing: :adopt)
 

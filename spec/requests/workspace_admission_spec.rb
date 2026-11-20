@@ -8,7 +8,7 @@ require "rails_helper"
 # the only path that reaches the rescue, so it must be proven with a stub.
 RSpec.describe "Workspace admission (not_admittable rescue)", type: :request do
   before do
-    allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link])
+    permit_open_join_links
     allow_any_instance_of(Workspace).to receive(:admit).and_raise(Workspace::NotAdmittableError)
   end
 
@@ -34,9 +34,7 @@ end
 # setup from spec/requests/workspaces/joins_spec.rb and the invitation setup
 # from spec/requests/invitation_accepts_spec.rb.
 RSpec.describe "Admission into non-active workspaces", type: :request do
-  before do
-    allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link])
-  end
+  before { permit_open_join_links }
 
   def non_active_workspace(lifecycle_action)
     workspace = create(:workspace, personal: false, join_policy: "open_link")

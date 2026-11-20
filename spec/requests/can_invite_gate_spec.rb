@@ -85,17 +85,15 @@ RSpec.describe "User#can_invite? — verified_at writer inventory", type: :reque
   # returns :unverified_pending and the controller redirects to sign-in with a
   # "check your email" notice. There is no way to reach onboarding unverified.
   describe "the gate on an invitation surface" do
-    def sender_with_workspace
+    def signed_in_sender_with_workspace
       user = user_without_authentications
       workspace = create(:workspace)
-      create(:membership, user: user, workspace: workspace,
-                          role: Role.system_default!("owner"))
+      sign_in_as_owner_of(workspace, user: user)
       [ user, workspace ]
     end
 
     it "refuses to send and says why when the sender is unverified" do
-      user, workspace = sender_with_workspace
-      sign_in(user)
+      user, workspace = signed_in_sender_with_workspace
 
       expect {
         post workspace_invitations_path(workspace),
@@ -107,8 +105,7 @@ RSpec.describe "User#can_invite? — verified_at writer inventory", type: :reque
     end
 
     it "says why on a Turbo Stream submit too" do
-      user, workspace = sender_with_workspace
-      sign_in(user)
+      user, workspace = signed_in_sender_with_workspace
 
       post workspace_invitations_path(workspace),
            params: { invitation: { emails: "someone@example.test", role_id: Role.system_default!("member").id } },
@@ -125,8 +122,7 @@ RSpec.describe "User#can_invite? — verified_at writer inventory", type: :reque
       unverified = create(:user, :unverified_email, :with_zero_workspaces)
       workspace = create(:workspace)
       create(:project, workspace: workspace)
-      workspace.memberships.create!(user: unverified, role: Role.system_default!("owner"))
-      sign_in(unverified)
+      sign_in_as_owner_of(workspace, user: unverified)
 
       expect {
         post onboarding_team_path,
