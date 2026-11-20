@@ -2,7 +2,7 @@
 
 A multi-tenant SaaS starter kit you fork to start a product, with sign-in,
 workspaces, WCAG 2.2 AAA accessibility and deployment already done. It runs on
-Rails main (8.2.0.alpha, pinned to one commit) and Ruby 4.0.9.
+Rails main (8.2.0.alpha, pinned to one commit) and Ruby 4.0 (the exact release is pinned in `.tool-versions`).
 
 ## Set up your machine
 
@@ -37,7 +37,7 @@ needed only when you deploy, from the quickstart's step 5.
 ```bash
 gh repo clone dschmura/modelrails_base my_app
 cd my_app
-mise install   # Ruby 4.0.9 and the deploy tools
+mise install   # the Ruby in .tool-versions, plus the deploy tools
 bin/fork
 ```
 
@@ -52,7 +52,7 @@ taking the template's updates later with `bin/sync`.
 
 ## Tech stack
 
-- **Framework:** Rails main (8.2.0.alpha) at a pinned commit, Ruby 4.0.9
+- **Framework:** Rails main (8.2.0.alpha) at a pinned commit, Ruby 4.0 (the exact release is pinned in `.tool-versions`)
 - **Database:** SQLite, with Solid Queue, Cache and Cable in-process
 - **Frontend:** TailwindCSS 4, Turbo, Stimulus, Propshaft, importmaps
 - **Auth:** passwordless-first magic links, passkeys (WebAuthn), Google and
