@@ -6,11 +6,21 @@ RSpec.describe ProjectMembershipChangedNotifier, type: :notifier do
   include ActiveJob::TestHelper
   include ActionMailer::TestHelper
 
-  let(:workspace) { create(:workspace) }
-  let(:user) { create(:user) }
-  let!(:membership) { create(:membership, user: user, workspace: workspace) }
-  let(:project) { create(:project, workspace: workspace) }
-  let(:project_membership) { ProjectMembership.create!(project: project, user: user, role: "editor") }
+  def add_member(workspace, user: create(:user))
+    create(:membership, user: user, workspace: workspace)
+  end
+
+  def editor_on(project, user)
+    ProjectMembership.create!(project: project, user: user, role: "editor")
+  end
+
+  def member_with_project_membership
+    workspace = create(:workspace)
+    user = create(:user)
+    add_member(workspace, user: user)
+    project = create(:project, workspace: workspace)
+    [ user, project, editor_on(project, user) ]
+  end
 
   describe ".category" do
     it "is :project_activity" do
@@ -20,6 +30,10 @@ RSpec.describe ProjectMembershipChangedNotifier, type: :notifier do
 
   describe "dispatching" do
     it "delivers to the project membership's user and creates a Noticed::Notification row" do
+      workspace = create(:workspace)
+      user = create(:user)
+      add_member(workspace, user: user)
+      project = create(:project, workspace: workspace)
       pm = ProjectMembership.new(project: project, user: user, role: "editor")
       pm.save(validate: true)
       # Re-using the same record + same minute would dedup; bypass that for the
@@ -34,6 +48,7 @@ RSpec.describe ProjectMembershipChangedNotifier, type: :notifier do
     end
 
     it "auto-populates idempotency_key on the event column" do
+      user, _project, project_membership = member_with_project_membership
       described_class.with(record: project_membership).deliver(user)
       event = Noticed::Event.last
       expect(event.idempotency_key).to be_present
@@ -41,6 +56,7 @@ RSpec.describe ProjectMembershipChangedNotifier, type: :notifier do
     end
 
     it "deduplicates concurrent dispatches within the same minute" do
+      user, _project, project_membership = member_with_project_membership
       freeze_time do
         described_class.with(record: project_membership).deliver(user)
         result = described_class.with(record: project_membership).deliver(user)
@@ -49,6 +65,7 @@ RSpec.describe ProjectMembershipChangedNotifier, type: :notifier do
     end
 
     it "does not enqueue any NotificationMailer email job (in-app + digest only)" do
+      user, _project, project_membership = member_with_project_membership
       expect {
         described_class.with(record: project_membership).deliver(user)
         drain_noticed_jobs
@@ -57,9 +74,13 @@ RSpec.describe ProjectMembershipChangedNotifier, type: :notifier do
   end
 
   describe "preferences gating" do
-    let!(:prefs) { create(:user_preferences, user: user) }
-
     it "respects DND (quiet hours active) for project_activity (does NOT bypass)" do
+      workspace = create(:workspace)
+      user = create(:user)
+      add_member(workspace, user: user)
+      prefs = create(:user_preferences, user: user)
+      project = create(:project, workspace: workspace)
+      project_membership = editor_on(project, user)
       # v2: DND is now time-windowed via quiet_hours. Set an always-active
       # window (00:00..23:59) to model the v1 "DND on" semantic.
       prefs.update!(notification_preferences:
@@ -73,6 +94,12 @@ RSpec.describe ProjectMembershipChangedNotifier, type: :notifier do
     end
 
     it "permits in-app + email (instant) under default preferences (project_activity)" do
+      workspace = create(:workspace)
+      user = create(:user)
+      add_member(workspace, user: user)
+      prefs = create(:user_preferences, user: user)
+      project = create(:project, workspace: workspace)
+      project_membership = editor_on(project, user)
       # v2: defaults have email.frequency = "instant", so emails fire
       # immediately rather than queuing for digest.
       described_class.with(record: project_membership).deliver(user)
@@ -84,6 +111,7 @@ RSpec.describe ProjectMembershipChangedNotifier, type: :notifier do
 
   describe "#message" do
     it "renders the localized project membership changed message" do
+      user, project, project_membership = member_with_project_membership
       described_class.with(record: project_membership).deliver(user)
       notification = user.notifications.last
       expect(notification.message).to eq(
@@ -94,11 +122,9 @@ RSpec.describe ProjectMembershipChangedNotifier, type: :notifier do
     end
 
     it "passes recipient_locale to I18n.t (matches the convention used by sibling notifiers)" do
-      # Mirror the locale-fallback pattern from application_notifier_spec.rb:
-      # the message must pass `locale: recipient_locale` into I18n.t so the
-      # rendered string respects the recipient's prefs.locale rather than the
-      # ambient I18n.locale at dispatch time. Verified by intercepting the
-      # I18n.t call to assert the keyword is forwarded.
+      user, _project, project_membership = member_with_project_membership
+      # The message must forward `locale: recipient_locale` to I18n.t,
+      # not rely on the ambient locale at dispatch time.
       with_available_locale(:fr, notifications: { project_membership_changed: { message: "FR %{project} %{new_role}" } }) do
         prefs = create(:user_preferences, user: user)
         prefs.update!(locale: "fr")
@@ -115,10 +141,12 @@ RSpec.describe ProjectMembershipChangedNotifier, type: :notifier do
 
   describe "ProjectMembership callback triggers" do
     it "fires on after_create_commit when a user is added to a project" do
+      workspace = create(:workspace)
+      user = create(:user)
+      add_member(workspace, user: user)
       another_user = create(:user)
-      create(:membership, user: another_user, workspace: workspace)
-      project # materialize outside the measured window — the factory's own
-      # creator membership fires this notifier too (#688)
+      add_member(workspace, user: another_user)
+      project = create(:project, workspace: workspace)
       expect {
         ProjectMembership.create!(project: project, user: another_user, role: "viewer")
       }.to change { Noticed::Event.where(type: described_class.name).count }.by(1)
@@ -128,15 +156,20 @@ RSpec.describe ProjectMembershipChangedNotifier, type: :notifier do
     it "fires on after_update_commit when role changes on a project membership" do
       # Create the PM in one minute bucket, then update in the next so the
       # idempotency_key differs and the second dispatch isn't deduplicated.
+      workspace = create(:workspace)
+      user = create(:user)
+      add_member(workspace, user: user)
       pm = nil
-      travel_to(2.minutes.ago) { pm = project_membership }
+      travel_to(2.minutes.ago) do
+        pm = editor_on(create(:project, workspace: workspace), user)
+      end
       expect {
         pm.update!(role: "viewer")
       }.to change { Noticed::Event.where(type: described_class.name).count }.by(1)
     end
 
     it "does not fire on unrelated updates" do
-      project_membership # ensure created (one create-side notification)
+      _user, _project, project_membership = member_with_project_membership
       expect {
         project_membership.update!(pinned: true)
       }.not_to change { Noticed::Event.where(type: described_class.name).count }
@@ -147,6 +180,7 @@ RSpec.describe ProjectMembershipChangedNotifier, type: :notifier do
   # this one called a route helper that never existed.
   describe "#url" do
     it "points at the project under its workspace" do
+      user, project, project_membership = member_with_project_membership
       described_class.with(record: project_membership).deliver(user)
       notification = user.notifications.order(:id).last
 
@@ -161,7 +195,8 @@ RSpec.describe ProjectMembershipChangedNotifier, type: :notifier do
   # recipient's digest rather than just its own line.
   describe "#url once the workspace is gone" do
     it "renders the placeholder instead of raising" do
-      project_membership
+      user, project, _project_membership = member_with_project_membership
+      workspace = project.workspace
       notification = Noticed::Event.where(type: described_class.name).last.notifications.first
       workspace.destroy!
 
