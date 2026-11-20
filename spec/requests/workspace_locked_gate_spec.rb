@@ -1,22 +1,24 @@
 require "rails_helper"
 
 RSpec.describe "Locked workspace gate", type: :request do
-  let(:user) { create(:user) }
-  let(:workspace) { create(:workspace) }
-
-  before do
+  def locked_workspace_of_signed_in_owner
+    user = create(:user)
+    workspace = create(:workspace)
     create(:membership, :owner, user: user, workspace: workspace)
     sign_in(user)
     workspace.suspend!
+    workspace
   end
 
   it "redirects workspace pages to the index with the locked notice" do
+    workspace = locked_workspace_of_signed_in_owner
     get workspace_path(workspace)
     expect(response).to redirect_to(workspaces_path)
     expect(flash[:alert]).to eq(I18n.t("workspaces.locked_notice"))
   end
 
   it "gates nested workspace-scoped controllers too" do
+    workspace = locked_workspace_of_signed_in_owner
     get workspace_projects_path(workspace)
     expect(response).to redirect_to(workspaces_path)
   end
@@ -25,59 +27,53 @@ RSpec.describe "Locked workspace gate", type: :request do
   # Workspace#create_project's SuspendedError is HTTP-unreachable precisely
   # because this before_action fires first; this example is what proves that.
   it "gates POST create on a locked workspace (the model raise stays HTTP-unreachable)" do
+    workspace = locked_workspace_of_signed_in_owner
     post workspace_projects_path(workspace), params: { project: { name: "Atlas" } }
     expect(response).to redirect_to(workspaces_path)
     expect(flash[:alert]).to eq(I18n.t("workspaces.locked_notice"))
   end
 
   it "renders the index fine with a locked workspace present (nil-gate regression)" do
+    locked_workspace_of_signed_in_owner
     get workspaces_path
     expect(response).to have_http_status(:ok)
   end
 
   it "blocks archiving (gate runs before the action)" do
+    workspace = locked_workspace_of_signed_in_owner
     post workspace_archival_path(workspace)
     expect(response).to redirect_to(workspaces_path)
     expect(workspace.reload).not_to be_archived
   end
 
-  # Workspaces::JoinsController does not include WorkspaceScoped (it resolves
-  # the workspace directly to serve unauthenticated visitors — see its own
-  # docs), so the lock has to be enforced separately here. Outsiders following
-  # a join link must not learn the workspace is locked: reuse the existing
-  # invalid_or_revoked copy rather than locked_notice (privacy decision).
+  # JoinsController skips WorkspaceScoped, so the lock is enforced separately;
+  # outsiders get invalid_or_revoked, not locked_notice (privacy decision).
   describe "join links on a locked workspace" do
-    let(:locked_workspace) { create(:workspace, personal: false, join_policy: "open_link", name: "Locked Co") }
-    let(:owner) { create(:user) }
-    let(:newcomer) { create(:user) }
-    let!(:owner_role) {
-      Role.find_or_create_by!(slug: "owner", workspace_id: nil) { |r|
-        r.name = "Owner"
-        r.permissions = { manage_workspace: true, manage_members: true, manage_projects: true, manage_settings: true }
-      }
-    }
-    let!(:member_role) {
-      Role.find_or_create_by!(slug: "member", workspace_id: nil) { |r|
-        r.name = "Member"
-        r.permissions = { manage_projects: true }
-      }
-    }
-    let(:link) { create(:workspace_join_link, workspace: locked_workspace, created_by: owner) }
-
     before do
       allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link])
-      locked_workspace.memberships.create!(user: owner, role: owner_role)
+    end
+
+    def locked_join_link
+      locked_workspace = create(:workspace, personal: false, join_policy: "open_link", name: "Locked Co")
+      owner = create(:user)
+      create(:membership, :owner, user: owner, workspace: locked_workspace)
       locked_workspace.suspend!
-      sign_in(newcomer)
+      create(:workspace_join_link, workspace: locked_workspace, created_by: owner)
     end
 
     it "redirects the GET join page with the invalid_or_revoked flash (no locked disclosure)" do
+      link = locked_join_link
+      locked_workspace = link.workspace
+      sign_in(create(:user))
       get workspace_join_path(locked_workspace, token: link.plaintext_token)
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to eq(I18n.t("workspaces.joins.invalid_or_revoked"))
     end
 
     it "does not admit a new member on POST, and redirects with the invalid_or_revoked flash" do
+      link = locked_join_link
+      locked_workspace = link.workspace
+      sign_in(create(:user))
       expect {
         post workspace_join_path(locked_workspace, token: link.plaintext_token)
       }.not_to change(locked_workspace.memberships, :count)
@@ -86,24 +82,20 @@ RSpec.describe "Locked workspace gate", type: :request do
     end
   end
 
-  # Invitation#accept! is the single acceptance funnel shared by the direct
-  # accept controller, magic-link registration, OAuth signup, and the
-  # email-verification claim (Authentication#claim_pending_invitation!) —
-  # guarding it there closes all of those paths at once. An invitee accepting
-  # a stale invitation must not learn the workspace is locked: reuse the
-  # existing acceptance_failed copy rather than locked_notice (privacy
-  # decision, mirrors the join-link case above).
+  # Invitation#accept! is the single acceptance funnel, so guarding it closes
+  # every path; invitees get acceptance_failed, not locked_notice (privacy).
   describe "invitations to a locked workspace" do
-    let(:locked_workspace) { create(:workspace, name: "Locked Co") }
-    let(:owner) { create(:user) }
-    let(:invitee) { create(:user) }
-    let(:viewer_role) { Role.find_or_create_by!(slug: "viewer", workspace_id: nil) { |r| r.name = "Viewer" } }
-
-    before do
+    def workspace_with_owner
+      locked_workspace = create(:workspace, name: "Locked Co")
+      owner = create(:user)
       create(:membership, :owner, user: owner, workspace: locked_workspace)
+      [ locked_workspace, owner ]
     end
 
     it "does not admit a member via a pending PROJECT invitation, and redirects with the existing acceptance_failed copy" do
+      locked_workspace, owner = workspace_with_owner
+      invitee = create(:user)
+      viewer_role = Role.find_or_create_by!(slug: "viewer", workspace_id: nil) { |r| r.name = "Viewer" }
       project = create(:project, workspace: locked_workspace, created_by: owner)
       invitation = project.invitations.create!(
         email: invitee.email_address,
@@ -124,6 +116,9 @@ RSpec.describe "Locked workspace gate", type: :request do
     end
 
     it "does not admit a member via a pending WORKSPACE invitation, and redirects with the existing acceptance_failed copy" do
+      locked_workspace, owner = workspace_with_owner
+      invitee = create(:user)
+      viewer_role = Role.find_or_create_by!(slug: "viewer", workspace_id: nil) { |r| r.name = "Viewer" }
       invitation = create(:invitation, invitable: locked_workspace, email: invitee.email_address, role: viewer_role, invited_by: owner)
       locked_workspace.suspend!
       sign_in(invitee)

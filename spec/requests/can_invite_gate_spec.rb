@@ -6,10 +6,13 @@ require "rake"
 # writer that skips the round trip fails this file rather than silently
 # widening who may send invitations.
 RSpec.describe "User#can_invite? — verified_at writer inventory", type: :request do
-  let(:user) { create(:user, :no_authentications, password: "SecureP@ssw0rd123!") }
+  def user_without_authentications
+    create(:user, :no_authentications, password: "SecureP@ssw0rd123!")
+  end
 
   describe "writers that legitimately prove the address" do
     it "email round-trip: Authentication#verify! satisfies the gate" do
+      user = user_without_authentications
       auth = user.authentications.create!(provider: "email")
       expect(user.reload.can_invite?).to be(false)
 
@@ -19,6 +22,7 @@ RSpec.describe "User#can_invite? — verified_at writer inventory", type: :reque
     end
 
     it "provider-vouched OAuth: a verified oauth authentication satisfies the gate" do
+      user = user_without_authentications
       user.authentications.create!(provider: "google", uid: "g-1",
                                    email: user.email_address, verified_at: Time.current)
 
@@ -29,6 +33,7 @@ RSpec.describe "User#can_invite? — verified_at writer inventory", type: :reque
     # `rails operators:grant`, the :shared seed's reasoning for its bootstrap
     # owner. The task creates the row; it never converts a pending one.
     it "operator vouching: operators:grant creates a verified email authentication" do
+      user = user_without_authentications
       RakeTasks.load_once
       Rake::Task["operators:grant"].reenable
       Rake::Task["operators:grant"].invoke(user.email_address)
@@ -43,6 +48,7 @@ RSpec.describe "User#can_invite? — verified_at writer inventory", type: :reque
     # mailbox. Stamping verified_at here let password-set alone satisfy the
     # invite gate without any email round trip.
     it "setting a password does not mark the address verified" do
+      user = user_without_authentications
       sign_in(user)
       user.update!(password_digest: nil)
 
@@ -56,6 +62,7 @@ RSpec.describe "User#can_invite? — verified_at writer inventory", type: :reque
     end
 
     it "setting a password does not satisfy the invite gate" do
+      user = user_without_authentications
       sign_in(user)
       user.update!(password_digest: nil)
 
@@ -78,13 +85,16 @@ RSpec.describe "User#can_invite? — verified_at writer inventory", type: :reque
   # returns :unverified_pending and the controller redirects to sign-in with a
   # "check your email" notice. There is no way to reach onboarding unverified.
   describe "the gate on an invitation surface" do
-    let(:workspace) { create(:workspace) }
-    let!(:membership) do
+    def sender_with_workspace
+      user = user_without_authentications
+      workspace = create(:workspace)
       create(:membership, user: user, workspace: workspace,
                           role: Role.system_default!("owner"))
+      [ user, workspace ]
     end
 
     it "refuses to send and says why when the sender is unverified" do
+      user, workspace = sender_with_workspace
       sign_in(user)
 
       expect {
@@ -97,6 +107,7 @@ RSpec.describe "User#can_invite? — verified_at writer inventory", type: :reque
     end
 
     it "says why on a Turbo Stream submit too" do
+      user, workspace = sender_with_workspace
       sign_in(user)
 
       post workspace_invitations_path(workspace),
@@ -108,17 +119,15 @@ RSpec.describe "User#can_invite? — verified_at writer inventory", type: :reque
   end
 
   describe "the gate on onboarding, the fourth surface" do
-    let(:unverified) { create(:user, :unverified_email, :with_zero_workspaces) }
-    let(:workspace) { create(:workspace) }
-    let!(:project) { create(:project, workspace: workspace) }
-
-    before do
-      allow(TenancyConfig).to receive(:onboarding).and_return(:none)
-      workspace.memberships.create!(user: unverified, role: Role.system_default!("owner"))
-      sign_in(unverified)
-    end
+    before { allow(TenancyConfig).to receive(:onboarding).and_return(:none) }
 
     it "refuses invitations from an unverified sender during first-run too" do
+      unverified = create(:user, :unverified_email, :with_zero_workspaces)
+      workspace = create(:workspace)
+      create(:project, workspace: workspace)
+      workspace.memberships.create!(user: unverified, role: Role.system_default!("owner"))
+      sign_in(unverified)
+
       expect {
         post onboarding_team_path,
              params: { invitation: { emails: "someone@example.test",
@@ -131,6 +140,7 @@ RSpec.describe "User#can_invite? — verified_at writer inventory", type: :reque
 
   describe "a user with no authentication at all" do
     it "cannot invite" do
+      user = user_without_authentications
       expect(user.can_invite?).to be(false)
     end
   end
