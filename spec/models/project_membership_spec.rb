@@ -85,26 +85,27 @@ RSpec.describe ProjectMembership, type: :model do
     # Broadcastable concern was refactored to resolve broadcast_events lazily,
     # the destroy override was silently a no-op. These specs lock in correct
     # behavior across all three lifecycle events.
-    let(:workspace) { create(:workspace) }
-    let(:user) { create(:user) }
-    let(:project) do
+    def project_and_other_member
+      workspace = create(:workspace)
+      user = create(:user)
       create(:membership, user: user, workspace: workspace)
-      create(:project, workspace: workspace, created_by: user)
+      project = create(:project, workspace: workspace, created_by: user)
+      # The factory gives created_by its creator membership (#688), so the
+      # observed create must be someone else's.
+      [ project, create(:user).tap { |u| create(:membership, user: u, workspace: workspace) } ]
     end
-    # A second member: the factory already gives created_by its creator
-    # membership (#688), so the observed create must be someone else's.
-    let(:other_member) do
-      create(:user).tap { |u| create(:membership, user: u, workspace: workspace) }
-    end
-    let(:stream_name) { project.to_gid_param }
 
     it "broadcasts a refresh to the project on create" do
+      project, other_member = project_and_other_member
+      stream_name = project.to_gid_param
       expect {
         project.project_memberships.create!(user: other_member, role: "editor")
       }.to have_broadcasted_to(stream_name)
     end
 
     it "broadcasts a refresh on update (e.g., role change, pin)" do
+      project, other_member = project_and_other_member
+      stream_name = project.to_gid_param
       pm = project.project_memberships.create!(user: other_member, role: "editor")
       expect {
         pm.update!(pinned: true)
@@ -112,6 +113,8 @@ RSpec.describe ProjectMembership, type: :model do
     end
 
     it "broadcasts a refresh on destroy" do
+      project, other_member = project_and_other_member
+      stream_name = project.to_gid_param
       pm = project.project_memberships.create!(user: other_member, role: "editor")
       expect {
         pm.destroy!
@@ -124,16 +127,17 @@ RSpec.describe ProjectMembership, type: :model do
   # form would be de-duplicated by ActiveSupport) — the update example here
   # fails if that ever regresses.
   describe "notification wiring" do
-    let(:workspace) { create(:workspace) }
-    let(:member) { create(:user) }
-    let!(:membership) { create(:membership, user: member, workspace: workspace) }
     # created_by is someone else — the factory gives created_by its creator
     # membership (#688), and these examples must observe MEMBER's create.
-    let(:project) { create(:project, workspace: workspace) }
+    def member_and_project
+      workspace = create(:workspace)
+      member = create(:user)
+      create(:membership, user: member, workspace: workspace)
+      [ member, create(:project, workspace: workspace) ]
+    end
 
     it "notifies the user when added to a project (after_create_commit)" do
-      project # materialize outside the measured window — the factory's own
-      # creator membership fires this notifier too (#688)
+      member, project = member_and_project
       expect {
         project.project_memberships.create!(user: member, role: "editor")
       }.to change { Noticed::Event.where(type: "ProjectMembershipChangedNotifier").count }.by(1)
@@ -142,6 +146,7 @@ RSpec.describe ProjectMembership, type: :model do
     end
 
     it "notifies the user when their project role changes (after_update_commit)" do
+      member, project = member_and_project
       pm = project.project_memberships.create!(user: member, role: "editor")
       # Outside the one-minute idempotency bucket, so the role-change event
       # doesn't dedup into the just-created "added to project" event.
@@ -153,6 +158,7 @@ RSpec.describe ProjectMembership, type: :model do
     end
 
     it "dedups a role change into the add notification inside the one-minute idempotency window" do
+      member, project = member_and_project
       # freeze_time pins both writes to one idempotency bucket; without it, a
       # create at :59 and update at :00 straddle the documented minute boundary.
       freeze_time do
@@ -164,6 +170,7 @@ RSpec.describe ProjectMembership, type: :model do
     end
 
     it "does not notify on a save that leaves the role unchanged" do
+      member, project = member_and_project
       pm = project.project_memberships.create!(user: member, role: "editor")
       expect {
         pm.update!(pinned: true)
