@@ -71,6 +71,21 @@ RSpec.describe "Template invariants" do
         "expected config/deploy.yml builder.args.RUBY_VERSION (#{ruby_version_arg.inspect}) " \
         "to equal .tool-versions Ruby (#{tool_versions_ruby}); uncomment and wire the args block"
     end
+
+    it "the docs name no patch-level Ruby version, so a Ruby bump can't leave them stale" do
+      series = File.read(Rails.root.join(".tool-versions"))[/^ruby\s+(\d+\.\d+)\./, 1]
+      exact_ruby = /\bruby[\s:-]+\d+\.\d+\.\d+|(?<![\d.])#{Regexp.escape(series)}\.\d+(?!\.?\d)/i
+      docs = [ Rails.root.join("README.md"), *Dir[Rails.root.join("app/docs/**/*.md")] ]
+      offenders = docs.flat_map do |path|
+        File.readlines(path).each_with_index.filter_map do |line, index|
+          "#{Pathname(path).relative_path_from(Rails.root)}:#{index + 1}" if line.match?(exact_ruby)
+        end
+      end
+
+      expect(offenders).to be_empty,
+        "these lines name an exact Ruby version, which goes stale on the next bump; " \
+        "say \"Ruby 4.0\" or point at .tool-versions instead:\n  #{offenders.join("\n  ")}"
+    end
   end
 
   # The lock protects this checkout; the Gemfile requirement protects a fork.
