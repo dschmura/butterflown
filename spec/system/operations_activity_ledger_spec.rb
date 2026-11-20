@@ -15,18 +15,19 @@ require "rails_helper"
 # :with_zero_workspaces keeps the operator out of the feed's own rows, so
 # every assertion below is about the fixtures this file created.
 RSpec.describe "Operations activity ledger", type: :system do
-  let(:operator) { create(:user, :with_zero_workspaces).tap { |u| Operatorship.grant!(user: u) } }
-  let!(:acme) { create(:workspace, name: "Acme Robotics") }
-  let!(:beta) { create(:workspace, name: "Beta Works") }
-  let!(:priya) { create(:user, first_name: "Priya", last_name: "Nair") }
-  # A deterministic `membership.created` row — the positive control the kind
-  # filter is measured against.
-  let!(:priya_membership) { create(:membership, user: priya, workspace: acme) }
-
-  before do
+  def ledger_scene
+    acme = create(:workspace, name: "Acme Robotics")
+    beta = create(:workspace, name: "Beta Works")
+    priya = create(:user, first_name: "Priya", last_name: "Nair")
+    # The deterministic membership.created row the kind filter is measured against.
+    create(:membership, user: priya, workspace: acme)
     acting_as(priya) { plan_named(acme, "Launch plan") }
     plan_named(beta, "Beta plan")
-    sign_in_via_form(operator)
+    { acme: acme, beta: beta, priya: priya }
+  end
+
+  def sign_in_operator
+    sign_in_via_form(create(:user, :with_zero_workspaces, :operator))
   end
 
   def within_results(&) = within("turbo-frame#activity_results", &)
@@ -70,6 +71,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   end
 
   it "renders the default window AAA-clean in both themes, with an open details row" do
+    priya = ledger_scene.fetch(:priya)
+    sign_in_operator
     visit operations_activity_logs_path
     within_results { expect(page).to have_css("tbody tr", minimum: 2) }
 
@@ -87,6 +90,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   # visible text, so its open state is where an unnamed icon button or an
   # unreadable panel would show up. Audited open, both themes.
   it "opens the results caveats from the toolbar, AAA in both themes" do
+    ledger_scene
+    sign_in_operator
     visit operations_activity_logs_path
     within_results { expect(page).to have_css("tbody tr", minimum: 1) }
 
@@ -97,6 +102,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   end
 
   it "applies a select change inside the frame, advances the URL, keeps focus, and announces the count" do
+    ledger_scene
+    sign_in_operator
     visit operations_activity_logs_path
     # Positive control: the sentence the kind filter must remove is on the
     # unfiltered page first, so its later absence measures the filter.
@@ -122,6 +129,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   end
 
   it "narrows by workspace through the combobox without an Apply button" do
+    acme = ledger_scene.fetch(:acme)
+    sign_in_operator
     visit operations_activity_logs_path
     # Every control applies on change; the only visible submit button on the
     # page is the range panel's "Use this range", which carries name="range".
@@ -143,6 +152,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   end
 
   it "switches the range from the one trigger and accepts a custom range from its panel" do
+    ledger_scene
+    sign_in_operator
     visit operations_activity_logs_path
     # The trigger names the applied window, so on a fresh visit it is "Last 30
     # days" — the default — and the presets live behind it.
@@ -166,6 +177,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   # form-associated, so before the band grew a nameless default button that was
   # "24h", and pressing Enter after typing an email silently narrowed the window.
   it "keeps the applied range when Enter submits from the search box" do
+    priya = ledger_scene.fetch(:priya)
+    sign_in_operator
     visit operations_activity_logs_path(range: "all")
     within_results { expect(page).to have_css("h2", text: I18n.t("operations.activity_logs.index.ranges_long.all")) }
 
@@ -184,6 +197,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   # Enter or leaving the box (the form's change->submit alone fired only on
   # blur or Enter), focus stays in the box, and Escape clears it.
   it "searches as you type and clears on Escape" do
+    priya = ledger_scene.fetch(:priya)
+    sign_in_operator
     visit operations_activity_logs_path
     within_results { expect(page).to have_link("Beta Works") }
 
@@ -204,6 +219,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   # here on purpose: the summary has to name both, or an operator cannot tell
   # which Priya the rows in front of them belong to.
   it "resolves a typed first name to everyone who carries it, AAA in both themes" do
+    beta, priya = ledger_scene.values_at(:beta, :priya)
+    sign_in_operator
     patel = create(:user, first_name: "Priya", last_name: "Patel")
     acting_as(patel) { plan_named(beta, "Patel plan") }
     visit operations_activity_logs_path
@@ -227,6 +244,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   # resolved to the HIDDEN field and the visible date input had no accessible
   # name at all — an axe `label` violation only this state can produce.
   it "keeps the popover AAA-clean in both themes while a custom range is applied" do
+    ledger_scene
+    sign_in_operator
     to = Date.current
     visit operations_activity_logs_path(range: "custom", from: "2026-09-03", to: to.iso8601)
     within_results { expect(page).to have_css("tbody tr", minimum: 1) }
@@ -242,6 +261,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   # band re-renders with the new range rather than going stale behind a frame
   # swap. Turbo reads data-turbo-frame off the submitter before the form.
   it "keeps the rest of the filter state when the range changes, and vice versa" do
+    ledger_scene
+    sign_in_operator
     visit operations_activity_logs_path
     cdp_execute("document.getElementById('kind').focus()")
     select I18n.t("activity.kinds.project"), from: "kind"
@@ -274,6 +295,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   end
 
   it "pivots into one person from a row's details and shows the empty state when nothing matches" do
+    priya = ledger_scene.fetch(:priya)
+    sign_in_operator
     visit operations_activity_logs_path
     within_results { expect(page).to have_link("Beta Works") }
 
@@ -294,6 +317,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   end
 
   it "changes rows per page from the footer" do
+    ledger_scene
+    sign_in_operator
     visit operations_activity_logs_path
     within_results { click_link "25" }
     expect(page).to have_current_path(/rows=25/)
@@ -308,6 +333,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   # an advance visit changes the URL when it starts, not when it renders, so
   # have_current_path alone can be satisfied while the old page is still up.
   it "returns focus to the control that navigated the page" do
+    priya = ledger_scene.fetch(:priya)
+    sign_in_operator
     visit operations_activity_logs_path
     within_results { click_link I18n.t("operations.activity_logs.index.columns.when") }
     within_results { expect(page).to have_css("th[aria-sort='ascending']") }
@@ -341,6 +368,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   # off the right edge is invisible until the page scrolls sideways.
   # Last in the file — it resizes the shared window.
   it "keeps the range panel inside a 390px viewport" do
+    ledger_scene
+    sign_in_operator
     page.current_window.resize_to(390, 1000)
     visit operations_activity_logs_path
     within_results { expect(page).to have_css("tbody tr", minimum: 1) }
@@ -393,6 +422,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   # first to find out. Every state the shape can reach is audited here: the bare
   # search box, several candidates offered, no match, and a filter applied.
   it "audits the large-instance workspace search in every state it can reach" do
+    acme = ledger_scene.fetch(:acme)
+    sign_in_operator
     stub_const("Operations::ActivityLogsController::WORKSPACE_PICKER_LIMIT", 1)
 
     visit operations_activity_logs_path
@@ -428,6 +459,8 @@ RSpec.describe "Operations activity ledger", type: :system do
   # strip is a single chip and its wrapping, target size and contrast are never
   # exercised.
   it "audits the most-active strip, and its entries narrow to one person" do
+    acme, priya = ledger_scene.values_at(:acme, :priya)
+    sign_in_operator
     other = create(:user, first_name: "Grace", last_name: "Hopper")
     acting_as(other) { plan_named(acme, "Grace plan") }
 

@@ -9,9 +9,8 @@ RSpec.describe "CSRF protection by Sec-Fetch-Site", type: :request do
     ActionController::Base.allow_forgery_protection = false
   end
 
-  let!(:user) { create(:user) }
-
   it "accepts a same-origin POST that carries no authenticity token" do
+    user = create(:user)
     post session_lookup_path, params: { email_address: user.email_address },
       headers: { "Sec-Fetch-Site" => "same-origin" }
 
@@ -19,6 +18,7 @@ RSpec.describe "CSRF protection by Sec-Fetch-Site", type: :request do
   end
 
   it "rejects a cross-site POST" do
+    user = create(:user)
     post session_lookup_path, params: { email_address: user.email_address },
       headers: { "Sec-Fetch-Site" => "cross-site" }
 
@@ -26,6 +26,7 @@ RSpec.describe "CSRF protection by Sec-Fetch-Site", type: :request do
   end
 
   it "rejects a POST with no Sec-Fetch-Site header over HTTPS" do
+    user = create(:user)
     https!
     post session_lookup_path, params: { email_address: user.email_address }
 
@@ -33,6 +34,7 @@ RSpec.describe "CSRF protection by Sec-Fetch-Site", type: :request do
   end
 
   it "rejects a POST with no Sec-Fetch-Site header over HTTPS even when it carries a valid token" do
+    user = create(:user)
     https!
     get new_session_path
     token = Capybara.string(response.body).find("[data-biscuit-csrf-token-value]", visible: :all)["data-biscuit-csrf-token-value"]

@@ -40,7 +40,7 @@ Clone the template under your product's name and run `bin/fork`:
 ```bash
 gh repo clone dschmura/modelrails_base my_app
 cd my_app
-mise install   # Ruby 4.0.9 and the deploy tools
+mise install   # the Ruby in .tool-versions, plus the deploy tools
 bin/fork
 ```
 

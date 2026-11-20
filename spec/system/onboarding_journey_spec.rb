@@ -6,8 +6,6 @@ require "rails_helper"
 # Rails.configuration value and restore it after each example.
 # (RSpec mocks do not cross into the Capybara/Playwright server thread.)
 RSpec.describe "Onboarding journey", type: :system do
-  let(:axe_options) { { runOnly: { type: "tag", values: [ "wcag2aaa" ] } } }
-
   around do |example|
     original = Rails.configuration.x.tenancy.onboarding
     Rails.configuration.x.tenancy.onboarding = :none
@@ -15,32 +13,19 @@ RSpec.describe "Onboarding journey", type: :system do
     Rails.configuration.x.tenancy.onboarding = original
   end
 
-  # The workspace-creation step calls Role.find_by!(slug: "owner", workspace_id: nil).
-  # The team-step populates the role dropdown from effective_roles, which includes
-  # the global "member" role (workspace_id: nil). Both must exist.
-  let!(:owner_role) do
-    Role.find_or_create_by!(slug: "owner", workspace_id: nil) do |r|
-      r.name        = "Owner"
-      r.permissions = { "manage_workspace" => true, "manage_members" => true,
-                        "manage_projects" => true, "manage_settings" => true }
-    end
+  # The wizard needs the global owner and member roles; the zero-workspace user
+  # comes from a trait that suppresses the auto-workspace callback.
+  def sign_in_newcomer
+    Role.system_default!("owner")
+    Role.system_default!("member")
+    create(:user, :with_zero_workspaces).tap { |user| sign_in_via_form(user) }
   end
-
-  let!(:member_role) do
-    Role.find_or_create_by!(slug: "member", workspace_id: nil) do |r|
-      r.name        = "Member"
-      r.permissions = { "manage_projects" => true }
-    end
-  end
-
-  # A user that has no workspaces yet (the :with_zero_workspaces trait suppresses
-  # the auto-workspace callback fired after factory creation).
-  let(:user) { create(:user, :with_zero_workspaces) }
-
-  before { sign_in_via_form(user) }
 
   describe "happy path: workspace → project → invite → project home" do
     it "walks all three wizard steps and lands on the project home" do
+      user = sign_in_newcomer
+      axe_options = { runOnly: { type: "tag", values: [ "wcag2aaa" ] } }
+
       # OnboardingsController#show is the dispatcher: it resolves the current step
       # and redirects. A zero-workspace user lands on the workspace step.
       visit onboarding_path
@@ -84,6 +69,8 @@ RSpec.describe "Onboarding journey", type: :system do
 
   describe "skip path: workspace → project → skip invite → project home" do
     it "lands on project home without sending invitations" do
+      user = sign_in_newcomer
+
       visit onboarding_path
 
       fill_in I18n.t("onboarding.workspaces.new.name_label"), with: "Skip Co"
