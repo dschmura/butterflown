@@ -4,6 +4,23 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ## [Unreleased]
 
+## v2026.11.20
+
+### Fixed
+
+- The README and setup docs no longer name an exact Ruby version that goes stale on each bump; `.tool-versions` holds it, and a spec keeps the docs from repeating it.
+
+### Changed
+
+- Specs share `add_member`, `sign_in_as_owner_of`, `permit_open_join_links` and `axe_options` from `spec/support`, plus `:viewer` membership and `:operator` user traits. A fork whose own specs define one of those names fails `spec_helpers_are_defined_once_spec` after `bin/sync`; delete the local copy and call the shared one.
+- The membership factory builds its roles with `Role.system_default!`, so a plain `rspec` run (no seeds) gives a factory member the real member role's `manage_projects`, as the seeded suite and CI already did.
+- Specs build their own setup instead of using `let` or `let!` (Getting Started, "Spec conventions"). The suite's `let!` calls come out over the next releases, so a fork that edited one of those specs should expect a merge conflict there.
+
+### Security
+
+- modelrails_ui is pinned to v0.26.0, which requires ViewComponent 4.14 or later (GHSA-8qw7-6phv-7q6p); this app already runs 4.24, so no component changes.
+- markdowndocs moves to 0.12.0, which requires rails-html-sanitizer 1.7.2 and loofah 2.25.3 for their XSS fixes; this app already runs both.
+
 ## v2026.11.19-3
 
 ### Changed
