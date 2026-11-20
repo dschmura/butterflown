@@ -10,15 +10,11 @@ require "rails_helper"
 #      with a specific alert (not the generic ApplicationController
 #      record_not_found posture).
 RSpec.describe "ProjectScoped controllers", type: :request do
-  let(:workspace) { create(:workspace) }
-  let(:user) { create(:user) }
-  let!(:ws_membership) { create(:membership, :owner, user: user, workspace: workspace) }
-  let(:project) { create(:project, workspace: workspace, created_by: user) }
-  let!(:creator_pm) { project.project_memberships.find_by!(user: user) }
-
-  before do
-    project.update!(clientside_enabled: true)
-    sign_in(user)
+  def signed_in_clientside_project
+    owner = create(:membership, :owner)
+    project = create(:project, workspace: owner.workspace, created_by: owner.user, clientside_enabled: true)
+    sign_in(owner.user)
+    project
   end
 
   {
@@ -39,6 +35,8 @@ RSpec.describe "ProjectScoped controllers", type: :request do
   }.each do |controller_action, path_for|
     describe controller_action do
       it "assigns Current.project during the request" do
+        project = signed_in_clientside_project
+        workspace = project.workspace
         assigned = []
         allow(Current).to receive(:project=).and_wrap_original do |original, value|
           assigned << value
@@ -52,6 +50,7 @@ RSpec.describe "ProjectScoped controllers", type: :request do
       end
 
       it "redirects an unknown project slug to the projects list" do
+        workspace = signed_in_clientside_project.workspace
         get instance_exec(workspace, "no-such-project", &path_for)
 
         expect(response).to redirect_to(workspace_projects_path(workspace))

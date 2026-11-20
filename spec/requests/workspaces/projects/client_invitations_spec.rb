@@ -1,20 +1,22 @@
 require "rails_helper"
 
 RSpec.describe "Client invitations (team side)", type: :request do
-  let(:user) { create(:user) }
-  let(:workspace) { user.workspaces.sole }
-  let(:project) do
-    create(:project, workspace: workspace, created_by: user, clientside_enabled: true)
+  def team_project
+    user = create(:user)
+    sign_in(user)
+    create(:project, workspace: user.workspaces.sole, created_by: user, clientside_enabled: true)
   end
 
-  before { sign_in(user) }
-
   it "renders the invite form when Clientside is on" do
+    project = team_project
+    workspace = project.workspace
     get new_workspace_project_client_invitation_path(workspace, project)
     expect(response).to have_http_status(:ok)
   end
 
   it "redirects to settings when Clientside is off" do
+    project = team_project
+    workspace = project.workspace
     project.update!(clientside_enabled: false)
     get new_workspace_project_client_invitation_path(workspace, project)
     expect(response).to redirect_to(edit_workspace_project_clientside_path(workspace, project))
@@ -22,6 +24,8 @@ RSpec.describe "Client invitations (team side)", type: :request do
   end
 
   it "sends a client invitation" do
+    project = team_project
+    workspace = project.workspace
     expect {
       post workspace_project_client_invitations_path(workspace, project),
         params: { client_invitation: { email: "dana@bigco.com", company_name: "BigCo" } }
@@ -30,6 +34,8 @@ RSpec.describe "Client invitations (team side)", type: :request do
   end
 
   it "re-renders on an invalid email" do
+    project = team_project
+    workspace = project.workspace
     post workspace_project_client_invitations_path(workspace, project),
       params: { client_invitation: { email: "", company_name: "BigCo" } }
     expect(response).to have_http_status(:unprocessable_entity)
@@ -37,6 +43,8 @@ RSpec.describe "Client invitations (team side)", type: :request do
   end
 
   it "returns 422 and does not create a second invitation when email already has a pending invite" do
+    project = team_project
+    workspace = project.workspace
     post workspace_project_client_invitations_path(workspace, project),
       params: { client_invitation: { email: "dana@bigco.com", company_name: "BigCo" } }
     expect(response).to redirect_to(edit_workspace_project_clientside_path(workspace, project))
@@ -54,7 +62,7 @@ RSpec.describe "Client invitations (team side)", type: :request do
   describe "a blocked re-invite is refused exactly like an unblocked one" do
     include ActiveJob::TestHelper
 
-    def re_invite_outcome(email)
+    def re_invite_outcome(workspace, project, email)
       2.times do |attempt|
         post workspace_project_client_invitations_path(workspace, project),
           params: { client_invitation: { email: email, company_name: "BigCo" } }
@@ -66,10 +74,12 @@ RSpec.describe "Client invitations (team side)", type: :request do
     end
 
     it "returns the same status, flash and record count either way" do
-      create(:invitation_block, inviter: user, email: "blocked@bigco.com")
+      project = team_project
+      workspace = project.workspace
+      create(:invitation_block, inviter: project.created_by, email: "blocked@bigco.com")
 
-      blocked = re_invite_outcome("blocked@bigco.com")
-      unblocked = re_invite_outcome("open@bigco.com")
+      blocked = re_invite_outcome(workspace, project, "blocked@bigco.com")
+      unblocked = re_invite_outcome(workspace, project, "open@bigco.com")
 
       expect(blocked).to eq(unblocked)
       expect(blocked).to eq([ 422, I18n.t("clientside.invitations.already_invited"), 1 ])
@@ -77,26 +87,29 @@ RSpec.describe "Client invitations (team side)", type: :request do
   end
 
   context "as a viewer (no manage_members permission)" do
-    let(:viewer) { create(:user) }
-    let!(:viewer_role) do
-      Role.find_or_create_by!(slug: "viewer", workspace_id: nil) do |r|
+    def sign_in_viewer_of(project)
+      viewer = create(:user)
+      viewer_role = Role.find_or_create_by!(slug: "viewer", workspace_id: nil) do |r|
         r.name = "Viewer"
         r.permissions = {}
       end
-    end
-
-    before do
-      workspace.memberships.create!(user: viewer, role: viewer_role)
-      project.project_memberships.create!(user: viewer, role: "viewer")
+      create(:membership, user: viewer, workspace: project.workspace, role: viewer_role)
+      create(:project_membership, :viewer, user: viewer, project: project)
       sign_in(viewer)
     end
 
     it "denies new (redirect)" do
+      project = team_project
+      workspace = project.workspace
+      sign_in_viewer_of(project)
       get new_workspace_project_client_invitation_path(workspace, project)
       expect(response).to have_http_status(:redirect)
     end
 
     it "denies create (redirect) and creates no invitation" do
+      project = team_project
+      workspace = project.workspace
+      sign_in_viewer_of(project)
       expect {
         post workspace_project_client_invitations_path(workspace, project),
           params: { client_invitation: { email: "attacker@example.com", company_name: "Evil Corp" } }

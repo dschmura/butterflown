@@ -1,28 +1,31 @@
 require "rails_helper"
 
 RSpec.describe "Project Clientside settings", type: :request do
-  let(:user) { create(:user) }
-  let(:workspace) { user.workspaces.sole }
-  let(:project) do
-    create(:project, workspace: workspace, created_by: user)
+  def own_project(workspace: nil)
+    user = create(:user)
+    sign_in(user)
+    create(:project, workspace: workspace || user.workspaces.sole, created_by: user)
   end
 
-  before { sign_in(user) }
-
   it "renders the toggle form" do
+    project = own_project
+    workspace = project.workspace
     get edit_workspace_project_clientside_path(workspace, project)
     expect(response).to have_http_status(:ok)
   end
 
   it "links to inviting a client when the creator can manage members" do
+    project = own_project
+    workspace = project.workspace
     get edit_workspace_project_clientside_path(workspace, project)
     expect(response.body).to include(new_workspace_project_client_invitation_path(workspace, project))
   end
 
   context "as a creator whose workspace role cannot manage members" do
-    let(:workspace) { create(:user).workspaces.sole }
-
     it "offers no invite link and names who can invite" do
+      project = own_project(workspace: create(:user).workspaces.sole)
+      workspace = project.workspace
+
       get edit_workspace_project_clientside_path(workspace, project)
 
       expect(response).to have_http_status(:ok)
@@ -32,6 +35,8 @@ RSpec.describe "Project Clientside settings", type: :request do
   end
 
   it "enables Clientside" do
+    project = own_project
+    workspace = project.workspace
     patch workspace_project_clientside_path(workspace, project),
       params: { project: { clientside_enabled: "1" } }
     expect(project.reload.clientside_enabled?).to be(true)
@@ -40,21 +45,17 @@ RSpec.describe "Project Clientside settings", type: :request do
   end
 
   context "as a project member who is not the creator" do
-    let(:viewer) { create(:user) }
-    let!(:viewer_role) do
-      Role.find_or_create_by!(slug: "viewer", workspace_id: nil) do |r|
+    it "denies access (redirect, unchanged)" do
+      project = own_project
+      workspace = project.workspace
+      viewer = create(:user)
+      viewer_role = Role.find_or_create_by!(slug: "viewer", workspace_id: nil) do |r|
         r.name = "Viewer"
         r.permissions = {}
       end
-    end
-
-    before do
-      workspace.memberships.create!(user: viewer, role: viewer_role)
-      project.project_memberships.create!(user: viewer, role: "viewer")
+      create(:membership, user: viewer, workspace: workspace, role: viewer_role)
+      create(:project_membership, :viewer, user: viewer, project: project)
       sign_in(viewer)
-    end
-
-    it "denies access (redirect, unchanged)" do
       patch workspace_project_clientside_path(workspace, project),
         params: { project: { clientside_enabled: "1" } }
       expect(response).to have_http_status(:redirect)
