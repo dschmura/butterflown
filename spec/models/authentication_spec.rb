@@ -279,9 +279,7 @@ RSpec.describe Authentication, type: :model do
   end
 
   describe "#claim_pending!" do
-    before do
-      allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link])
-    end
+    before { permit_open_join_links }
 
     it "is a no-op with no problems when nothing is parked" do
       user = create(:user, :no_authentications)

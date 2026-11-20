@@ -169,11 +169,7 @@ RSpec.describe User, type: :model do
 
   describe "onboarding step derivation (:none wizard)" do
     def join(user, workspace)
-      owner_role = Role.find_or_create_by!(slug: "owner", workspace_id: nil) do |r|
-        r.name = "Owner"
-        r.permissions = { manage_workspace: true, manage_members: true, manage_projects: true, manage_settings: true }
-      end
-      workspace.memberships.create!(user: user, role: owner_role)
+      create(:membership, :owner, user: user, workspace: workspace)
       user.reload
     end
 

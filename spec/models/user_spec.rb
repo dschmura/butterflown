@@ -271,8 +271,7 @@ RSpec.describe User, type: :model do
 
     it "reaches every kept workspace, suspended included, once granted" do
       workspace, suspended, discarded = operated_workspace_cast
-      user = create(:user)
-      Operatorship.grant!(user: user)
+      user = create(:user, :operator)
 
       expect(user.reload).to be_operator
       # `include`, not `contain_exactly`: under the default :personal preset,
