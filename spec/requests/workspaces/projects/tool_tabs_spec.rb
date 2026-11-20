@@ -9,18 +9,17 @@ RSpec.describe "Project tool tabs", type: :request do
   end
 
   context "authenticated" do
-    let(:workspace) { create(:workspace) }
-    let(:user) { create(:user) }
-    let!(:ws_membership) { create(:membership, :owner, user: user, workspace: workspace) }
-    let(:project) { create(:project, workspace: workspace, created_by: user) }
-    let!(:creator_pm) { project.project_memberships.find_by!(user: user) }
-
-    before do
-      Current.workspace = workspace
-      sign_in(user)
+    def sign_in_owner_with_project
+      workspace = create(:workspace)
+      owner = create(:user)
+      create(:membership, :owner, user: owner, workspace: workspace)
+      project = create(:project, workspace: workspace, created_by: owner)
+      sign_in(owner)
+      [ workspace, project ]
     end
 
     it "renders a Docs tab linking to the project's resources" do
+      workspace, project = sign_in_owner_with_project
       get workspace_project_path(workspace, project)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(workspace_project_resources_path(workspace, project))
@@ -28,6 +27,7 @@ RSpec.describe "Project tool tabs", type: :request do
     end
 
     it "omits a tool's tab when it is disabled" do
+      workspace, project = sign_in_owner_with_project
       project.update!(enabled_tools: [])
       get workspace_project_path(workspace, project)
       expect(response.body).not_to include(workspace_project_resources_path(workspace, project))
