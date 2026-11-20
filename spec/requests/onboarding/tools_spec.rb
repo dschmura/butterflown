@@ -3,20 +3,14 @@ require "rails_helper"
 RSpec.describe "Onboarding · tools step", type: :request do
   before { allow(TenancyConfig).to receive(:onboarding).and_return(:none) }
 
-  let(:user) { create(:user, :with_zero_workspaces) }
-  let(:workspace) { create(:workspace) }
-  let!(:owner_role) do
-    Role.find_or_create_by!(slug: "owner", workspace_id: nil) do |r|
-      r.name = "Owner"
-      r.permissions = { manage_workspace: true, manage_members: true, manage_projects: true, manage_settings: true }
-    end
-  end
-  let!(:project) { create(:project, workspace: workspace) }
-
-  before do
-    workspace.memberships.create!(user: user, role: owner_role)
+  def tools_step_project
+    workspace = create(:workspace)
+    project = create(:project, workspace: workspace)
+    user = create(:user, :with_zero_workspaces)
+    create(:membership, :owner, user: user, workspace: workspace)
     project.project_memberships.create!(user: user, role: "creator")
     sign_in(user)
+    project
   end
 
   # A second toggleable tool so the registry offers a real choice, with the
@@ -32,6 +26,7 @@ RSpec.describe "Onboarding · tools step", type: :request do
   end
 
   it "renders the tools step when the registry offers more than one tool" do
+    tools_step_project
     with_two_tools do
       get new_onboarding_tools_path
       expect(response).to have_http_status(:ok)
@@ -41,6 +36,7 @@ RSpec.describe "Onboarding · tools step", type: :request do
   # #692: the stepper must name the screen you're on — this page rendered
   # current: :team (the NEXT screen) in a 3-step stepper with no Tools entry.
   it "marks Tools as the current step, between Project and Team" do
+    tools_step_project
     with_two_tools do
       get new_onboarding_tools_path
       doc = Nokogiri::HTML(response.body)
@@ -53,6 +49,7 @@ RSpec.describe "Onboarding · tools step", type: :request do
   end
 
   it "saves the selected tools and advances to the team step" do
+    project = tools_step_project
     with_two_tools do
       post onboarding_tools_path, params: { project: { enabled_tools: [ "docs" ] } }
       expect(project.reload.enabled_tools).to eq([ "docs" ])
@@ -61,6 +58,7 @@ RSpec.describe "Onboarding · tools step", type: :request do
   end
 
   it "project create skips the tools step when only one tool is toggleable" do
+    tools_step_project
     # Default registry (docs only) → project#create goes straight to team.
     get new_onboarding_project_path
     post onboarding_project_path, params: { project: { name: "Acme Website" } }
@@ -68,6 +66,7 @@ RSpec.describe "Onboarding · tools step", type: :request do
   end
 
   it "project create routes through the tools step when >1 tool is toggleable" do
+    tools_step_project
     with_two_tools do
       get new_onboarding_project_path
       post onboarding_project_path, params: { project: { name: "Acme Two" } }

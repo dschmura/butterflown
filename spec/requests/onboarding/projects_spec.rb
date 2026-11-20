@@ -3,26 +3,22 @@ require "rails_helper"
 RSpec.describe "Onboarding · project step", type: :request do
   before { allow(TenancyConfig).to receive(:onboarding).and_return(:none) }
 
-  let(:user) { create(:user, :with_zero_workspaces) }
-  let(:workspace) { create(:workspace) }
-  let!(:owner_role) do
-    Role.find_or_create_by!(slug: "owner", workspace_id: nil) do |r|
-      r.name = "Owner"
-      r.permissions = { manage_workspace: true, manage_members: true, manage_projects: true, manage_settings: true }
-    end
-  end
-
-  before do
-    workspace.memberships.create!(user: user, role: owner_role)
+  def signed_in_owner_with_workspace
+    user = create(:user, :with_zero_workspaces)
+    workspace = create(:workspace)
+    create(:membership, :owner, user: user, workspace: workspace)
     sign_in(user)
+    [ user, workspace ]
   end
 
   it "renders the new-project form" do
+    signed_in_owner_with_workspace
     get new_onboarding_project_path
     expect(response).to have_http_status(:ok)
   end
 
   it "creates the project and advances to the team step" do
+    user, workspace = signed_in_owner_with_workspace
     expect {
       post onboarding_project_path, params: { project: { name: "Acme Website", description: "Marketing site" } }
     }.to change(workspace.projects.kept, :count).by(1)
@@ -36,6 +32,7 @@ RSpec.describe "Onboarding · project step", type: :request do
   end
 
   it "re-renders on a blank name" do
+    _user, workspace = signed_in_owner_with_workspace
     expect {
       post onboarding_project_path, params: { project: { name: "" } }
     }.not_to change(workspace.projects.kept, :count)
@@ -43,6 +40,7 @@ RSpec.describe "Onboarding · project step", type: :request do
   end
 
   it "redirects back to the account step if no workspace exists yet" do
+    signed_in_owner_with_workspace
     other = create(:user, :with_zero_workspaces)
     sign_in(other)
     get new_onboarding_project_path
@@ -50,6 +48,7 @@ RSpec.describe "Onboarding · project step", type: :request do
   end
 
   it "does not create a project and redirects when the workspace is suspended" do
+    _user, workspace = signed_in_owner_with_workspace
     workspace.suspend!
 
     expect {

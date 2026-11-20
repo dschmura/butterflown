@@ -7,32 +7,29 @@ require "rails_helper"
 RSpec.describe "Onboarding · invitees", type: :request do
   before { allow(TenancyConfig).to receive(:onboarding).and_return(:none) }
 
-  let(:owner) { create(:user, :with_zero_workspaces, onboarded_at: Time.current) }
-  let(:workspace) { create(:workspace) }
   # Membership before project: the project factory seats its creator.
-  let!(:owner_membership) { create(:membership, :owner, user: owner, workspace: workspace) }
-  let!(:project) { create(:project, workspace: workspace, created_by: owner) }
-  let!(:member_role) do
-    Role.find_or_create_by!(slug: "member", workspace_id: nil) do |r|
-      r.name = "Member"
-      r.permissions = { manage_projects: true }
-    end
+  def owned_workspace
+    owner = create(:user, :with_zero_workspaces, onboarded_at: Time.current)
+    workspace = create(:workspace)
+    create(:membership, :owner, user: owner, workspace: workspace)
+    create(:project, workspace: workspace, created_by: owner)
+    [ workspace, owner ]
   end
-  let!(:admin_role) do
-    Role.find_or_create_by!(slug: "admin", workspace_id: nil) do |r|
-      r.name = "Admin"
-      r.permissions = { manage_members: true, manage_projects: true, manage_settings: true }
-    end
-  end
-  let(:invitee) { create(:user, :with_zero_workspaces) }
 
-  def accept_as(role)
+  def accept_as(role, workspace:, owner:)
+    invitee = create(:user, :with_zero_workspaces)
     create(:invitation, invitable: workspace, role: role, invited_by: owner, email: invitee.email_address)
       .accept!(invitee)
+    invitee
   end
 
   it "lands an invited Member on their workspace, never in the wizard" do
-    accept_as(member_role)
+    workspace, owner = owned_workspace
+    member_role = Role.find_or_create_by!(slug: "member", workspace_id: nil) do |r|
+      r.name = "Member"
+      r.permissions = { manage_projects: true }
+    end
+    invitee = accept_as(member_role, workspace: workspace, owner: owner)
     sign_in(invitee)
 
     get new_session_path
@@ -43,7 +40,12 @@ RSpec.describe "Onboarding · invitees", type: :request do
   end
 
   it "shows an invited Admin no first-run wizard for a workspace they did not set up" do
-    accept_as(admin_role)
+    workspace, owner = owned_workspace
+    admin_role = Role.find_or_create_by!(slug: "admin", workspace_id: nil) do |r|
+      r.name = "Admin"
+      r.permissions = { manage_members: true, manage_projects: true, manage_settings: true }
+    end
+    invitee = accept_as(admin_role, workspace: workspace, owner: owner)
     sign_in(invitee)
 
     get new_onboarding_team_path
@@ -53,7 +55,12 @@ RSpec.describe "Onboarding · invitees", type: :request do
   # Data that predates the stamp, or any future refusal inside the wizard: a
   # refused step leaves the wizard for good instead of bouncing back into it.
   it "leaves the wizard on a refusal instead of bouncing back into it" do
-    accept_as(member_role)
+    workspace, owner = owned_workspace
+    member_role = Role.find_or_create_by!(slug: "member", workspace_id: nil) do |r|
+      r.name = "Member"
+      r.permissions = { manage_projects: true }
+    end
+    invitee = accept_as(member_role, workspace: workspace, owner: owner)
     invitee.update_column(:onboarded_at, nil)
     sign_in(invitee)
 
