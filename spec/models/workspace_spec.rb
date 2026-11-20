@@ -65,19 +65,20 @@ RSpec.describe Workspace, type: :model do
   end
 
   describe "Discardable" do
-    let(:workspace) { create(:workspace) }
-
     it "can be discarded" do
+      workspace = create(:workspace)
       workspace.discard!
       expect(workspace).to be_discarded
     end
 
     it "is excluded from kept scope when discarded" do
+      workspace = create(:workspace)
       workspace.discard!
       expect(Workspace.kept).not_to include(workspace)
     end
 
     it "can be undiscarded" do
+      workspace = create(:workspace)
       workspace.discard!
       workspace.undiscard!
       expect(workspace).not_to be_discarded
@@ -99,15 +100,16 @@ RSpec.describe Workspace, type: :model do
   end
 
   describe "#owners" do
-    let(:workspace) { create(:workspace) }
-    let(:owner_role) do
+    def owner_role
       Role.find_or_create_by!(slug: "owner", workspace_id: nil) { |r| r.name = "Owner" }
     end
-    let(:member_role) do
+
+    def member_role
       Role.find_or_create_by!(slug: "member", workspace_id: nil) { |r| r.name = "Member" }
     end
 
     it "returns all kept users with owner role for the workspace" do
+      workspace = create(:workspace)
       owner_a = create(:user)
       owner_b = create(:user)
       member  = create(:user)
@@ -119,6 +121,7 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "excludes discarded owner memberships" do
+      workspace = create(:workspace)
       owner_a = create(:user)
       owner_b = create(:user)
       create(:membership, user: owner_a, workspace: workspace, role: owner_role)
@@ -129,12 +132,14 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "returns an empty collection when the workspace has no owner-role memberships" do
+      workspace = create(:workspace)
       member = create(:user)
       create(:membership, user: member, workspace: workspace, role: member_role)
       expect(workspace.owners).to be_empty
     end
 
     it "returns fresh data even when a stale association is loaded" do
+      workspace = create(:workspace)
       first = create(:membership, user: create(:user), workspace: workspace, role: owner_role)
       second = create(:membership, user: create(:user), workspace: workspace, role: owner_role)
       workspace.memberships.load
@@ -241,18 +246,23 @@ RSpec.describe Workspace, type: :model do
   end
 
   describe "#create_project" do
-    let(:workspace) { create(:workspace, personal: false) }
-    let(:creator) { create(:user) }
-    let!(:member_role) {
+    def project_member_role
       Role.find_or_create_by!(slug: "member", workspace_id: nil) { |r|
         r.name = "Member"
         r.permissions = { manage_projects: true }
       }
-    }
+    end
 
-    before { workspace.memberships.create!(user: creator, role: member_role) }
+    def workspace_with_creator(**attrs)
+      member_role = project_member_role
+      workspace = create(:workspace, personal: false, **attrs)
+      creator = create(:user)
+      workspace.memberships.create!(user: creator, role: member_role)
+      [ workspace, creator ]
+    end
 
     it "creates the project and its creator membership atomically" do
+      workspace, creator = workspace_with_creator
       project = nil
       expect {
         project = workspace.create_project({ name: "Atlas" }, creator: creator)
@@ -264,6 +274,7 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "returns the unpersisted project with errors when attributes are invalid" do
+      workspace, creator = workspace_with_creator
       project = nil
       expect {
         project = workspace.create_project({ name: "" }, creator: creator)
@@ -275,6 +286,7 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "rolls back the project INSERT when the creator membership cannot be created" do
+      workspace, creator = workspace_with_creator
       outsider = create(:user)
 
       expect {
@@ -284,13 +296,10 @@ RSpec.describe Workspace, type: :model do
       }.not_to change(workspace.projects, :count)
     end
 
-    # #689: the pre-flight capacity validation runs before the racer's row is committed, so the
-    # post-INSERT net (Project#enforce_project_capacity_invariant) is what has to stop the write.
-    # The net raises RecordInvalid, and a non-bang save inside this transaction would both rescue
-    # it and skip the savepoint — committing an over-capacity project with no creator membership.
-    # Stubbed on the workspace instance (the file's idiom) rather than any_instance: the built
-    # project reaches its workspace through the association, so this is the object it asks.
+    # #689: the post-INSERT net (Project#enforce_project_capacity_invariant) must stop a
+    # racer's write; stubbed on the workspace instance, the object the project asks.
     it "rolls the project back when the post-INSERT capacity net raises" do
+      workspace, creator = workspace_with_creator
       workspace.update!(max_projects: 1)
       create(:project, workspace: workspace, created_by: creator)
       allow(workspace).to receive(:at_project_capacity?).and_return(false)
@@ -308,6 +317,7 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "raises SuspendedError on a suspended workspace and creates nothing" do
+      workspace, creator = workspace_with_creator
       workspace.suspend!
 
       expect {
@@ -320,6 +330,7 @@ RSpec.describe Workspace, type: :model do
     # #688 decision pins — the lifecycle semantics are deliberate, not gaps.
 
     it "accepts new projects in an ARCHIVED workspace (archive stops new PEOPLE; existing work continues)" do
+      workspace, creator = workspace_with_creator
       workspace.archive!
 
       project = workspace.create_project({ name: "Atlas" }, creator: creator)
@@ -328,6 +339,7 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "still creates model-level under a DISCARDED workspace (HTTP is guarded by workspaces.kept; the model deliberately is not)" do
+      workspace, creator = workspace_with_creator
       workspace.discard!
 
       project = workspace.create_project({ name: "Atlas" }, creator: creator)
@@ -337,17 +349,19 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "discloses suspension (SuspendedError) where #admit deliberately does not (NotAdmittableError)" do
+      workspace, creator = workspace_with_creator
       workspace.suspend!
 
       expect { workspace.create_project({ name: "Atlas" }, creator: creator) }
         .to raise_error(Suspendable::SuspendedError)
-      expect { workspace.admit(create(:user), role: member_role) }
+      expect { workspace.admit(create(:user), role: project_member_role) }
         .to raise_error(Workspace::NotAdmittableError)
     end
 
     it "works in a personal workspace" do
+      workspace, creator = workspace_with_creator
       personal = create(:workspace, personal: true)
-      personal.memberships.create!(user: creator, role: member_role)
+      personal.memberships.create!(user: creator, role: project_member_role)
 
       project = personal.create_project({ name: "Atlas" }, creator: creator)
 
@@ -355,6 +369,7 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "returns the unpersisted project with errors when creator is nil (no half-written state)" do
+      workspace, _creator = workspace_with_creator
       project = nil
       expect {
         project = workspace.create_project({ name: "Atlas" }, creator: nil)
@@ -365,9 +380,8 @@ RSpec.describe Workspace, type: :model do
     end
 
     describe "capacity boundary" do
-      let(:workspace) { create(:workspace, personal: false, max_projects: 2) }
-
       it "creates at one below max, refuses AT max, and a discard frees the slot" do
+        workspace, creator = workspace_with_creator(max_projects: 2)
         workspace.create_project({ name: "One" }, creator: creator)
         at_one_below = workspace.create_project({ name: "Two" }, creator: creator)
         expect(at_one_below).to be_persisted
@@ -388,9 +402,8 @@ RSpec.describe Workspace, type: :model do
   # workspace (no membership → unreachable and undeletable through the UI)
   # when the owner-role lookup raised after the commit.
   describe ".create_owned" do
-    let(:user) { create(:user) }
-
     it "creates the workspace with its owner membership" do
+      user = create(:user)
       workspace = Workspace.create_owned({ name: "Acme" }, owner: user)
 
       expect(workspace).to be_persisted
@@ -400,6 +413,7 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "resolves the owner role through the self-healing Role.system_default!, not find_by!" do
+      user = create(:user)
       allow(Role).to receive(:system_default!).and_call_original
 
       Workspace.create_owned({ name: "Acme" }, owner: user)
@@ -408,6 +422,7 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "rolls back the workspace INSERT when the owner membership cannot be created" do
+      user = create(:user)
       allow(Role).to receive(:system_default!).and_raise(ActiveRecord::RecordNotFound)
 
       expect {
@@ -417,6 +432,7 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "returns the unsaved workspace with errors on validation failure (form re-render contract)" do
+      user = create(:user)
       workspace = Workspace.create_owned({ name: nil }, owner: user)
 
       expect(workspace).not_to be_persisted
@@ -425,9 +441,8 @@ RSpec.describe Workspace, type: :model do
   end
 
   describe ".create_for_owner_email" do
-    let(:operator) { create(:user) }
-
     it "owns the workspace by an existing user's account, with no invitation" do
+      operator = create(:user)
       existing_owner = create(:user)
 
       workspace = nil
@@ -441,6 +456,7 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "owns the workspace by the operator and invites an unknown email as Owner" do
+      operator = create(:user)
       workspace = nil
       expect {
         workspace = Workspace.create_for_owner_email(
@@ -456,9 +472,9 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "does not persist a malformed owner_email, and issues no invitation" do
-      # See the blank-email example below: forces the operator's own
-      # onboarded workspace to exist before the count is measured.
-      operator
+      operator = create(:user)
+      # Created before the block: create(:user) onboards a workspace that would
+      # otherwise read as this verb's count.
       workspace = nil
       expect {
         workspace = Workspace.create_for_owner_email(
@@ -470,15 +486,10 @@ RSpec.describe Workspace, type: :model do
       expect(workspace.errors[:owner_email]).to be_present
     end
 
-    # The silent-skip guard: bulk_invite! swallows a malformed/blank email
-    # rather than raising, so a blank owner_email must fail Workspace's own
-    # validation before this verb ever reaches bulk_invite! — otherwise the
-    # workspace would be silently handed to the operator with no invitation.
+    # The silent-skip guard: bulk_invite! swallows a blank email, so Workspace's own
+    # validation must fail it first or the operator silently gets an uninvited workspace.
     it "does not persist a blank owner_email, and issues no invitation" do
-      # Created outside the block: create(:user) onboards its own workspace
-      # (User#onboard_workspace), which would otherwise read as this verb's
-      # count when it's really the operator's.
-      operator
+      operator = create(:user)
       workspace = nil
       expect {
         workspace = Workspace.create_for_owner_email(
@@ -490,11 +501,10 @@ RSpec.describe Workspace, type: :model do
       expect(workspace.errors[:owner_email]).to be_present
     end
 
-    # A POST with no owner_email key at all reaches the verb as nil, and the
-    # format validation's allow_nil would let the save through — the coercion
-    # to "" is what makes a missing key the same failure as a blank one.
+    # A missing owner_email key reaches the verb as nil, which allow_nil would let
+    # through; the coercion to "" makes it the same failure as a blank one.
     it "does not persist when the owner_email key is missing entirely" do
-      operator
+      operator = create(:user)
       workspace = nil
       expect {
         workspace = Workspace.create_for_owner_email({ name: "Acme" }, operator: operator)
@@ -505,6 +515,7 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "strips and case-folds an existing user's email before matching and validating" do
+      operator = create(:user)
       existing_owner = create(:user)
 
       workspace = Workspace.create_for_owner_email(
@@ -516,10 +527,9 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "issues the invitation after create_owned's transaction has committed" do
-      # open_transactions, not transaction_open?: transactional fixtures
-      # already hold one transaction open for the whole example, so
-      # transaction_open? would read true both inside and after
-      # create_owned's block and couldn't tell the two apart.
+      operator = create(:user)
+      # open_transactions, not transaction_open?: transactional fixtures hold one open
+      # for the whole example, so transaction_open? could not tell inside from after.
       baseline = Workspace.connection.open_transactions
 
       allow(Invitation).to receive(:bulk_invite!).and_wrap_original { |m, **kw|
@@ -537,9 +547,6 @@ RSpec.describe Workspace, type: :model do
   # workspaces that could be hard-destroyed were ones nobody had ever done
   # anything in — and "Delete permanently" is a user-facing action.
   describe "hard destroy with an audit trail" do
-    let(:workspace) { create(:workspace) }
-    let(:user) { create(:user) }
-
     # Trackable reads Current for the actor and the workspace; set both the way
     # the request cycle does, then put them back.
     def with_current(user, workspace)
@@ -552,6 +559,8 @@ RSpec.describe Workspace, type: :model do
     end
 
     it "destroys the workspace's own activity trail with it" do
+      workspace = create(:workspace)
+      user = create(:user)
       with_current(user, workspace) { create(:membership, user: user, workspace: workspace) }
       expect(ActivityLog.for_workspace(workspace)).to be_any
 
@@ -559,13 +568,11 @@ RSpec.describe Workspace, type: :model do
       expect(ActivityLog.where(workspace_id: workspace.id)).to be_empty
     end
 
-    # The retention floor's rows are written by ActivityLog.record_security_event!,
-    # which hardcodes `workspace_id: nil` and is the single writer for every
-    # SECURITY_ACTIONS row in both tiers. So no security row is workspace-scoped
-    # and a workspace destroy cannot reach one. This pins that, because the day
-    # a security row gains a workspace_id is the day `dependent: :destroy`
-    # starts eating credential evidence silently.
+    # record_security_event! hardcodes workspace_id: nil, so a workspace destroy cannot
+    # reach a security row; this pins it before dependent: :destroy eats evidence.
     it "leaves account-security rows alone, since none of them are workspace-scoped" do
+      workspace = create(:workspace)
+      user = create(:user)
       ActivityLog.record_security_event!(action: "user.password_changed", user: user)
       with_current(user, workspace) { create(:membership, user: user, workspace: workspace) }
 
