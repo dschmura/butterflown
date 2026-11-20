@@ -196,7 +196,7 @@ RSpec.describe "Operations area", type: :system do
   # phone-width layouts of the empty list, the roster and a user page.
   # Last in the file — it resizes the shared window.
   it "audits an operator's own page and the phone-width layouts, AAA in both themes" do
-    fellow = create(:user, :with_zero_workspaces, first_name: "Fern", last_name: "Fellow").tap { |u| Operatorship.grant!(user: u) }
+    fellow = create(:user, :with_zero_workspaces, :operator, first_name: "Fern", last_name: "Fellow")
 
     visit operations_user_path(fellow)
     expect(page).to have_link(I18n.t("operations.users.show.operator_access"))
