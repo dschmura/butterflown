@@ -51,7 +51,7 @@ RSpec.describe "Locked workspace gate", type: :request do
     before { permit_open_join_links }
 
     def locked_join_link
-      locked_workspace = create(:workspace, personal: false, join_policy: "open_link", name: "Locked Co")
+      locked_workspace = create(:workspace, :open_link, name: "Locked Co")
       owner = create(:user)
       create(:membership, :owner, user: owner, workspace: locked_workspace)
       locked_workspace.suspend!

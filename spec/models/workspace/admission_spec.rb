@@ -7,7 +7,7 @@ RSpec.describe Workspace, type: :model do
     before { permit_open_join_links }
 
     it "is true for an org workspace with join_policy 'open_link' when instance permits it" do
-      workspace = build(:workspace, join_policy: "open_link", personal: false)
+      workspace = build(:workspace, :open_link)
       expect(workspace).to be_open_join
     end
 
@@ -38,18 +38,18 @@ RSpec.describe Workspace, type: :model do
     before { permit_open_join_links }
 
     it "is true when the join policy is open and the workspace is admittable" do
-      workspace = create(:workspace, personal: false, join_policy: "open_link")
+      workspace = create(:workspace, :open_link)
       expect(workspace.accepting_open_joins?).to be(true)
     end
 
     it "is false when the join policy is not open" do
-      workspace = create(:workspace, personal: false, join_policy: "open_link")
+      workspace = create(:workspace, :open_link)
       workspace.update!(join_policy: "invite")
       expect(workspace.accepting_open_joins?).to be(false)
     end
 
     it "is false when the workspace is not admittable (archived/suspended)" do
-      workspace = create(:workspace, personal: false, join_policy: "open_link")
+      workspace = create(:workspace, :open_link)
       workspace.archive!
       expect(workspace.accepting_open_joins?).to be(false)
     end

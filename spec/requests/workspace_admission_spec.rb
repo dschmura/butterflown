@@ -13,7 +13,7 @@ RSpec.describe "Workspace admission (not_admittable rescue)", type: :request do
   end
 
   it "redirects to root_path with the generic invalid_or_revoked flash, never disclosing lifecycle state" do
-    workspace = create(:workspace, personal: false, join_policy: "open_link")
+    workspace = create(:workspace, :open_link)
     owner = create(:user)
     newcomer = create(:user)
     create(:membership, :owner, user: owner, workspace: workspace)
@@ -37,7 +37,7 @@ RSpec.describe "Admission into non-active workspaces", type: :request do
   before { permit_open_join_links }
 
   def non_active_workspace(lifecycle_action)
-    workspace = create(:workspace, personal: false, join_policy: "open_link")
+    workspace = create(:workspace, :open_link)
     owner = create(:user)
     create(:membership, :owner, user: owner, workspace: workspace)
     workspace.public_send("#{lifecycle_action}!")
