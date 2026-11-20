@@ -18,10 +18,6 @@ RSpec.describe "Member row actions escape the members frame", type: :system do
     visit workspace_members_path(actor_membership.workspace)
   end
 
-  def axe_options
-    { runOnly: { type: "tag", values: [ "wcag2aaa" ] } }
-  end
-
   def row_for(membership)
     "##{ActionView::RecordIdentifier.dom_id(membership)}"
   end
