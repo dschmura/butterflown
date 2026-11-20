@@ -11,10 +11,8 @@ RSpec.describe "Project tool tabs", type: :request do
   context "authenticated" do
     def sign_in_owner_with_project
       workspace = create(:workspace)
-      owner = create(:user)
-      create(:membership, :owner, user: owner, workspace: workspace)
+      owner = sign_in_as_owner_of(workspace)
       project = create(:project, workspace: workspace, created_by: owner)
-      sign_in(owner)
       [ workspace, project ]
     end
 

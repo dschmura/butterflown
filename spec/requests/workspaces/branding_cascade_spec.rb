@@ -4,9 +4,7 @@ RSpec.describe "Workspace branding cascade", type: :request do
   describe "on workspace-scoped routes" do
     def sign_in_owner_of_workspace(**attributes)
       workspace = create(:workspace, **attributes)
-      owner = create(:user)
-      create(:membership, :owner, user: owner, workspace: workspace)
-      sign_in(owner)
+      sign_in_as_owner_of(workspace)
       workspace
     end
 

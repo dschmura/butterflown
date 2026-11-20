@@ -16,12 +16,6 @@ RSpec.describe "Workspace Logo", type: :request do
   end
 
   context "authenticated" do
-    def sign_in_owner_of(workspace)
-      owner = create(:user)
-      create(:membership, :owner, user: owner, workspace: workspace)
-      sign_in(owner)
-    end
-
     def sign_in_member_of(workspace)
       sign_in(add_member(workspace).user)
     end
@@ -29,7 +23,7 @@ RSpec.describe "Workspace Logo", type: :request do
     describe "GET /workspaces/:slug/logo" do
       it "renders the picker hub partial" do
         workspace = create(:workspace)
-        sign_in_owner_of(workspace)
+        sign_in_as_owner_of(workspace)
         get workspace_logo_path(workspace, source: "initials"),
             headers: { "Turbo-Frame" => "identity-picker-hub" }
         expect(response).to have_http_status(:ok)
@@ -38,7 +32,7 @@ RSpec.describe "Workspace Logo", type: :request do
 
       it "falls back to the current logo source for an invalid source param" do
         workspace = create(:workspace)
-        sign_in_owner_of(workspace)
+        sign_in_as_owner_of(workspace)
         get workspace_logo_path(workspace, source: "gravatar"),
             headers: { "Turbo-Frame" => "identity-picker-hub" }
         expect(response).to have_http_status(:ok)
@@ -46,7 +40,7 @@ RSpec.describe "Workspace Logo", type: :request do
 
       it "denies a member without manage_settings" do
         workspace = create(:workspace)
-        sign_in_owner_of(workspace)
+        sign_in_as_owner_of(workspace)
         sign_in_member_of(workspace)
         get workspace_logo_path(workspace)
         expect(response).not_to have_http_status(:ok)
@@ -56,7 +50,7 @@ RSpec.describe "Workspace Logo", type: :request do
     describe "DELETE /workspaces/:slug/logo" do
       it "removes the logo and keeps the workspace" do
         workspace = create(:workspace, :with_logo)
-        sign_in_owner_of(workspace)
+        sign_in_as_owner_of(workspace)
         delete workspace_logo_path(workspace), headers: { "Accept" => "text/vnd.turbo-stream.html" }
 
         expect(response).to have_http_status(:ok)
@@ -69,7 +63,7 @@ RSpec.describe "Workspace Logo", type: :request do
 
       it "refreshes the Profile and switcher logos and closes the picker" do
         workspace = create(:workspace, :with_logo)
-        sign_in_owner_of(workspace)
+        sign_in_as_owner_of(workspace)
         delete workspace_logo_path(workspace), headers: { "Accept" => "text/vnd.turbo-stream.html" }
 
         expect(response.media_type).to eq("text/vnd.turbo-stream.html")
@@ -82,7 +76,7 @@ RSpec.describe "Workspace Logo", type: :request do
 
       it "redirects an HTML request back to the Profile page" do
         workspace = create(:workspace, :with_logo)
-        sign_in_owner_of(workspace)
+        sign_in_as_owner_of(workspace)
         delete workspace_logo_path(workspace)
 
         expect(response).to redirect_to(edit_workspace_path(workspace))
@@ -91,7 +85,7 @@ RSpec.describe "Workspace Logo", type: :request do
 
       it "renders an error toast and keeps the workspace when the save fails" do
         workspace = create(:workspace, :with_logo)
-        sign_in_owner_of(workspace)
+        sign_in_as_owner_of(workspace)
         workspace.update_columns(primary_color: 999)
 
         delete workspace_logo_path(workspace), headers: { "Accept" => "text/vnd.turbo-stream.html" }
@@ -108,7 +102,7 @@ RSpec.describe "Workspace Logo", type: :request do
 
       it "tells an HTML request why the save failed" do
         workspace = create(:workspace, :with_logo)
-        sign_in_owner_of(workspace)
+        sign_in_as_owner_of(workspace)
         workspace.update_columns(primary_color: 999)
 
         delete workspace_logo_path(workspace)
@@ -119,7 +113,7 @@ RSpec.describe "Workspace Logo", type: :request do
 
       it "returns 429 once the limit is exceeded" do
         workspace = create(:workspace, :with_logo)
-        sign_in_owner_of(workspace)
+        sign_in_as_owner_of(workspace)
         # rate_limit counts via Rails.cache.increment; an over-limit count fires it without a real cache.
         allow(Rails.cache).to receive(:increment).and_return(21)
 
@@ -132,7 +126,7 @@ RSpec.describe "Workspace Logo", type: :request do
 
       it "denies a member without manage_settings and leaves the logo alone" do
         workspace = create(:workspace, :with_logo)
-        sign_in_owner_of(workspace)
+        sign_in_as_owner_of(workspace)
         sign_in_member_of(workspace)
 
         delete workspace_logo_path(workspace)
@@ -146,7 +140,7 @@ RSpec.describe "Workspace Logo", type: :request do
     describe "the Profile page's Remove photo button" do
       it "removes the logo, never the workspace" do
         workspace = create(:workspace)
-        sign_in_owner_of(workspace)
+        sign_in_as_owner_of(workspace)
         get edit_workspace_path(workspace)
 
         # The crop section renders `hidden` until a photo is chosen.

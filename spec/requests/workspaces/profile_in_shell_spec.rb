@@ -3,9 +3,7 @@ require "rails_helper"
 RSpec.describe "Workspace Profile in the workspace shell", type: :request do
   def sign_in_owner_of_acme
     workspace = create(:workspace, name: "Acme")
-    owner = create(:user)
-    create(:membership, :owner, user: owner, workspace: workspace)
-    sign_in(owner)
+    sign_in_as_owner_of(workspace)
     workspace
   end
 
