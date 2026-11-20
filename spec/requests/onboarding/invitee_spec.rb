@@ -25,10 +25,7 @@ RSpec.describe "Onboarding · invitees", type: :request do
 
   it "lands an invited Member on their workspace, never in the wizard" do
     workspace, owner = owned_workspace
-    member_role = Role.find_or_create_by!(slug: "member", workspace_id: nil) do |r|
-      r.name = "Member"
-      r.permissions = { manage_projects: true }
-    end
+    member_role = Role.system_default!("member")
     invitee = accept_as(member_role, workspace: workspace, owner: owner)
     sign_in(invitee)
 
@@ -41,10 +38,7 @@ RSpec.describe "Onboarding · invitees", type: :request do
 
   it "shows an invited Admin no first-run wizard for a workspace they did not set up" do
     workspace, owner = owned_workspace
-    admin_role = Role.find_or_create_by!(slug: "admin", workspace_id: nil) do |r|
-      r.name = "Admin"
-      r.permissions = { manage_members: true, manage_projects: true, manage_settings: true }
-    end
+    admin_role = Role.system_default!("admin")
     invitee = accept_as(admin_role, workspace: workspace, owner: owner)
     sign_in(invitee)
 
@@ -56,10 +50,7 @@ RSpec.describe "Onboarding · invitees", type: :request do
   # refused step leaves the wizard for good instead of bouncing back into it.
   it "leaves the wizard on a refusal instead of bouncing back into it" do
     workspace, owner = owned_workspace
-    member_role = Role.find_or_create_by!(slug: "member", workspace_id: nil) do |r|
-      r.name = "Member"
-      r.permissions = { manage_projects: true }
-    end
+    member_role = Role.system_default!("member")
     invitee = accept_as(member_role, workspace: workspace, owner: owner)
     invitee.update_column(:onboarded_at, nil)
     sign_in(invitee)

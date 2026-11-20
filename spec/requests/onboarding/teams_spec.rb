@@ -7,8 +7,7 @@ RSpec.describe "Onboarding · team step", type: :request do
     workspace = create(:workspace)
     project = create(:project, workspace: workspace)
     user = create(:user, :with_zero_workspaces)
-    create(:membership, :owner, user: user, workspace: workspace)
-    sign_in(user)
+    sign_in_as_owner_of(workspace, user: user)
     [ user, workspace, project ]
   end
 
@@ -47,10 +46,7 @@ RSpec.describe "Onboarding · team step", type: :request do
 
   it "sends invites, completes onboarding, and lands on the project" do
     user, workspace, project = team_step_scene
-    role = Role.find_or_create_by!(slug: "member", workspace_id: nil) do |r|
-      r.name = "Member"
-      r.permissions = { manage_projects: true }
-    end
+    role = Role.system_default!("member")
     expect {
       post onboarding_team_path, params: {
         invitation: { emails: "sam@example.com, lee@example.com", role_id: role.id }
@@ -64,10 +60,7 @@ RSpec.describe "Onboarding · team step", type: :request do
 
   it "re-renders when no emails are provided" do
     user, = team_step_scene
-    role = Role.find_or_create_by!(slug: "member", workspace_id: nil) do |r|
-      r.name = "Member"
-      r.permissions = { manage_projects: true }
-    end
+    role = Role.system_default!("member")
     post onboarding_team_path, params: { invitation: { emails: "", role_id: role.id } }
     expect(response).to have_http_status(:unprocessable_entity)
     expect(flash[:alert]).to eq(I18n.t("onboarding.teams.create.no_emails"))

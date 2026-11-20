@@ -7,9 +7,8 @@ RSpec.describe "Onboarding · tools step", type: :request do
     workspace = create(:workspace)
     project = create(:project, workspace: workspace)
     user = create(:user, :with_zero_workspaces)
-    create(:membership, :owner, user: user, workspace: workspace)
+    sign_in_as_owner_of(workspace, user: user)
     project.project_memberships.create!(user: user, role: "creator")
-    sign_in(user)
     project
   end
 
