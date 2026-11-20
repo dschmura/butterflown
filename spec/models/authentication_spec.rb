@@ -279,13 +279,6 @@ RSpec.describe Authentication, type: :model do
   end
 
   describe "#claim_pending!" do
-    def member_role
-      Role.find_or_create_by!(slug: "member", workspace_id: nil) { |r|
-        r.name = "Member"
-        r.permissions = { manage_projects: true }
-      }
-    end
-
     before do
       allow(Rails.configuration.x.signup).to receive(:permitted_join_strategies).and_return(%i[invite open_link])
     end
@@ -312,7 +305,7 @@ RSpec.describe Authentication, type: :model do
     end
 
     it "accepts the invitation and clears the token on success" do
-      member_role
+      Role.system_default!("member")
       user = create(:user, :no_authentications)
       authentication = create(:authentication, user: user, pending_invitation_token: nil)
       invitation = create(:invitation, email: user.email_address)
@@ -368,7 +361,7 @@ RSpec.describe Authentication, type: :model do
     end
 
     it "admits the user as Member and clears the join digest on success" do
-      member_role
+      Role.system_default!("member")
       user = create(:user, :no_authentications)
       authentication = create(:authentication, user: user, pending_invitation_token: nil)
       workspace = create(:workspace, personal: false, join_policy: "open_link")
@@ -414,13 +407,13 @@ RSpec.describe Authentication, type: :model do
     end
 
     it "reports :join_link_at_capacity and clears the spent digest when the workspace is full" do
-      member_role
+      Role.system_default!("member")
       user = create(:user, :no_authentications)
       authentication = create(:authentication, user: user, pending_invitation_token: nil)
       workspace = create(:workspace, personal: false, join_policy: "open_link")
       link = create(:workspace_join_link, workspace: workspace, created_by: create(:user))
       workspace.update!(max_members: 1)
-      create(:membership, workspace: workspace, user: create(:user), role: member_role)
+      create(:membership, workspace: workspace, user: create(:user), role: Role.system_default!("member"))
       authentication.update!(pending_join_link_digest: WorkspaceJoinLink.digest(link.plaintext_token))
 
       result = nil
