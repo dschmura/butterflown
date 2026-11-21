@@ -1,6 +1,17 @@
 require "rails_helper"
 
 RSpec.describe "Workspace Projects", type: :request do
+  def sign_in_owner
+    owner = create(:membership, :owner)
+    Current.workspace = owner.workspace
+    sign_in(owner.user)
+    owner
+  end
+
+  def project_in(owner)
+    create(:project, workspace: owner.workspace, created_by: owner.user)
+  end
+
   describe "unauthenticated access" do
     it "redirects GET /workspaces/:slug/projects to sign in" do
       get workspace_projects_path(workspace_slug: "any-slug")
@@ -9,34 +20,30 @@ RSpec.describe "Workspace Projects", type: :request do
   end
 
   context "authenticated" do
-    let(:workspace) { create(:workspace) }
-    let(:user) { create(:user) }
-    let!(:ws_membership) { create(:membership, :owner, user: user, workspace: workspace) }
-
-    before do
-      Current.workspace = workspace
-      sign_in(user)
-    end
-
     describe "GET /workspaces/:workspace_slug/projects" do
       it "lists projects" do
-        project = create(:project, workspace: workspace, created_by: user)
+        owner = sign_in_owner
+        workspace = owner.workspace
+        project = project_in(owner)
         get workspace_projects_path(workspace)
         expect(response).to have_http_status(:ok)
         expect(response.body).to include(CGI.escapeHTML(project.name))
       end
 
-      # #687: the index listed every kept project to any workspace member,
-      # while ProjectPolicy#show? requires project membership — rows most
-      # members could only bounce off. The scope: members see their projects;
-      # workspace managers (who already hold lifecycle powers) see all.
+      # #687: the index listed every kept project to any member; the scope
+      # shows members their projects and workspace managers all of them.
       describe "index visibility (ProjectPolicy::Scope)" do
-        let(:plain_member) { create(:user) }
-        let!(:plain_membership) { create(:membership, user: plain_member, workspace: workspace) }
-        let!(:mine) { create(:project, workspace: workspace, created_by: plain_member, name: "Mine Alone") }
-        let!(:not_mine) { create(:project, workspace: workspace, created_by: user, name: "Somebody Elses") }
+        def visibility_cast(owner)
+          plain_member = add_member(owner.workspace).user
+          create(:project, workspace: owner.workspace, created_by: plain_member, name: "Mine Alone")
+          not_mine = create(:project, workspace: owner.workspace, created_by: owner.user, name: "Somebody Elses")
+          [ plain_member, not_mine ]
+        end
 
         it "shows a plain member only the projects they belong to" do
+          owner = sign_in_owner
+          workspace = owner.workspace
+          plain_member, = visibility_cast(owner)
           sign_in(plain_member)
           get workspace_projects_path(workspace)
 
@@ -45,13 +52,19 @@ RSpec.describe "Workspace Projects", type: :request do
         end
 
         it "shows a workspace manager every project" do
-          get workspace_projects_path(workspace) # `user` is the owner
+          owner = sign_in_owner
+          workspace = owner.workspace
+          visibility_cast(owner)
+          get workspace_projects_path(workspace)
 
           expect(response.body).to include("Mine Alone")
           expect(response.body).to include(CGI.escapeHTML("Somebody Elses"))
         end
 
         it "scopes the archived section the same way" do
+          owner = sign_in_owner
+          workspace = owner.workspace
+          plain_member, not_mine = visibility_cast(owner)
           not_mine.archive!
           sign_in(plain_member)
           get workspace_projects_path(workspace)
@@ -61,7 +74,9 @@ RSpec.describe "Workspace Projects", type: :request do
       end
 
       it "renders the project initials through the avatar component" do
-        project = create(:project, workspace: workspace, created_by: user)
+        owner = sign_in_owner
+        workspace = owner.workspace
+        project = project_in(owner)
         get workspace_projects_path(workspace)
         html = Capybara.string(response.body)
         # Scoped to the project card: the layout's workspace switcher renders the
@@ -75,7 +90,9 @@ RSpec.describe "Workspace Projects", type: :request do
       end
 
       it "renders an attached logo through the component's recovery pair" do
-        project = create(:project, workspace: workspace, created_by: user)
+        owner = sign_in_owner
+        workspace = owner.workspace
+        project = project_in(owner)
         project.logo.attach(
           io: File.open(Rails.root.join("spec/fixtures/files/avatar.png")),
           filename: "logo.png",
@@ -92,17 +109,13 @@ RSpec.describe "Workspace Projects", type: :request do
         expect(card).to have_css("span[data-avatar-target='fallback']", visible: :hidden)
       end
 
-      # Regression guard: the avatar consolidation (PR-C) checks
-      # project.logo.attached? per row, which loads logo_attachment per
-      # project unless the index query eager-loads it. Bullet.raise fails
-      # this example mid-request on any eager-load shape regression; the
-      # single-row examples above can't trip Bullet's threshold-based
-      # detector, so the multi-row fixture is what gives the guard teeth
-      # (same mechanism as the workspaces#index guard).
+      # Bullet.raise fails this on a per-row logo_attachment N+1; only the
+      # multi-row fixture trips Bullet's threshold detector.
       it "renders without N+1 queries (regression guard)" do
+        owner = sign_in_owner
+        workspace = owner.workspace
         projects = (1..3).map do |i|
-          project = create(:project, workspace: workspace, created_by: user, name: "Project #{i}")
-          project
+          create(:project, workspace: workspace, created_by: owner.user, name: "Project #{i}")
         end
 
         get workspace_projects_path(workspace)
@@ -116,6 +129,7 @@ RSpec.describe "Workspace Projects", type: :request do
 
     describe "GET /workspaces/:workspace_slug/projects/new" do
       it "renders the new form" do
+        workspace = sign_in_owner.workspace
         get new_workspace_project_path(workspace)
         expect(response).to have_http_status(:ok)
       end
@@ -123,6 +137,9 @@ RSpec.describe "Workspace Projects", type: :request do
 
     describe "POST /workspaces/:workspace_slug/projects" do
       it "creates a project and assigns creator role" do
+        owner = sign_in_owner
+        workspace = owner.workspace
+        user = owner.user
         expect {
           post workspace_projects_path(workspace), params: { project: { name: "New Project", description: "Client launch" } }
         }.to change(Project, :count).by(1)
@@ -135,25 +152,30 @@ RSpec.describe "Workspace Projects", type: :request do
       end
 
       it "enforces max_projects" do
+        owner = sign_in_owner
+        workspace = owner.workspace
         workspace.update!(max_projects: 1)
-        create(:project, workspace: workspace, created_by: user)
+        project_in(owner)
         post workspace_projects_path(workspace), params: { project: { name: "Over Limit" } }
         expect(response).to have_http_status(:unprocessable_entity)
       end
     end
 
     describe "GET /workspaces/:workspace_slug/projects/:slug" do
-      let(:project) { create(:project, workspace: workspace, created_by: user) }
-
       it "shows the project" do
+        owner = sign_in_owner
+        workspace = owner.workspace
+        project = project_in(owner)
         get workspace_project_path(workspace, project)
         expect(response).to have_http_status(:ok)
       end
 
-      # #746 (2.4.9 Link Purpose, AAA): a links-list rotor shows this link out
-      # of context — "Edit" alone names no object. Literal string on purpose:
-      # an I18n.t assertion would move with a wrong locale edit.
+      # #746 (2.4.9 Link Purpose, AAA): "Edit" alone names no object out of
+      # context. Literal string on purpose: I18n.t would move with a locale edit.
       it "names the edit link with its object for out-of-context reading" do
+        owner = sign_in_owner
+        workspace = owner.workspace
+        project = project_in(owner)
         get workspace_project_path(workspace, project)
         page = Capybara.string(response.body)
         expect(page).to have_link(I18n.t("workspaces.projects.show.edit"), href: edit_workspace_project_path(workspace, project))
@@ -161,6 +183,9 @@ RSpec.describe "Workspace Projects", type: :request do
       end
 
       it "renders the header initials through the avatar component" do
+        owner = sign_in_owner
+        workspace = owner.workspace
+        project = project_in(owner)
         get workspace_project_path(workspace, project)
         html = Capybara.string(response.body)
         expect(html).to have_css("span.w-16.h-16[aria-hidden='true']", exact_text: project.initials)
@@ -169,8 +194,10 @@ RSpec.describe "Workspace Projects", type: :request do
       end
 
       it "denies non-project-members" do
-        other = create(:user)
-        create(:membership, user: other, workspace: workspace)
+        owner = sign_in_owner
+        workspace = owner.workspace
+        project = project_in(owner)
+        other = add_member(workspace).user
         sign_in(other)
         get workspace_project_path(workspace, project)
         expect(response).to have_http_status(:redirect)
@@ -178,9 +205,10 @@ RSpec.describe "Workspace Projects", type: :request do
     end
 
     describe "PATCH /workspaces/:workspace_slug/projects/:slug" do
-      let(:project) { create(:project, workspace: workspace, created_by: user) }
-
       it "updates the project" do
+        owner = sign_in_owner
+        workspace = owner.workspace
+        project = project_in(owner)
         patch workspace_project_path(workspace, project), params: { project: { name: "Updated", description: "New scope" } }
         expect(project.reload.name).to eq("Updated")
         expect(project.description).to eq("New scope")
@@ -189,9 +217,10 @@ RSpec.describe "Workspace Projects", type: :request do
     end
 
     describe "DELETE /workspaces/:workspace_slug/projects/:slug" do
-      let(:project) { create(:project, workspace: workspace, created_by: user) }
-
       it "soft deletes the project" do
+        owner = sign_in_owner
+        workspace = owner.workspace
+        project = project_in(owner)
         delete workspace_project_path(workspace, project)
         expect(project.reload).to be_discarded
       end
@@ -200,9 +229,10 @@ RSpec.describe "Workspace Projects", type: :request do
     # Archive/restore moved to spec/requests/workspaces/projects/archivals_spec.rb with the resource (#1007).
 
     describe "GET /workspaces/:workspace_slug/projects/:slug/edit" do
-      let(:project) { create(:project, workspace: workspace, created_by: user) }
-
       it "renders the edit form" do
+        owner = sign_in_owner
+        workspace = owner.workspace
+        project = project_in(owner)
         get edit_workspace_project_path(workspace, project)
         expect(response).to have_http_status(:ok)
       end
@@ -210,15 +240,17 @@ RSpec.describe "Workspace Projects", type: :request do
 
     describe "POST /workspaces/:workspace_slug/projects with invalid params" do
       it "returns unprocessable entity for blank name" do
+        workspace = sign_in_owner.workspace
         post workspace_projects_path(workspace), params: { project: { name: "" } }
         expect(response).to have_http_status(:unprocessable_entity)
       end
     end
 
     describe "PATCH /workspaces/:workspace_slug/projects/:slug with invalid params" do
-      let(:project) { create(:project, workspace: workspace, created_by: user) }
-
       it "returns unprocessable entity for blank name" do
+        owner = sign_in_owner
+        workspace = owner.workspace
+        project = project_in(owner)
         patch workspace_project_path(workspace, project), params: { project: { name: "" } }
         expect(response).to have_http_status(:unprocessable_entity)
       end
@@ -226,18 +258,18 @@ RSpec.describe "Workspace Projects", type: :request do
 
     describe "GET /workspaces/:workspace_slug/projects/:slug with nonexistent slug" do
       it "redirects to projects list" do
+        workspace = sign_in_owner.workspace
         get workspace_project_path(workspace, "nonexistent-slug")
         expect(response).to redirect_to(workspace_projects_path(workspace))
       end
     end
 
     describe "discarded projects" do
-      let(:project) { create(:project, workspace: workspace, created_by: user) }
-      before do
-        project.discard!
-      end
-
       it "are excluded from show" do
+        owner = sign_in_owner
+        workspace = owner.workspace
+        project = project_in(owner)
+        project.discard!
         get workspace_project_path(workspace, project)
         expect(response).to redirect_to(workspace_projects_path(workspace))
       end
