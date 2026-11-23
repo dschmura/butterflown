@@ -103,7 +103,14 @@ RSpec.describe MailSetup do
     end
 
     it "keeps the MAIL_FROM comment when no sender is given" do
-      expect(described_class.with_values(real, values.except("MAIL_FROM"))).to include(mail_from_comment.first)
+      comment = "    # MAIL_FROM: hello@app.yourdomain.com   # default: noreply@RAILS_HOST\n"
+      commented = "env:\n  clear:\n    SMTP_ADDRESS: old.example\n#{comment}"
+
+      expect(described_class.with_values(commented, values.except("MAIL_FROM"))).to include(comment)
+    end
+
+    it "finds the MAIL_FROM comment it fills in, in the template's own deploy.yml", :template_only do
+      expect(mail_from_comment).to contain_exactly(/^\s+# MAIL_FROM: /)
     end
 
     it "inserts the port and sender directly after the address when they're absent" do
@@ -953,7 +960,7 @@ RSpec.describe MailSetup do
     describe "swap warnings" do
       before do
         allow(credentials).to receive(:login?).and_return(true)
-        deploy.write(deploy.read.sub("# MAIL_FROM: hello@app.yourdomain.com", "MAIL_FROM: old@acme.example"))
+        deploy.write("env:\n  clear:\n    SMTP_ADDRESS: smtp.postmarkapp.com\n    SMTP_PORT: 587\n    MAIL_FROM: old@acme.example\n")
       end
 
       it "warns that the sender's domain must be verified at the new provider" do
