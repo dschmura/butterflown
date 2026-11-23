@@ -151,7 +151,7 @@ RSpec.describe "the deployment guide" do
     printed = Kamal::Utils.redacted(config.to_h).to_yaml
 
     expect(target).to be_present
-    expect(printed.lines.each_cons(2).find { |line, _| line.include?(target) }&.last).to include("192.168.0.1")
+    expect(printed.lines.each_cons(2).find { |line, _| line.include?(target) }&.last).to match(/\A\s*- \S+/)
   end
 
   it "links only to headings it has" do

@@ -4,6 +4,15 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ## [Unreleased]
 
+## v2026.11.23
+
+### Fixed
+
+- A fork that edits `config/deploy.yml` as the quickstart says no longer fails four deploy-file specs: they bring their own `deploy.yml` or check what the guide's command is for, and only the two checks of the template's untouched files are `:template_only`.
+- `tenancy:owner_setup_link` and the production seed's log print links on the app's own host (the mailer's, `RAILS_HOST` in production) instead of `localhost` when `APP_HOST` isn't set.
+- `bin/release prepare` names a fork's first release instead of crashing when its `CHANGELOG.md` holds only an empty `## [Unreleased]`, and writes the changelog with a single trailing newline (release_flow 0.2.1).
+- RuboCop skips the gitignored `docs/` folder, so a local scratch file there can no longer fail the pre-push run.
+
 ## v2026.11.21
 
 ### Changed
