@@ -4,6 +4,12 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ## [Unreleased]
 
+## v2026.11.23-2
+
+### Changed
+
+- When a fork's `next` already has the template's latest release, `bin/sync` also counts the template changes not released yet, so "nothing to sync" no longer looks like "nothing new upstream".
+
 ## v2026.11.23
 
 ### Fixed
