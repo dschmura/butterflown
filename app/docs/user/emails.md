@@ -121,7 +121,10 @@ sign-in options and [Application Flows](/docs/developer/application-flows) for t
 
 ### SMTP Setup
 
-For production, run `bin/mail-setup`, or set this by hand.
+The first time you set up production, run `bin/production-setup`
+([Quickstart §4](/docs/developer/quickstart#4-production-secrets-and-mail)): it
+sets up mail and the encryption keys production needs to boot. To change mail
+provider later, run `bin/mail-setup` on its own. Or set this by hand.
 
 Where mail goes comes from the environment (`SMTP_ADDRESS`, `SMTP_PORT`,
 `SMTP_DOMAIN`); the login lives in the per-environment credentials:

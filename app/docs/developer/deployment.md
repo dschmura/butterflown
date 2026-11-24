@@ -314,11 +314,14 @@ the box through Action Mailer, so a deployment with no mail server boots,
 reports healthy at `/up`, and nobody can sign in. The preflight guard refuses
 that boot, which is why this step sits before the first deploy.
 
-**The quick way:** run `bin/mail-setup`. It asks for your provider and login,
-writes them to the production credentials and `config/deploy.yml`, and closes by
-saying what to commit, what production still refuses and how to prove delivery.
-Run it again to swap providers or replace a login. The recipes below are the same
-steps by hand.
+**The quick way:** the first time, run `bin/production-setup`, as in
+[Quickstart §4](quickstart#4-production-secrets-and-mail). It runs
+`bin/mail-setup`, which asks for your provider and login, writes them to the
+production credentials and `config/deploy.yml`, and closes by saying what to
+commit, what production still refuses and how to prove delivery. It then sets
+up the encryption keys production also needs to boot. Later, run
+`bin/mail-setup` on its own to swap providers or replace a login. The recipes
+below are the same steps by hand.
 
 Mail leaves over SMTP. Where it goes comes from the environment and how it
 signs in comes from the credentials, which keep every app-runtime secret.
