@@ -15,7 +15,7 @@ Starting a product? Follow the [quickstart](quickstart) first. This page is the 
 
 ## The stack
 
-Rails 8.1 or newer, and the pieces Rails ships: Propshaft for assets, import maps for JavaScript (with `tailwindcss-rails` for CSS), Hotwire (Turbo and Stimulus) for interaction, the built-in authentication generator's shape for sessions, and Solid Queue, Solid Cache, and Solid Cable on SQLite. That is a floor, not a preference list: there is no Devise, no JavaScript bundler, no React, no Sprockets, and no Redis-backed queue, and a fork that adds one of them is off the path every other page here describes. The `ModelRails/StackFloor` cop (`lib/rubocop`) fails a Gemfile line that brings in what the floor replaces, or pins `rails` below it, on commit.
+Rails 8.1 or newer, and the pieces Rails ships: Propshaft for assets, import maps for JavaScript (with `tailwindcss-rails` for CSS), Hotwire (Turbo and Stimulus) for interaction, the built-in authentication generator's shape for sessions, and Solid Queue, Solid Cache, and Solid Cable on SQLite. Every fork starts on that stack, and every page here assumes it: there is no Devise, no JavaScript bundler, no React, no Sprockets, and no Redis-backed queue, and a fork that adds one of them is off the path every other page here describes. The `ModelRails/StackFloor` cop (`lib/rubocop`) fails a Gemfile line that brings in one of those, or pins `rails` below 8.1, on commit.
 
 ### Rails comes from a pinned commit
 
@@ -252,7 +252,7 @@ Runs automatically when you `git push`. `bin/setup` installs the hooks; in a clo
 
 Pre-commit hooks also auto-fix Ruby style issues on staged files.
 
-Don't skip the hooks. When one fails, run that check on its own to see why — each one's command is in `lefthook.yml`, and the specs are `bin/test-plan --run` — fix it, and push again. `LEFTHOOK=0` and `--no-verify` do turn the hooks off, but they only move the failure: CI runs the same checks on the pull request, and the image build runs again on every push to `main`.
+Don't skip the hooks. When one fails, run that check on its own to see why — each one's command is in `lefthook.yml`, and the specs are `bin/test-plan --run` — fix it, and push again. `LEFTHOOK=0` and `--no-verify` do turn the hooks off, but skipping them only means the same checks fail later: CI runs the same checks on the pull request, and the image build runs again on every push to `main`.
 
 ### Gate 2: GitHub Actions (on push/PR)
 
