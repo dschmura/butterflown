@@ -9,7 +9,13 @@ RSpec.describe "plain words in the developer docs" do
     {
       "how-code-ships" => [ "practice server", "every switch on", "can pause here", "carries on by itself",
                             "carry on by themselves", "has moved on", "drift apart", "Once the release is named" ],
-      "releasing" => [ "built around attention", "as it stood", "drive-by", "send it first", "widens a PR" ]
+      "releasing" => [ "built around attention", "as it stood", "drive-by", "send it first", "widens a PR" ],
+      "extending" => [ "action-at-a-distance", "load-bearing", "defense-in-depth backstop", "guard dodge", "hops its own" ],
+      "architecture" => [ "TOCTOU", "the net that actually prevents", "only bites once", "load-bearing" ],
+      "background-jobs" => [ "queue backs up", "outgrow", "graduation path", "Graduation to" ],
+      "getting-started" => [ "a floor, not a preference list", "only move the failure" ],
+      "accessibility" => [ "headline rules", "an inert hook", "honest deviation", "The gate ends where your obligation begins" ],
+      "testing" => [ "fail closed", "the same distrust as" ]
     }
   end
 

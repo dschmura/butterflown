@@ -1,6 +1,6 @@
 ---
 title: Background Jobs
-description: Solid Queue topology, named queues, recurring jobs, and the graduation path from in-Puma supervisor to dedicated bin/jobs host.
+description: Solid Queue topology, named queues, recurring jobs, and when to move jobs from the in-Puma supervisor to a dedicated bin/jobs host.
 keywords: solid queue jobs mailers default low recurring digest cron observability mission control queue routing
 ---
 
@@ -21,7 +21,7 @@ This means:
 - **No accessory networking** for the job runner
 - **No SQLite-can't-reach-the-other-host problem**
 
-It's the right default for a SQLite + one-VPS template. When you outgrow it, see [Graduation to a dedicated jobs host](#graduation-to-a-dedicated-jobs-host) below.
+It's the right default for a SQLite + one-VPS template. When it stops being enough, see [Move jobs to a dedicated host](#move-jobs-to-a-dedicated-host) below.
 
 ## Named queues (for observability)
 
@@ -35,7 +35,7 @@ workers:
     polling_interval: 0.1
 ```
 
-**Why named queues?** With a single worker process + 3 threads sharing the GVL, splitting queues *doesn't* relieve contention — that's a multi-process win, not a multi-queue win. What named queues *do* give you is **observability**: when a queue backs up, you can see which class of work is slow.
+**Why named queues?** With a single worker process + 3 threads sharing the GVL, splitting queues *doesn't* relieve contention — that's a multi-process win, not a multi-queue win. What named queues *do* give you is **observability**: when jobs pile up waiting in a queue, you can see which class of work is slow.
 
 | Queue | Convention | Examples |
 |---|---|---|
@@ -91,7 +91,7 @@ A recurring entry with **no** `queue:` key is not "the default queue" — Solid 
 
 ### Why `digest_mailer` is on the `mailers` queue
 
-It's the only currently-shipping recurring job that is **mailer-class work** — network-bound, can be slow due to SMTP timeouts. Routing it to `mailers` gives you a clean operational signal: when the `mailers` queue backs up, you know it's SMTP, not your sweep jobs.
+It's the only currently-shipping recurring job that is **mailer-class work** — network-bound, can be slow due to SMTP timeouts. Routing it to `mailers` gives you a clean operational signal: when jobs pile up waiting in the `mailers` queue, you know it's SMTP, not your sweep jobs.
 
 ### Adding a recurring job
 
@@ -138,15 +138,15 @@ When `kamal deploy` rolls a new container:
 
 **Jobs you write should be idempotent.** Solid Queue gives you at-least-once delivery; deploys can SIGKILL mid-execution if `stop_timeout` is too tight. Use database constraints, idempotency keys, or `find_or_create_by!` patterns instead of assuming "this job runs exactly once."
 
-## Graduation to a dedicated jobs host
+## Move jobs to a dedicated host
 
-When you outgrow the in-Puma supervisor — typically because:
+Move jobs off the in-Puma supervisor when any of these is true:
 
 - Sustained job throughput exceeds ~10 jobs/sec
 - You've added a second `web` host (which can't all run separate Solid Queue supervisors against the same SQLite file anyway)
 - Recurring jobs are noticeably affecting HTTP p99 latency
 
-…follow the four-step graduation checklist on [Deployment](/docs/developer/deployment#graduation-checklist). The summary:
+Then follow the four-step checklist on [Deployment](/docs/developer/deployment#graduation-checklist). The summary:
 
 1. Add a database accessory (Postgres or MySQL)
 2. Set `DB_HOST` in `env.clear`
@@ -243,7 +243,7 @@ explains.
 
 ## See also
 
-- [Deployment](/docs/developer/deployment) — Kamal topology + the graduation path
+- [Deployment](/docs/developer/deployment) — Kamal topology + when to move jobs to their own host
 - [Notifications](/docs/user/notifications) — User-facing side of recurring `digest_mailer` and friends
 - [Notifications (technical)](/docs/developer/notifications) — `Noticed` integration with Solid Queue
 - `config/queue.yml` — Worker configuration with inline comments
