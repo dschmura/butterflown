@@ -22,7 +22,7 @@ If your question isn't here, the [docs index](/docs) lists every page.
 - **Email every member of a workspace.** Use a notifier, not a mailer of
   your own. A notifier respects each member's notification preferences and
   the digest, and its mailer skips suspended users.
-  [Notifier subclasses](/docs/developer/notifications#notifier-subclasses)
+  [A job that emails a workspace's members](/docs/developer/background-jobs#a-job-that-emails-a-workspaces-members)
 - **Check accessibility before I push.** The axe audit runs after every
   system spec, in both themes. The hook won't run the system spec for a page
   whose view you changed, so run that spec yourself, or write one if none

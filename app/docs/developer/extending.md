@@ -137,6 +137,9 @@ class DigestJob < ApplicationJob
 end
 ```
 
+A job that emails a workspace's members goes through a notifier: see
+[A job that emails a workspace's members](/docs/developer/background-jobs#a-job-that-emails-a-workspaces-members).
+
 ## Cross-workspace queries
 
 Everything above scopes to *one* workspace. Some code legitimately needs the
