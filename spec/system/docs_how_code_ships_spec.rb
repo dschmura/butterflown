@@ -17,7 +17,7 @@ RSpec.describe "The how-code-ships guide in a browser", type: :system do
     within("#step-1") do
       expect(page).to have_no_css("code", text: "bin/dev")
 
-      find("summary", text: "Commands and next step").click
+      find("summary", text: "Commands").click
 
       expect(page).to have_css("code", text: "bin/dev")
     end

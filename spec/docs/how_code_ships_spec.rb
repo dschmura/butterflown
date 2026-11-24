@@ -11,16 +11,36 @@ RSpec.describe "The how-code-ships guide" do
     steps.each { |step| expect(step.at_css("h3")&.text).to be_present }
   end
 
-  it "gives every step a closed drawer of commands that ends by saying when to move on" do
+  it "gives every step a closed drawer of commands, and says when to move on outside it" do
     steps.each do |step|
       drawer = step.at_css("details")
 
       expect(drawer).to be_present, "#{step['id']} has no drawer"
       expect(drawer["open"]).to be_nil
-      expect(drawer.at_css("summary").text.strip).to eq("Commands and next step")
+      expect(drawer.at_css("summary").text.strip).to eq("Commands")
       expect(drawer.css("code")).not_to be_empty
-      expect(drawer.text).to include("Move on when")
+      expect(drawer.text).not_to include("Move on when")
+      expect(step.text).to include("Move on when")
     end
+  end
+
+  it "shows where a fix's changelog line goes after the release is named, outside the drawer" do
+    step = steps.find { |s| s["id"] == "step-5" }
+    step.at_css("details").remove
+
+    expect(step.text).to include("changelog line goes under")
+  end
+
+  it "keeps every source line short enough for a file reader to show whole" do
+    long = source.lines.each_with_index.select { |line, _| line.length > 2_000 }.map { |_, i| i + 1 }
+
+    expect(long).to be_empty, "lines over 2,000 characters: #{long.join(', ')}"
+  end
+
+  it "tints each step's marker with its area's color" do
+    markers = steps.map { |step| step.at_css(".lane-cell > span[aria-hidden]:not(.absolute.inset-y-0)") }
+
+    expect(markers.map { |m| m["class"][/\bbg-[a-z-]+(?:\/\d+)?/] }).to all(satisfy { |bg| bg && bg != "bg-surface" })
   end
 
   it "marks each step on its branch's lane, so the git graph survives the sanitizer" do
