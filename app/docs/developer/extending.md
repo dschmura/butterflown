@@ -35,7 +35,7 @@ class Milestone < ApplicationRecord
 end
 ```
 
-> **Scoping is explicit, not automatic.** `Tenanted` deliberately installs **no** `default_scope`. You scope every query yourself (step 3). That avoids `default_scope`'s action-at-a-distance, but it means *you* are responsible for never loading a tenant model unscoped.
+> **Scoping is explicit, not automatic.** `Tenanted` deliberately installs **no** `default_scope`. You scope every query yourself (step 3). That avoids `default_scope`'s hidden filter, which changes queries far from the line that declared it, but it means *you* are responsible for never loading a tenant model unscoped.
 
 ### 3. Controller — scope through the workspace, and authorize
 
@@ -60,7 +60,7 @@ class Workspaces::MilestonesController < ApplicationController
 end
 ```
 
-`@workspace.milestones` is the load-bearing isolation boundary; `Current.workspace` (set by `WorkspaceScoped`) is the defense-in-depth backstop that policies and `for_current_workspace` rely on.
+`@workspace.milestones` is what keeps one workspace from loading another's records. `Current.workspace` (set by `WorkspaceScoped`) is a second check behind it, which policies and `for_current_workspace` rely on.
 
 > **The moment a create involves a second row** — a membership, a join record, anything that must exist for the first row to be usable — move the assembly onto the tenant root as a verb: `Workspace#create_milestone(attrs, creator:)` in the `Workspace#create_project` shape (one transaction, `lock!` + guard, both writes, returns the possibly-invalid record for form re-render). Committing the first row and then writing the second outside the transaction is the orphaned-record bug class #660 and #676 closed — a raise between the writes strands a committed record its own creator can't see. See the creation-verb shape under Concurrency in [Architecture](architecture).
 
@@ -257,14 +257,14 @@ end
 ```
 
 `Workspace` isn't `Tenanted`, so `no_unscoped_tenant_loads_spec.rb` wouldn't
-flag a bare `Workspace.find_by!` here — but the relation form is the point,
-not a guard dodge. `operated_workspaces` is every kept workspace today (the activity ledger
+flag a bare `Workspace.find_by!` here — but the relation form is not there to get past that spec;
+it is the point. `operated_workspaces` is every kept workspace today (the activity ledger
 alone passes `include_discarded: true`); it's
 also the one seam a future scoped-operator model changes, and every
 operations controller reading through it (rather than each reinventing "all
 workspaces") is what makes that a one-method change instead of an audit.
-Anything *inside* the resolved workspace still hops its own
-association (`@workspace.memberships`, `@workspace.activity_logs`), exactly
+Anything *inside* the resolved workspace still loads through that workspace's
+associations (`@workspace.memberships`, `@workspace.activity_logs`), exactly
 like Patterns 1 and 2. See [Instance operations](operations) for what the
 area does with this.
 
