@@ -31,6 +31,8 @@ linked section has the details.
 
 ## How changes ship
 
+Set a repository variable on GitHub, under the repository's Settings → Secrets and variables → Actions → Variables.
+
 | Setting | Default | To change it | Details |
 | --- | --- | --- | --- |
 | Branch rules | Solo: a PR merges once `static` and `test` pass, with no approval | `bin/branch-rules` (without `--solo`) requires one approval per PR | [Protect the branches](forking#protect-the-branches) |
