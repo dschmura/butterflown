@@ -24,9 +24,10 @@ If your question isn't here, the [docs index](/docs) lists every page.
   the digest, and its mailer skips suspended users.
   [A job that emails a workspace's members](/docs/developer/background-jobs#a-job-that-emails-a-workspaces-members)
 - **Check accessibility before I push.** The axe audit runs after every
-  system spec, in both themes. Make sure a system spec visits the page you
-  changed, then run `bin/test-plan --run`.
-  [How the gate runs](/docs/developer/accessibility#how-the-gate-runs)
+  system spec, in both themes. The hook won't run the system spec for a page
+  whose view you changed, so run that spec yourself, or write one if none
+  visits the page.
+  [Check accessibility on the page you changed](/docs/developer/before-you-push#check-accessibility-on-the-page-you-changed)
 - **Run only the specs my branch can break.** Run `bin/test-plan --run`.
   This is what the pre-push hook runs.
   [Change lanes](/docs/developer/testing#change-lanes)
@@ -34,7 +35,7 @@ If your question isn't here, the [docs index](/docs) lists every page.
   [Three ways to run the suite](/docs/developer/testing#three-ways-to-run-the-suite)
 - **Get my change to users.** Merge your pull request into `next`. A release
   carries it to staging, then to production.
-  [Ship changes](/docs/developer/quickstart#8-ship-changes)
+  [How your code reaches users](/docs/developer/how-code-ships#follow-your-pr)
 - **Add a recurring job.**
   [Adding a recurring job](/docs/developer/background-jobs#adding-a-recurring-job)
 - **Add a docs page of my own to a fork.**
@@ -46,10 +47,10 @@ If your question isn't here, the [docs index](/docs) lists every page.
 
 ## Something went wrong
 
-- **`git push` was refused.** Lefthook prints the name of the check that
-  failed. Find it in the table, run its command on its own, fix the cause and
-  push again. For the specs, the command is `bin/test-plan --run`.
-  [Gate 1: Local (Lefthook pre-push)](/docs/developer/getting-started#gate-1-local-lefthook-pre-push)
+- **`git push` was refused.** Lefthook's summary marks the failed check with
+  🥊. Rerun it with `bundle exec lefthook run pre-push --job <name>`, fix the
+  cause and push again.
+  [When a push is refused](/docs/developer/before-you-push#when-a-push-is-refused)
 - **Tests on `next` went red after my merge.** If it's a flaky test, re-run
   the failed jobs. If it's a real failure, merge a fix. A release waits until
   CI passes on `next`.
