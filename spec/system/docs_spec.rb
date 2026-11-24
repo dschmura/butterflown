@@ -59,6 +59,16 @@ RSpec.describe "Docs (markdowndocs gem)", type: :system do
     end
   end
 
+  describe "/docs/developer/before-you-push" do
+    it "passes axe-core at WCAG 2.2 AAA in both themes" do
+      visit "/docs/developer/before-you-push"
+
+      expect(page).to have_css("td code", text: "protected_branch")
+      expect(axe_clean_in_both_themes?(axe_options)).to be(true),
+        "AAA violations:\n#{axe_violations_in_both_themes(axe_options).join("\n")}"
+    end
+  end
+
   describe "/docs (index)" do
     it "renders the index" do
       visit "/docs"
