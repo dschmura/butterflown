@@ -1,7 +1,7 @@
 ---
 title: Deployment
-description: Deploy ModelRails to production with Kamal — SQLite topology, Solid Queue graduation path, SSL configuration, and the runtime invariants that keep deploys safe.
-keywords: kamal deploy production self-hosted fnox age secrets sqlite solid queue single-host stop_timeout graduation rolling deploy ssl https proxy registry github container preflight rails_host placeholder
+description: Deploy ModelRails to production with Kamal, deploy from CI, and back up and restore the database, plus the SQLite topology, SSL setup and the invariants that keep deploys safe.
+keywords: kamal deploy production backup restore database copy self-hosted fnox age secrets sqlite solid queue single-host stop_timeout graduation rolling deploy ssl https proxy registry github container preflight rails_host placeholder
 ---
 
 # Deployment
@@ -92,7 +92,7 @@ has a provider console to recover it. A machine you run yourself needs more:
 
 ### 2. Configure `config/deploy.yml`
 
-[Forking](forking) already had you rename `service:`, `image:` and the volume.
+`bin/fork` already renamed `service:`, `image:` and the volume.
 Now set the server, the domain and the architecture:
 
 ```yaml
@@ -519,7 +519,7 @@ from `next` by `bin/release cut` ([Releasing](releasing)).
 | `main` | production (`bin/kamal deploy`) | `DEPLOY_PRODUCTION=true` |
 | `release/**` | staging (`bin/kamal deploy -d staging`) | `DEPLOY_STAGING=true` |
 
-Until a variable is `true`, its deploy is skipped. Each job runs in the GitHub
+Until a variable is `true`, its deploy is skipped. [How changes ship](changing-the-defaults#how-changes-ship) says where to set one. Each job runs in the GitHub
 environment of the same name (`production` or `staging`). Give each one these
 secrets:
 
