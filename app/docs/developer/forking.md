@@ -253,7 +253,7 @@ find again.
 | Docker image name | `config/deploy.yml` (`image:`) | Must match your registry path |
 | Storage volume names | `config/deploy.yml` (`volumes:`) | Renaming later orphans the old volume — do it before first deploy |
 | Brand strings | `config/locales/en/brand.en.yml` | Product name, description, copyright — fork-owned, one file |
-| Brand colors | `config/locales/en/brand.en.yml`'s visual twin: `app/assets/tailwind/tokens/_brand.css` | Optional — swap the primary palette family here (the file's header says how); re-prove AAA in CI |
+| Brand colors | `config/locales/en/brand.en.yml`'s visual twin: `app/assets/tailwind/tokens/_brand.css` | Optional — swap the primary palette family here (the file's header says how); re-prove AAA in CI. Pages inside a workspace keep the workspace's own color ([what `_brand.css` does not reach](ui-patterns#what-_brandcss-does-not-reach)) |
 | Brand mark | `app/views/shared/_site_mark.html.erb` (one `<svg>`, nothing else) + the icon set in `public/` | Replace wholesale; keep `fill="currentColor"`, `aria-hidden="true"`, and a `viewBox` with no width/height ([Extending](extending#customizing-the-site-logo)) |
 | Vocabulary | `config/vocabulary.local.yml` | Your names for workspace and project (singular + plural); every template string follows ([i18n](i18n#vocabulary)) |
 | Marketing copy | `config/locales/en/pages.en.yml` + `app/views/pages/` | Fork-owned — rewrite wholesale |
