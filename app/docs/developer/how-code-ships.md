@@ -8,12 +8,13 @@ keywords: release flow walkthrough pull request next staging production ship mer
 
 **Merging your PR doesn't put it in front of users.** It waits on the next
 branch until a release includes it. There's no fixed schedule: the release
-lead decides when each release ships. Before that, bots put the release on a
-practice server called staging, where you and your team follow each PR's hand
-checks. A problem there comes back as a fix PR.
+lead decides when each release ships. Before that, an automatic deploy puts
+the release on staging, a practice copy of the app, where you and your team
+follow each PR's hand checks. A problem there comes back as a fix PR.
 
-This page shows a team setup, with every switch on. A new fork starts solo: no
-approvals, no staging, and releases and deploys run by hand.
+This page shows a team setup: approvals on, and the `AUTO_RELEASE`,
+`DEPLOY_STAGING` and `DEPLOY_PRODUCTION` switches on. A new fork starts with all
+four off: no approvals, no staging, and releases and deploys run by hand.
 [What changes when a switch is off](#when-a-switch-is-off).
 
 <div class="mb-8 w-fit max-w-full rounded-lg border border-danger-border bg-danger-surface px-4 py-2 text-danger"><strong class="text-danger">Users hitting a bug right now?</strong> See <a class="font-bold text-danger!" href="#urgent-fix">Urgent fix</a> below.</div>
@@ -106,7 +107,7 @@ Each step says when to move on. Open its Commands drawer for what to run.
 <div class="col-start-2 row-start-1 my-2 ml-3 grid min-w-0 gap-1 rounded-xl border bg-surface p-4 shadow-sm border-accent/40">
 <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs"><span class="font-medium">Team</span><span class="font-semibold text-accent">GitHub</span><span class="font-mono">merged into next</span></div>
 <h3 class="mt-0! mb-0! text-lg! font-bold"><span class="sr-only">Step 4: </span>Approved, then merged</h3>
-<div>A teammate approves the code, unless your repo is set up for solo work. Your branch must be up to date with next, so if next has moved on, GitHub's <strong>Update branch</strong> button merges next into yours first. That's where the “Merge branch 'next' into …” commits in your history come from. With tests passing, it merges into next.</div>
+<div>A teammate approves the code, unless your repo is set up for solo work. Your branch must be up to date with next, so if next has new commits, GitHub's <strong>Update branch</strong> button merges next into yours first. That's where the “Merge branch 'next' into …” commits in your history come from. With tests passing, it merges into next.</div>
 <div class="mt-1 border-l-4 pl-3 border-accent/40"><span class="block text-xs font-bold uppercase tracking-wide text-accent">Move on when</span>GitHub shows the PR as Merged. There's nothing for you to do until step 5 or step 9.</div>
 <details class="mt-2 border-t border-border"><summary class="focus-ring cursor-pointer py-3 text-sm font-semibold text-text-body">Commands</summary>
 <div class="grid gap-3 pb-2 text-sm">
@@ -130,9 +131,9 @@ Each step says when to move on. Open its Commands drawer for what to run.
 <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs"><span class="font-medium">Bot</span><span class="font-semibold text-accent">GitHub</span><span class="font-mono">on next</span></div>
 <h3 class="mt-0! mb-0! text-lg! font-bold"><span class="sr-only">Step 5: </span>Tests run again on next</h3>
 <div>After every merge, the whole suite runs on next. Code on next isn't deployed anywhere.</div>
-<div class="mt-2 rounded-lg border border-dashed border-border-strong bg-surface-sunken px-3 py-2 text-sm"><span class="mr-2 text-xs font-bold uppercase tracking-wide text-text-heading">⏸ The release can pause here</span>If tests on next fail, the release branch (step 7) can't be made. <strong>If your PR broke the tests, you fix them</strong> with a PR into next. If you can't, the release lead takes over. When the tests pass, the release carries on by itself.</div>
-<div class="mt-2 rounded-lg border border-warning-border bg-warning-surface px-3 py-2 text-sm"><span class="mr-2 text-xs font-bold uppercase tracking-wide text-warning">Changelog</span>Once the release is named (step 6), a fix's changelog line goes under <code>## v2026.11.18</code> in <code>CHANGELOG.md</code>, not in <code>changelog.d/</code>. A file there would hold the fix back for the next release.</div>
-<div class="mt-1 border-l-4 pl-3 border-accent/40"><span class="block text-xs font-bold uppercase tracking-wide text-accent">Move on when</span>The newest run on next is green. Steps 6 and 7 carry on by themselves.</div>
+<div class="mt-2 rounded-lg border border-dashed border-border-strong bg-surface-sunken px-3 py-2 text-sm"><span class="mr-2 text-xs font-bold uppercase tracking-wide text-text-heading">⏸ The release may stop here</span>If tests on next fail, the release branch (step 7) can't be made. <strong>If your PR broke the tests, you fix them</strong> with a PR into next. If you can't, the release lead takes over. When the tests pass, the release continues automatically.</div>
+<div class="mt-2 rounded-lg border border-warning-border bg-warning-surface px-3 py-2 text-sm"><span class="mr-2 text-xs font-bold uppercase tracking-wide text-warning">Changelog</span>Once step 6's changelog PR has merged, <code>CHANGELOG.md</code> on next has a <code>## v2026.11.18</code> heading. From then on, a fix's changelog line goes under that heading, not in <code>changelog.d/</code>. A file in <code>changelog.d/</code> would make the fix wait for the release after this one.</div>
+<div class="mt-1 border-l-4 pl-3 border-accent/40"><span class="block text-xs font-bold uppercase tracking-wide text-accent">Move on when</span>The newest run on next is green. Steps 6 and 7 run automatically.</div>
 <details class="mt-2 border-t border-border"><summary class="focus-ring cursor-pointer py-3 text-sm font-semibold text-text-body">Commands</summary>
 <div class="grid gap-3 pb-2 text-sm">
 <div class="grid justify-items-start gap-1"><code>gh run list --branch next --workflow ci.yml --limit 3</code><span>The latest test runs on next.</span></div>
@@ -352,7 +353,7 @@ has the details.
 | Revert | A PR that undoes another PR's change. |
 | Tag | A permanent label on the commit that shipped, like `v2026.11.18`, so the team can find it or go back to it. |
 | Prepare, cut, ship | The three `bin/release` commands: name the release, make its branch, send it to users. |
-| Merge-back | Copying main into next after a release or an urgent fix, so the two don't drift apart. |
+| Merge-back | Copying main into next after a release or an urgent fix, so the two stay the same. |
 | Release lead | The person who decides when a release ships and runs `bin/release ship` (step 10). On a solo repo, that's you. |
 | Kamal | The tool that copies the app to a server and swaps in the new version. |
 | release_flow | The gem behind `bin/release`. |
