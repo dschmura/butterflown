@@ -46,6 +46,19 @@ RSpec.describe "Docs (markdowndocs gem)", type: :system do
     end
   end
 
+  describe "/docs/developer/common-tasks" do
+    it "passes axe-core at WCAG 2.2 AAA in both themes, and a task's link opens its section" do
+      visit "/docs/developer/common-tasks"
+      expect(axe_clean_in_both_themes?(axe_options)).to be(true),
+        "AAA violations:\n#{axe_violations_in_both_themes(axe_options).join("\n")}"
+
+      click_link "Change lanes"
+
+      expect(page).to have_current_path("/docs/developer/testing")
+      expect(page).to have_css("h3#change-lanes")
+    end
+  end
+
   describe "/docs (index)" do
     it "renders the index" do
       visit "/docs"

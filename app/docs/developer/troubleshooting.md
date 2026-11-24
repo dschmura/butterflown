@@ -8,6 +8,9 @@ keywords: troubleshooting stimulus controller assets clobber precompile importma
 
 Recovery procedures for environment-state issues. These are problems where the test suite passes but something is wrong at runtime in the browser or terminal. The [Operations](#operations) section at the end covers production questions that arrive as support tickets rather than as failing tests.
 
+A refused `git push` or red tests on `next` are in
+[Common Tasks](/docs/developer/common-tasks), under Something went wrong.
+
 ## Stimulus controller silently fails to register
 
 **Symptom**: You add `app/javascript/controllers/<name>_controller.js`, place `data-controller="<name>"` on an element, click it — nothing happens. No errors in the DevTools console. `Stimulus.controllers.map(c => c.identifier)` doesn't include your new controller.
