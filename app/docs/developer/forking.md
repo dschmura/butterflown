@@ -270,7 +270,7 @@ Then verify nothing was missed:
 ```bash
 grep -ri modelrails . \
   --exclude-dir={.git,tmp,log,coverage,storage,vendor}
-bundle exec rspec
+bin/parallel-rspec
 ```
 
 Expected leftovers: references to the **modelrails_ui** design-system gem
@@ -637,8 +637,11 @@ CI runs the suite on the PR. Locally, on the sync branch:
 
 ```bash
 bin/rails db:migrate    # upstream may ship migrations
-bundle exec rspec
+bin/parallel-rspec
 ```
+
+`bin/parallel-rspec` is the full-suite command the Quickstart and CI use; see
+[Three ways to run the suite](testing#three-ways-to-run-the-suite).
 
 ### If something looks wrong after the merge
 
