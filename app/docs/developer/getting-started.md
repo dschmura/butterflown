@@ -232,8 +232,6 @@ The project uses a two-gate CI pipeline:
 
 ### Gate 1: Local (Lefthook pre-push)
 
-Pushing for the first time, or a push was refused? Start with [Before You Push](/docs/developer/before-you-push).
-
 Runs automatically when you `git push`. `bin/setup` installs the hooks; in a clone made before it did, run `bundle exec lefthook install` once. The checks run one at a time, in this order, and the first failure stops the push:
 
 | Check | Tool |
