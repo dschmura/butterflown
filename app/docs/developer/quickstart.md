@@ -131,6 +131,9 @@ says and run it again: it skips what's already done.
 - **Mail:** `bin/mail-setup` asks for your mail provider and its login,
   creates the production credentials if they don't exist yet, and updates
   `config/deploy.yml`. It's skipped once production has a mail login.
+  Postmark reviews a new account before it mails anyone outside your own
+  domain, so until it's approved, sign in with an address at that domain
+  ([Postmark, the worked default](deployment#postmark-the-worked-default)).
 - **Encryption keys:** `bin/encryption-setup` adds them to the production
   credentials without printing them.
 - **fnox:** `bin/fnox-setup` creates `~/.config/fnox/age.txt` if it isn't there yet,
