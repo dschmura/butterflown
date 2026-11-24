@@ -173,6 +173,74 @@ bin/jobs   # Runs only the Solid Queue Supervisor, no Puma
 
 Useful when you're iterating on a job and don't need web requests in the mix.
 
+## A job that emails a workspace's members
+
+Send it through a notifier, not a mailer of your own. A notifier brings what
+a hand-written mailer would have to rebuild:
+
+- each member's notification preferences for the notifier's category;
+- the digest and quiet hours, through `deliver_email_now?`;
+- no email to a suspended user, because `NotificationMailer` skips them;
+- the in-app bell, alongside the email.
+
+`WorkspaceCapacitySweepJob` and `WorkspaceCapacityApproachingNotifier` are a
+working pair of this shape, sent to a workspace's owners.
+
+The job takes the workspace's id, loads it, and hands the workspace to the
+notifier. `deliver(nil)` leaves choosing the recipients to the notifier:
+
+```ruby
+class WorkspaceDigestJob < ApplicationJob
+  def perform(workspace_id)
+    workspace = Workspace.kept.find_by(id: workspace_id)
+    return unless workspace
+
+    WorkspaceDigestNotifier.with(record: workspace).deliver(nil)
+  end
+end
+```
+
+The notifier's `recipients` block returns the workspace's kept members.
+`permitted_in_app` drops anyone who turned the category off:
+
+```ruby
+class WorkspaceDigestNotifier < ApplicationNotifier
+  category :workspace_activity
+  severity :info
+
+  recipients do
+    permitted_in_app(record.memberships.kept.includes(:user).filter_map(&:user))
+  end
+
+  deliver_by :email do |config|
+    config.mailer = "NotificationMailer"
+    config.method = :workspace_digest
+    config.before_enqueue = -> { throw(:abort) unless deliver_email_now? }
+    config.enqueue = true
+  end
+
+  notification_methods do
+    def message
+      render_safe_or_placeholder do
+        I18n.t("notifications.workspace_digest.message", locale: recipient_locale,
+               workspace_name: event.record.name)
+      end
+    end
+  end
+end
+```
+
+The email itself is a method on `NotificationMailer`, with its view and a
+subject at `notification_mailer.workspace_digest.subject`.
+[Notifier subclasses](/docs/developer/notifications#notifier-subclasses) covers
+`url`, `record_preloads` and the specs that check them.
+
+This job doesn't set `Current.workspace`, because nothing it calls reads it.
+Set it, and read it back with `Current.workspace!`, only when the job calls
+something that does, as
+[Outside the request cycle](/docs/developer/extending#6-outside-the-request-cycle-jobs-rake-tasks-machine-clients)
+explains.
+
 ## See also
 
 - [Deployment](/docs/developer/deployment) — Kamal topology + the graduation path
