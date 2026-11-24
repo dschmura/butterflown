@@ -472,7 +472,8 @@ changes `main` already has, and can conflict on them.
 By hand, a release starts when someone runs `bin/release prepare`. A fork can
 have it start whenever staging is free instead, so nothing waits in `next`
 longer than one review on staging. Add a `RELEASE_TOKEN` secret (below), set
-the `AUTO_RELEASE` repository variable to `true`, and
+the `AUTO_RELEASE` repository variable to `true`
+([where](changing-the-defaults#how-changes-ship)), and
 `.github/workflows/next_release.yml` takes the first two steps itself:
 
 1. When any PR merges into `next`, it runs `bin/release prepare --if-needed`.
