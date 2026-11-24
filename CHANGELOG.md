@@ -4,6 +4,12 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ## [Unreleased]
 
+## v2026.11.24
+
+### Added
+
+- A docs page, How your code reaches users, follows one pull request from your branch to production, with each step's commands and when to move on.
+
 ## v2026.11.23-2
 
 ### Changed
