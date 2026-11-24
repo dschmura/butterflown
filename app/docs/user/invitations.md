@@ -1,5 +1,5 @@
 ---
-title: Invitations
+title: Accept an Invitation
 description: Receiving and accepting workspace, project, and client invitations
 keywords: invitation invite workspace project client accept decline block email-match magic link clientside
 ---
