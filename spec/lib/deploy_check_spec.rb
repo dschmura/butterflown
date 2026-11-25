@@ -321,7 +321,8 @@ RSpec.describe DeployCheck do
     deploy(volumes: [])
     credentials
 
-    expect(check.warnings.join).to include("BACKUP_PATH is /backups", "/srv/backups:/backups")
+    expect(check.warnings.join).to include("BACKUP_PATH is /backups", %(Add a volume such as "/srv/backups/<your_app>:/backups"))
+    expect(check.warnings.join).not_to include("Uncomment")
   end
 
   it "accepts a volume that mounts a folder holding BACKUP_PATH" do
