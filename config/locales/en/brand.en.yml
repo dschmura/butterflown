@@ -4,6 +4,6 @@
 en:
   application:
     name: "Butterflown"
-    description: "A multi-tenant SaaS starter kit built on Rails."
+    description: "Butterflown is collaborative memory sharing for connected communities. It's a private, invite-only space where groups with a shared history, like alumni, families and organizations, build and reflect on their memories together."
   footer:
-    copyright: "Butterflown. All rights reserved."
+    copyright: "Humble Daisy, Inc. All rights reserved."

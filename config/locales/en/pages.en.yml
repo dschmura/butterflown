@@ -2,8 +2,8 @@ en:
   pages:
     home:
       hero:
-        title: "Build your SaaS faster"
-        subtitle: "A production-ready Rails starter kit with passwordless sign-in, workspaces, projects, and real-time collaboration built in."
+        title: "Butterflown...a collaborative space to share memories."
+        subtitle: "Butterflown is collaborative memory sharing for connected communities. It's a private, invite-only space where groups with a shared history, like alumni, families and organizations, build and reflect on their memories together."
         cta_primary: "Get started"
         cta_signed_in: "Go to your workspaces"
         cta_secondary: "View documentation"
