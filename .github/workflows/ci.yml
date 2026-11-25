@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   # Every static check in one job: one billed runner minute, not four. Each check step runs even after an
-  # earlier one fails, so a push still reports every failing check. /docs/developer/getting-started (Gate 2)
+  # earlier one fails, so a push still reports every failing check. /docs/developer/checks-on-github
   static:
     runs-on: ubuntu-latest
     timeout-minutes: 15

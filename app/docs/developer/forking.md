@@ -230,7 +230,7 @@ bin/setup
 remote (push disabled), activates the merge driver, points `gh` at your fork,
 and writes the fork's recorded tenancy preset into their `.env`. Those are
 per-clone, not per-fork, which is why they live in setup rather than in the one-time script.
-It also installs the git hooks (see [Getting started](getting-started#gate-1-local-lefthook-pre-push));
+It also installs the git hooks (see [Before You Push](before-you-push));
 a clone that skipped `bin/setup` checks nothing until CI does.
 
 > Teammates need **read access to the upstream template repository** for the
@@ -293,7 +293,7 @@ bin/rails credentials:edit --environment production
 `bin/mail-setup` handles the mail half of this: it creates the production credentials if
 they don't exist, adds the provider's login, and updates `config/deploy.yml`.
 
-Add OAuth keys and `mailer.from` (structure in [Getting Started](/docs/developer/getting-started)),
+Add OAuth keys and `mailer.from` (structure in [Local Development](/docs/developer/local-development)),
 and to production the mail provider's login as `smtp.user_name` and `smtp.password`
 ([Deployment](/docs/developer/deployment#4-configure-outbound-mail)) and, once
 backups go to a bucket, its key as `object_storage.access_key_id` and
@@ -389,11 +389,11 @@ on every sync.
 | `app/views/pages/**`, `app/controllers/pages_controller.rb` | Your marketing/static pages. A layout of your own for them must render `shared/toasts`: email verification lands on `/` with its message |
 | `spec/system/pages/**`, `spec/requests/pages_spec.rb` | The tests for those pages — rewrite them with the pages |
 | `config/routes/app.rb` | Your product's routes (loaded by `draw(:app)`) |
-| `.rubocop/app.yml` | Your RuboCop overrides — turn a house cop off here, with the reason ([Getting started](getting-started#turning-a-house-cop-off-in-your-fork)) |
+| `.rubocop/app.yml` | Your RuboCop overrides — turn a house cop off here, with the reason ([below](#turning-a-house-cop-off-in-your-fork)) |
 | `config/markdowndocs_categories.local.yml` | Registers your own docs pages on this `/docs` index |
 | `app/assets/tailwind/tokens/_brand.css` | Brand-color overrides — swap the primary palette family (the file's header says how) |
 | `app/views/shared/_site_mark.html.erb` | The brand mark — a file that is one `<svg>` ([Extending](extending#customizing-the-site-logo)) |
-| `public/icon.svg`, `public/icon.png`, `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png`, `public/favicon.ico` | The favicon and PWA icon set — same artwork, same filenames and sizes ([Getting started](getting-started#favicon-and-pwa-icons)) |
+| `public/icon.svg`, `public/icon.png`, `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png`, `public/favicon.ico` | The favicon and PWA icon set — same artwork, same filenames and sizes ([Extending](extending#favicon-and-pwa-icons)) |
 | `config/vocabulary.local.yml` | Your product's nouns — any subset; `config/vocabulary.yml` fills the rest ([i18n](i18n#vocabulary)) |
 | `app/helpers/operations/fork_nav_helper.rb` | Your own operations pages for the operations nav, as `[label, path]` pairs |
 | `config/initializers/project_tools.rb` | Register your own project tools (`ProjectTools::Registry.register`) — see [Extending: Project Tools](/docs/developer/extending#project-tools-registry) |
@@ -463,6 +463,18 @@ These constants are yours to change and are **not** merge-frozen: an upstream ch
 - `NotificationPreferences::NEVER_CAP_DAYS` — what a pre-PR-5 "Never" choice reads as
 - `ActivityLogRetentionSweepJob::SECURITY_RETENTION_FLOOR` — how long credential-event audit rows are kept, regardless of the general window
 - `hotcell/config.rb` and the Hot Cell accessory's `cpus`/`memory` — the sandbox's limits, sized to your host ([Hot Cell](/docs/developer/hot-cell), Tune it)
+
+### Turning a house cop off in your fork
+
+Base ships eight house cops under `lib/rubocop` (`ModelRails/*`), configured in the base-owned `.rubocop/house.yml` and on by default. They are rules about how base writes code — the same kind of thing as the omakase config it inherits — and your fork is free to disagree with any of them. Do it in the fork-owned `.rubocop/app.yml`, which upstream never touches (`merge=ours`), with the reason on the line above:
+
+```yaml
+# Our admin area keeps a few verb routes on purpose; see ADR-7.
+ModelRails/RestfulActions:
+  Enabled: false
+```
+
+That is a decision with a name, which is what a reviewer or an agent reads first. It is not the place for offenses in code you inherited or wrote before a cop landed: those belong in `.rubocop_todo.yml`, which grandfathers by path and shrinks as files are fixed, while `app.yml` changes the rule itself. Never edit `.rubocop/house.yml` or `.rubocop.yml` in a fork; both are base-owned and every upstream sync would conflict.
 
 ### How the merge driver actually behaves
 
@@ -718,7 +730,7 @@ Three guardrails before you open the PR:
   before regenerating (see [Components](components)). The suite's invariant
   fails if the ignore is removed. Rails and `rspec-rails` come from git
   commits too, and are ignored and moved by hand the same way (see
-  [Getting started](getting-started)).
+  [Local Development](local-development)).
 - **Fetching a URL a user typed?** Read the outbound-request (SSRF) posture
   in [Security](security) first — the template deliberately ships no
   fetch-by-URL feature, and the first fork that adds one owns the pinning.

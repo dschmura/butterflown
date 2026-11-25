@@ -275,7 +275,7 @@ inputs:
     required: optional
     secret: false
     purpose: "Offers Google sign-in once its client_id is present"
-    where: "A google oauth client (OAuth Setup in getting-started)"
+    where: "A google oauth client (OAuth Setup in local-development)"
     set_with: "bin/rails credentials:edit --environment production"
     regenerable: "Yes, at Google; replace both"
     step: 4
@@ -286,7 +286,7 @@ inputs:
     required: { when_credential_set: oauth.google.client_id }
     secret: true
     purpose: "Offers Google sign-in once its client_id is present"
-    where: "A google oauth client (OAuth Setup in getting-started)"
+    where: "A google oauth client (OAuth Setup in local-development)"
     set_with: "bin/rails credentials:edit --environment production"
     regenerable: "Yes, at Google; replace both"
     step: 4
@@ -297,7 +297,7 @@ inputs:
     required: optional
     secret: false
     purpose: "Offers GitHub sign-in once its client_id is present"
-    where: "A github oauth app (OAuth Setup in getting-started)"
+    where: "A github oauth app (OAuth Setup in local-development)"
     set_with: "bin/rails credentials:edit --environment production"
     regenerable: "Yes, at GitHub; replace both"
     step: 4
@@ -308,7 +308,7 @@ inputs:
     required: { when_credential_set: oauth.github.client_id }
     secret: true
     purpose: "Offers GitHub sign-in once its client_id is present"
-    where: "A github oauth app (OAuth Setup in getting-started)"
+    where: "A github oauth app (OAuth Setup in local-development)"
     set_with: "bin/rails credentials:edit --environment production"
     regenerable: "Yes, at GitHub; replace both"
     step: 4

@@ -8,23 +8,23 @@ require "rails_helper"
 RSpec.describe "Docs (markdowndocs gem)", type: :system do
   let(:axe_options) { { runOnly: { type: "tag", values: [ "wcag2aaa" ] } } }
 
-  describe "/docs/developer/getting-started" do
+  describe "/docs/developer/local-development" do
     it "renders the document" do
-      visit "/docs/developer/getting-started"
-      expect(page).to have_css("article", text: /Getting Started/i)
+      visit "/docs/developer/local-development"
+      expect(page).to have_css("article", text: /Local Development/i)
     end
 
     # Fenced code picks up the Rouge palette (_syntax.css). These audit the rendered page;
     # spec/code_smells/syntax_contrast_spec.rb holds every token to 7:1 on every ground.
     it "passes axe-core at WCAG 2.2 AAA in light mode (Rouge syntax tokens)" do
-      visit "/docs/developer/getting-started"
+      visit "/docs/developer/local-development"
       ensure_light_mode
       expect(axe_clean?(axe_options)).to be(true),
         "Light-mode AAA violations:\n#{axe_violations(axe_options).join("\n")}"
     end
 
     it "passes axe-core at WCAG 2.2 AAA in dark mode (Rouge syntax tokens)" do
-      visit "/docs/developer/getting-started"
+      visit "/docs/developer/local-development"
       ensure_dark_mode
       expect(axe_clean?(axe_options)).to be(true),
         "Dark-mode AAA violations:\n#{axe_violations(axe_options).join("\n")}"
@@ -37,7 +37,7 @@ RSpec.describe "Docs (markdowndocs gem)", type: :system do
     # Region is `lg:hidden` so the elements are display:none at desktop test
     # viewport — assert against the DOM regardless of visibility.
     it "wires the mobile sidebar via Stimulus (CSP-safe toggle)" do
-      visit "/docs/developer/getting-started"
+      visit "/docs/developer/local-development"
       expect(page).to have_css('[data-controller="docs-sidebar"]', visible: :all)
       expect(page).to have_css('button[data-action="docs-sidebar#toggle"]', visible: :all)
       expect(page).to have_css('[data-docs-sidebar-target="sidebar"]', visible: :all)
