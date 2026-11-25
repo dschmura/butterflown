@@ -490,7 +490,7 @@ bin/kamal setup     # First time only
 bin/kamal deploy    # Every deploy after
 ```
 
-CI verifies your production image builds on every pull request that touches a build input (the `image_scan` workflow's cold build) and on every push to `main` (the `docker_build` workflow; see [Getting Started](/docs/developer/getting-started)), and the pre-push hook runs the same build locally when you change one, so the first time you run `kamal deploy` you're not also debugging Dockerfile issues.
+CI verifies your production image builds on every pull request that touches a build input (the `image_scan` workflow's cold build) and on every push to `main` (the `docker_build` check; see [Checks on GitHub](/docs/developer/checks-on-github)), and the pre-push hook runs the same build locally when you change one, so the first time you run `kamal deploy` you're not also debugging Dockerfile issues.
 
 Check: `curl -s -o /dev/null -w '%{http_code}\n' https://app.yourdomain.com/up`
 prints `200`, and the site loads in a browser. Then take the first backup by
@@ -1245,7 +1245,8 @@ that constraint belongs to the app, not to the deploy tool.
 
 ## See also
 
-- [Getting Started](/docs/developer/getting-started) — Dev environment + CI pipeline overview
+- [Getting Started](/docs/developer/getting-started) — Dev environment
+- [Checks on GitHub](/docs/developer/checks-on-github) — what CI runs on every pull request and on a schedule
 - [Background Jobs](/docs/developer/background-jobs) — Solid Queue topology, named queues, recurring jobs
 - [Security](/docs/developer/security) — Auth, headers, rate limiting
 - [Forking](/docs/developer/forking) — Identity rename, fork-owned files, pulling upstream updates
