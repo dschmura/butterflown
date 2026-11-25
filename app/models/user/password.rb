@@ -1,7 +1,6 @@
 class User < ApplicationRecord
-  # The optional password credential: its validations, lockout, removal, and the
-  # audit and notice every digest change produces.
-  # See /docs/developer/accounts-and-identity (Password lifecycle).
+  # The optional password credential: validations, lockout, removal, and the audit and notice of each change.
+  # See /docs/developer/users-and-workspaces (Password lifecycle).
   module Password
     extend ActiveSupport::Concern
 
@@ -70,7 +69,7 @@ class User < ApplicationRecord
     end
 
     # The reload is the idempotence guard (#826): a stale digest would otherwise write a second audit row.
-    # See /docs/developer/accounts-and-identity (Password lifecycle).
+    # See /docs/developer/users-and-workspaces (Password lifecycle).
     def remove_password!
       transaction do
         reload
