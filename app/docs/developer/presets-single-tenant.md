@@ -1,12 +1,12 @@
 ---
-title: Single-tenant
+title: Single-tenant (shared)
 description: Stand up and verify the Single-tenant preset — one shared workspace, no personal workspaces, tenancy UI suppressed
 keywords: single-tenant preset shared workspace internal tool owner bootstrap seed owner_setup_link invite-only
 ---
 
 [App Presets](/docs/developer/presets) › Single-tenant
 
-# Single-tenant
+# Single-tenant (`shared`)
 
 **What it is.** One shared workspace, no personal workspaces, the tenancy UI suppressed. Every authenticated user is a member of the same workspace; new signups land there automatically. The workspace switcher names that workspace and lists no other; there is no "New workspace" UI and no way for users to create additional workspaces.
 
