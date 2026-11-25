@@ -1,12 +1,12 @@
 ---
-title: Solo-default
+title: Solo-default (personal)
 description: Stand up and verify the Solo-default preset — every user gets a personal workspace; signup open or invite-only
 keywords: solo-default preset personal workspace prosumer multi-workspace signup onboarding switcher
 ---
 
 [App Presets](/docs/developer/presets) › Solo-default
 
-# Solo-default
+# Solo-default (`personal`)
 
 **What it is.** The default shape modelrails_base ships with. Every user auto-gets a *personal* workspace on signup. They can be invited to additional workspaces (org or personal) by other users. The workspace switcher's menu lists their other workspaces once they belong to more than one, and "New workspace" is on the All workspaces page from the start.
 
