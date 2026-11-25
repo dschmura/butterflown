@@ -545,17 +545,7 @@ The `EnforcesProjectTool` concern reads `@project.tool_enabled?(key)`, and `enfo
 
 ## Clientside (external-client area)
 
-The Clientside subsystem lets managers share a read-only project view with external clients — without giving them workspace membership or a seat in workspace policies.
-
-Key extension points:
-
-- **Enable per project.** Clientside is toggled on a per-project basis via the project's Clientside settings (`Workspaces::Projects::ClientsidesController`, `edit_workspace_project_clientside_path`). A project must have `clientside_enabled?` returning `true` before any client-invite or access logic runs.
-- **Invite a client.** `Invitation.invite_client!(project:, email:, company_name:, invited_by:)` creates a client-type invitation and dispatches the invite email. The invitation form lives at `new_workspace_project_client_invitation_path` (`Workspaces::Projects::ClientInvitationsController`).
-- **Acceptance creates a `ClientAccess`.** When a client accepts via `GET /invitations/:token/accept` (or `POST` if already signed in), `Invitation#accept_client_invitation!` creates a `ClientAccess` row — a deliberate non-`Membership` record so clients never enter workspace policies or member-seat counting.
-- **Client area controllers.** `Clientside::BaseController` (namespace `clientside`) resolves projects only through `Current.user.client_accesses.kept` — clients cannot reach workspace-scoped resources. `Clientside::ProjectsController` lists accessible projects; `Clientside::Projects::ResourcesController` shows a single resource only if it is in `Project#client_visible_resources`. The layout is `clientside`, isolated from the workspace shell.
-- **`skip_onboarding_requirement`.** `Clientside::BaseController` calls `skip_onboarding_requirement` so that client users (who have no workspace and therefore no `onboarded_at`) land in the client area rather than being funnelled into the onboarding wizard.
-
-See [Clientside](/docs/user/clientside) for the full configuration and usage guide.
+Clientside shares a read-only project view with external clients without giving them workspace membership or a seat in workspace policies. [Clientside](/docs/developer/clientside) covers the `ClientAccess` record, who may turn it on and invite, the `Clientside::` controllers, and where a fork adds client-area pages.
 
 ## AI tooling: bring your own
 
