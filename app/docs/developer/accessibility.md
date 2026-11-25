@@ -19,7 +19,7 @@ Level AAA raises the bar above the more common AA baseline:
 | Interactive target size | 44×44px minimum |
 | Focus indicator | Always visible, never suppressed |
 
-These are the headline rules the automated gate checks, alongside the rest of the `wcag2aaa` rule set.
+These are the main rules the automated gate checks, alongside the rest of the `wcag2aaa` rule set.
 
 ## How the Gate Runs
 
@@ -31,7 +31,7 @@ Set `SKIP_AXE=1` to opt out for a fast focused loop (roughly a third quicker on 
 
 **The audit cannot be switched off silently.** It once was, for months, without a single red run: a second `Capybara.reset_sessions!` after-hook in `spec/support/capybara.rb` ran ahead of the audit hook, so every example was already on `about:blank` when the audit looked, and it skipped ([#912](https://github.com/dschmura/modelrails_base/issues/912)). Three things now hold it on:
 
-- The audit hook writes a ledger entry for every system example (`:audited`, or `:blank` when the example ended with no page), and a prepended `visit` records which examples navigated. An `after(:suite)` gate raises for any example that navigated without an `:audited` entry, so an inert hook fails the run instead of passing it.
+- The audit hook writes a ledger entry for every system example (`:audited`, or `:blank` when the example ended with no page), and a prepended `visit` records which examples navigated. An `after(:suite)` gate raises for any example that navigated without an `:audited` entry, so if the audit hook stops running, the suite fails instead of passing.
 - There is no per-example opt-out tag. A page that has to show an anti-pattern is built to show it accessibly (a non-executing code sample, for instance), not excused from the audit. Narrow-viewport examples assert axe inside their viewport block *and* get the teardown audit at the restored desktop width.
 - `spec/code_smells/axe_teardown_audit_is_always_on_spec.rb` refuses a `reset_sessions!` anywhere in `spec/support`, a skip tag anywhere in `spec/`, and `SKIP_AXE` in any workflow that runs specs (the devcontainer provisioning check is the one named exception) or in the Lefthook config. It also reads the support file and requires the per-example hook and the suite gate to stay registered, behind nothing but the `SKIP_AXE` guard, so deleting them is red too. `SKIP_AXE=1` prints a banner at suite start so a shell profile cannot hide it.
 
@@ -76,7 +76,8 @@ Beyond axe's own rules, every audit also runs (2026-07 gate upgrade):
 Dropdown menu items and listbox options (`role=menuitem|option` inside
 `role=menu|menubar|listbox`) keep desktop density and are **not claimed
 under 2.5.5** on fine-pointer devices — 2.5.5 has no "dense widget"
-exception, so this is an honest deviation, not a reinterpretation. Two
+exception, so this is a deviation from 2.5.5, stated as one, not a reading
+of the rule that makes it pass. Two
 compensations, both enforced: the gate holds those items to the **24px
 2.5.8 AA floor**, and a global `@media (any-pointer: coarse)` rule
 (`app/assets/tailwind/application.css`) bumps every widget item to the full
@@ -169,7 +170,7 @@ session.
 
 ## The Manual Screen-Reader Pass
 
-The gate ends where your obligation begins. This is the procedure for the part
+The automated gate can't check everything; the rest is yours to do. This is the procedure for the part
 no suite performs — run it before you publish an accessibility statement, and
 again whenever a form, overlay or live region changes shape.
 

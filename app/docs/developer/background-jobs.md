@@ -1,6 +1,6 @@
 ---
 title: Background Jobs
-description: Solid Queue topology, named queues, recurring jobs, and the graduation path from in-Puma supervisor to dedicated bin/jobs host.
+description: Solid Queue topology, named queues, recurring jobs, and when to move jobs from the in-Puma supervisor to a dedicated bin/jobs host.
 keywords: solid queue jobs mailers default low recurring digest cron observability mission control queue routing
 ---
 
@@ -21,7 +21,7 @@ This means:
 - **No accessory networking** for the job runner
 - **No SQLite-can't-reach-the-other-host problem**
 
-It's the right default for a SQLite + one-VPS template. When you outgrow it, see [Graduation to a dedicated jobs host](#graduation-to-a-dedicated-jobs-host) below.
+It's the right default for a SQLite + one-VPS template. When it stops being enough, see [Move jobs to a dedicated host](#move-jobs-to-a-dedicated-host) below.
 
 ## Named queues (for observability)
 
@@ -35,7 +35,7 @@ workers:
     polling_interval: 0.1
 ```
 
-**Why named queues?** With a single worker process + 3 threads sharing the GVL, splitting queues *doesn't* relieve contention — that's a multi-process win, not a multi-queue win. What named queues *do* give you is **observability**: when a queue backs up, you can see which class of work is slow.
+**Why named queues?** With a single worker process + 3 threads sharing the GVL, splitting queues *doesn't* relieve contention — that's a multi-process win, not a multi-queue win. What named queues *do* give you is **observability**: when jobs pile up waiting in a queue, you can see which class of work is slow.
 
 | Queue | Convention | Examples |
 |---|---|---|
@@ -71,7 +71,7 @@ Recurring jobs are declared in `config/recurring.yml` and dispatched by Solid Qu
 
 | Job | Cadence | Queue | What it does |
 |---|---|---|---|
-| `database_backup` | Daily at 2am (`BACKUP_SCHEDULE`) | `default` | Backs up the app database and uploaded files once a destination is set; see [Deployment](/docs/developer/deployment#back-up-the-database) |
+| `database_backup` | Daily at 2am (`BACKUP_SCHEDULE`) | `default` | Backs up the app database and uploaded files once a destination is set; see [Backups](/docs/developer/backups) |
 | `clear_solid_queue_finished_jobs` | Every hour at :12 | `low` | Cleans up completed/failed jobs from Solid Queue's own tables in batches with 0.3s sleep between |
 | `workspace_invitation_expiring_sweep` | Every 6 hours | `default` | Notifies users whose invitations expire soon (per-day idempotency) |
 | `workspace_capacity_sweep` | Every 12 hours | `default` | Alerts workspace owners approaching member limits |
@@ -91,7 +91,7 @@ A recurring entry with **no** `queue:` key is not "the default queue" — Solid 
 
 ### Why `digest_mailer` is on the `mailers` queue
 
-It's the only currently-shipping recurring job that is **mailer-class work** — network-bound, can be slow due to SMTP timeouts. Routing it to `mailers` gives you a clean operational signal: when the `mailers` queue backs up, you know it's SMTP, not your sweep jobs.
+It's the only currently-shipping recurring job that is **mailer-class work** — network-bound, can be slow due to SMTP timeouts. Routing it to `mailers` gives you a clean operational signal: when jobs pile up waiting in the `mailers` queue, you know it's SMTP, not your sweep jobs.
 
 ### Adding a recurring job
 
@@ -138,15 +138,15 @@ When `kamal deploy` rolls a new container:
 
 **Jobs you write should be idempotent.** Solid Queue gives you at-least-once delivery; deploys can SIGKILL mid-execution if `stop_timeout` is too tight. Use database constraints, idempotency keys, or `find_or_create_by!` patterns instead of assuming "this job runs exactly once."
 
-## Graduation to a dedicated jobs host
+## Move jobs to a dedicated host
 
-When you outgrow the in-Puma supervisor — typically because:
+Move jobs off the in-Puma supervisor when any of these is true:
 
 - Sustained job throughput exceeds ~10 jobs/sec
 - You've added a second `web` host (which can't all run separate Solid Queue supervisors against the same SQLite file anyway)
 - Recurring jobs are noticeably affecting HTTP p99 latency
 
-…follow the four-step graduation checklist on [Deployment](/docs/developer/deployment#graduation-checklist). The summary:
+Then follow the four-step checklist on [Deployment](/docs/developer/deployment#graduation-checklist). The summary:
 
 1. Add a database accessory (Postgres or MySQL)
 2. Set `DB_HOST` in `env.clear`
@@ -173,9 +173,77 @@ bin/jobs   # Runs only the Solid Queue Supervisor, no Puma
 
 Useful when you're iterating on a job and don't need web requests in the mix.
 
+## A job that emails a workspace's members
+
+Send it through a notifier, not a mailer of your own. A notifier brings what
+a hand-written mailer would have to rebuild:
+
+- each member's notification preferences for the notifier's category;
+- the digest and quiet hours, through `deliver_email_now?`;
+- no email to a suspended user, because `NotificationMailer` skips them;
+- the in-app bell, alongside the email.
+
+`WorkspaceCapacitySweepJob` and `WorkspaceCapacityApproachingNotifier` are a
+working pair of this shape, sent to a workspace's owners.
+
+The job takes the workspace's id, loads it, and hands the workspace to the
+notifier. `deliver(nil)` leaves choosing the recipients to the notifier:
+
+```ruby
+class WorkspaceDigestJob < ApplicationJob
+  def perform(workspace_id)
+    workspace = Workspace.kept.find_by(id: workspace_id)
+    return unless workspace
+
+    WorkspaceDigestNotifier.with(record: workspace).deliver(nil)
+  end
+end
+```
+
+The notifier's `recipients` block returns the workspace's kept members.
+`permitted_in_app` drops anyone who turned the category off:
+
+```ruby
+class WorkspaceDigestNotifier < ApplicationNotifier
+  category :workspace_activity
+  severity :info
+
+  recipients do
+    permitted_in_app(record.memberships.kept.includes(:user).filter_map(&:user))
+  end
+
+  deliver_by :email do |config|
+    config.mailer = "NotificationMailer"
+    config.method = :workspace_digest
+    config.before_enqueue = -> { throw(:abort) unless deliver_email_now? }
+    config.enqueue = true
+  end
+
+  notification_methods do
+    def message
+      render_safe_or_placeholder do
+        I18n.t("notifications.workspace_digest.message", locale: recipient_locale,
+               workspace_name: event.record.name)
+      end
+    end
+  end
+end
+```
+
+The email itself is a method on `NotificationMailer`, with its view and a
+subject at `notification_mailer.workspace_digest.subject`.
+[Notifier subclasses](/docs/developer/notifications#notifier-subclasses) covers
+`url`, `record_preloads` and the specs that check them.
+
+This job doesn't set `Current.workspace`, because nothing it calls reads it.
+Set it, and read it back with `Current.workspace!`, only when the job calls
+something that does, as
+[Outside the request cycle](/docs/developer/extending#6-outside-the-request-cycle-jobs-rake-tasks-machine-clients)
+explains.
+
 ## See also
 
-- [Deployment](/docs/developer/deployment) — Kamal topology + the graduation path
+- [Deployment](/docs/developer/deployment) — Kamal topology + when to move jobs to their own host
 - [Notifications](/docs/user/notifications) — User-facing side of recurring `digest_mailer` and friends
 - [Notifications (technical)](/docs/developer/notifications) — `Noticed` integration with Solid Queue
 - `config/queue.yml` — Worker configuration with inline comments

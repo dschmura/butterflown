@@ -1,8 +1,6 @@
-# Base-owned: the house cops (lib/rubocop) and their scopes, on top of
-# omakase's style. Each message says what broke, how to fix it, which pattern
-# applies, and where to read more. A fork turns a cop off in the fork-owned
-# .rubocop/app.yml, never here, so upstream syncs stay clean. See
-# /docs/developer/getting-started (Turning a house cop off in your fork).
+# Base-owned house cops (lib/rubocop); a fork turns one off in .rubocop/app.yml, never here.
+# See /docs/developer/forking (Turning a house cop off in your fork).
+
 # A file under app/models/<model>/ defines its trait in nested form.
 ModelRails/ModelConcernNamespace:
   Enabled: true

@@ -61,7 +61,7 @@ RSpec.describe "The how-code-ships guide" do
   end
 
   it "says a new fork starts with every switch off, and what each switch changes" do
-    expect(rendered.text).to include("A new fork starts solo")
+    expect(rendered.text).to include("A new fork starts with all four off")
     expect(rendered.css("a[href='#when-a-switch-is-off']")).not_to be_empty
     expect(rendered.at_css("#when-a-switch-is-off")).to be_present
     expect(rendered.text).to include("AUTO_RELEASE", "DEPLOY_STAGING", "DEPLOY_PRODUCTION", "bin/branch-rules")

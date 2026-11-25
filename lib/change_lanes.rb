@@ -39,7 +39,7 @@ module ChangeLanes
       specs: %w[
         spec/ci/**/*_spec.rb
         spec/code_smells/template_invariants_spec.rb
-        spec/docs/pull_request_template_spec.rb
+        spec/docs/{before_you_push,pull_request_template}_spec.rb
         spec/docs/release_template_spec.rb
         spec/bin/{fork,parallel_rspec}_spec.rb
         spec/code_smells/axe_teardown_audit_is_always_on_spec.rb

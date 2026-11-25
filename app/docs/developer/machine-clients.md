@@ -1,4 +1,10 @@
-# Machine-Facing Entry Points
+---
+title: APIs, Webhooks and MCP
+description: Add an API, webhook receiver or MCP endpoint without breaking workspace isolation, starting from the template's browser-only entry points
+keywords: api webhook mcp token shared secret machine client integration tenancy workspace isolation rack service host origin
+---
+
+# APIs, Webhooks and MCP
 
 The template deliberately ships **no** machine-facing surface — no API
 namespace, no webhook receiver, no MCP endpoint. Every entry point is a

@@ -30,6 +30,13 @@ Project-level roles are simpler than workspace roles, using a three-tier enum:
 
 Project roles are checked via `ProjectMembership#role` (an enum), not via the JSON permissions system used at the workspace level. A member keeps the role they were added with; there is no control yet for changing it.
 
+## Who sees which projects
+
+Owners see every project in the workspace. Admins, Members and Viewers see
+only the projects they've been added to, even when they can manage people or
+projects elsewhere in the workspace. To let someone see a project, add them on
+its members page.
+
 ## Managing Project Members
 
 **Routes:** `/workspaces/:slug/projects/:slug/memberships`
@@ -50,9 +57,13 @@ Invite someone who isn't yet a workspace member:
 
 This dual-level acceptance happens atomically in `Invitation#accept!`.
 
-### Removing Members
+### Remove someone from one project only
 
-Destroy the `ProjectMembership` record. The user remains a workspace member.
+On the project's members page, choose **Remove** on their row. They lose
+access to this project, but they're still a member of the workspace and of
+any other project they're in. To remove them from the workspace altogether,
+deactivate them instead: see
+[Remove someone who left](/docs/user/workspaces#remove-someone-who-left).
 
 ## Resources
 
@@ -113,7 +124,7 @@ Per-project state is stored as a JSON array of key strings in `projects.enabled_
 
 New projects receive the registry's default enabled set (`Registry.default_keys`). The only built-in tool currently shipped is `:docs`.
 
-See [Project Tools](/docs/user/project-tools) for the full reference.
+See [Project Tools](/docs/developer/project-tools) for the full reference.
 
 ## Clientside (External Client Access)
 

@@ -38,6 +38,28 @@ Configure capacity limits:
 
 These limits are enforced when creating new memberships or projects. The validation runs inside a database lock to prevent race conditions.
 
+## Common People Tasks
+
+### Invite a colleague
+
+1. On the workspace's **Members** page, choose **Invite member**. Enter their
+   email address and the role they should have. You need to be an Owner or an
+   Admin.
+2. They get an email. The invitation lasts 7 days.
+3. Once they've accepted, add them to each project they need: on the
+   project's members page, choose **Add member**.
+
+Until you add them to a project, they won't see it, unless they're an Owner.
+See [Who sees which projects](/docs/user/projects#who-sees-which-projects).
+
+### Remove someone who left
+
+On the workspace's **Members** page, choose **Deactivate** on their row and
+confirm. They lose access to the workspace and are taken off all its projects.
+If they come back, **Reactivate** restores their workspace access, but you add
+them to projects again yourself. To take someone off one project only, see
+[Remove someone from one project only](/docs/user/projects#remove-someone-from-one-project-only).
+
 ## Member Management
 
 **Routes:** `/workspaces/:slug/members`  

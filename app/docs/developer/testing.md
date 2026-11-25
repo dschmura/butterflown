@@ -25,6 +25,8 @@ The floor is a whole-suite number everywhere. A bare `bundle exec rspec` is held
 
 Worker count comes from `PARALLEL_TEST_PROCESSORS` or the machine's core count.
 
+For a readable list of every example, add `--format documentation` to a focused run: `bundle exec rspec spec/path/to_spec.rb --format documentation`. The merged coverage report lands in `coverage/index.html`.
+
 ### Change lanes
 
 A change to a locale file, a docs page or a workflow other than CI's own usually breaks only the specs that read those files, so running the whole suite for it is mostly wasted. `lib/change_lanes.rb` sorts a branch's changed paths into lanes, and `bin/test-plan` turns the lanes into a list of specs:
@@ -35,7 +37,7 @@ A change to a locale file, a docs page or a workflow other than CI's own usually
 | `docs` | `app/docs/**/*.md`, a Markdown file at the repository root, `changelog.d/*.md` | `spec/docs/`, the docs request and system specs, and the specs that cite `app/docs` pages |
 | `workflows` | `.github/**` except `ci.yml` and `.github/actions/`, plus `lefthook.yml` | `spec/ci/`, the template invariants, and the specs that read workflow files |
 
-Everything else is `full`. The lanes fail closed: one path outside every lane makes the whole change `full`, and so do an empty diff, any push in CI, and any pull request into `main` or a `release/` branch (those deploy on merge without waiting for CI).
+Everything else is `full`. When in doubt, the lanes run the full suite: one path outside every lane makes the whole change `full`, and so do an empty diff, any push in CI, and any pull request into `main` or a `release/` branch (those deploy on merge without waiting for CI).
 
 **What a lane does not run.** Model, request, view and system specs that assert copy are not in the locale lane. `spec/models/role_spec.rb` checks a validation message, and request specs check flash text. A locale-only pull request into `next` that changes such a string passes its lane, merges, and turns `next` red on the full run that follows, and a red `next` blocks the next release cut. When you change copy a spec might assert, search `spec/` for the old text first, or run `bin/parallel-rspec`. `config/vocabulary.local.yml` is YAML but renames nouns across the whole suite, so it is `full`; so is a change to `ci.yml` or `.github/actions/`, so the changed workflow proves itself on the full suite.
 
@@ -53,7 +55,7 @@ On a lane change `--run` runs that lane's specs. On a `full` change it runs the 
 
 ### CI sharding
 
-CI runs the shards on every `full` change and on every push to `next` and `main`; a pull request into `next` that touches only [change lanes](#change-lanes) runs its lanes' specs in one `lane_specs` job instead, and the required `test` check passes on whichever ran. CI splits the suite across a shard matrix (#495, PR #615) — 8 shards of 4 workers by default, the free public-runner shape. A fork sets the `CI_SHARDS` and `CI_WORKERS` repository variables in its Actions settings to change that without editing a tracked file; private repositories are billed per job, rounded up to the minute, so fewer, longer shards cost less there. With `CI_SHARD_INDEX` and `CI_SHARD_TOTAL` set, `bin/parallel-rspec` takes only its shard's slice of the spec files — greedy-packed by recorded per-file runtimes, with file size as the fallback weight — and skips the merged-coverage floor (each shard sees only a fraction of the suite; the `test` CI job collates every shard's resultset and enforces the floor there). Example-count parity still runs per shard against the shard's own enumeration, and each shard records its file list so CI can assert the union of shards equals the full spec set — the shard splitter gets the same distrust as the worker splitter.
+CI runs the shards on every `full` change and on every push to `next` and `main`; a pull request into `next` that touches only [change lanes](#change-lanes) runs its lanes' specs in one `lane_specs` job instead, and the required `test` check passes on whichever ran. CI splits the suite across a shard matrix (#495, PR #615) — 8 shards of 4 workers by default, the free public-runner shape. A fork sets the `CI_SHARDS` and `CI_WORKERS` repository variables in its Actions settings to change that without editing a tracked file; private repositories are billed per job, rounded up to the minute, so fewer, longer shards cost less there. With `CI_SHARD_INDEX` and `CI_SHARD_TOTAL` set, `bin/parallel-rspec` takes only its shard's slice of the spec files — greedy-packed by recorded per-file runtimes, with file size as the fallback weight — and skips the merged-coverage floor (each shard sees only a fraction of the suite; the `test` CI job collates every shard's resultset and enforces the floor there). Example-count parity still runs per shard against the shard's own enumeration, and each shard records its file list so CI can assert the union of shards equals the full spec set — the shard splitter is checked the same way as the worker splitter, so a spec file it drops fails the run.
 
 ### The runtime log lifecycle
 
@@ -66,6 +68,37 @@ CI runs the shards on every `full` change and on every push to `next` and `main`
 A cache miss is harmless: the split falls back to file size — still correct, just less balanced.
 
 ## Conventions and guards
+
+### Spec conventions: setup lives in the example, and when guards are warranted
+
+Two conventions keep the suite readable as it grows:
+
+**No `let` or `let!`.** An example builds what it needs itself, in local
+variables named for their role (`target = add_member(role: :admin)`). When
+several examples need the same thing, extract a helper method and call it
+where the record is needed, so each example still shows its own cast. This
+is thoughtbot's rule ("Avoid `let` (or `let!`) in RSpec. Prefer extracting
+helper methods, but do not re-implement the functionality of `let`."), and
+it replaced a milder "let diet" (#440) in November 2026. `let` hides an
+example's inputs at the top of a context; it grows into a shared fixture
+that every new context bends; and `let!` builds its record for every
+example, including the ones that never read it.
+
+Two moves look like fixes and aren't: a memoizing helper
+(`@workspace ||= create(:workspace)`) is `let` under another name, and
+moving setup into a new `before` block hides it the same way. A `let` or
+`let!` still in the suite comes out when its example is next edited. There is deliberately **no lint or count ratchet**: a
+counter is easy to game, and it teaches satisfying a number rather than
+design judgment. The convention is enforced in review.
+
+**When a guard spec IS warranted.** Everything in `spec/code_smells/` earns
+its place by naming, in its header, the shipped bug class it catches —
+tenancy leaks, unasserted flashes, worker-colliding constants, live-class
+migrations. That is the line: a guard fences *behavior that already bit
+someone*; a preference with no incident behind it stays a documented
+convention like the one above. Before writing a new guard, fill in the
+blank "this guard exists because ___ shipped" — if you can't, write docs
+instead.
 
 #### What a `SEED=` replay does and does not reproduce
 
@@ -244,4 +277,4 @@ The hole is easy to fall into: `assets:clobber` (which `bin/setup` runs delibera
 
 - **[Accessibility](/docs/developer/accessibility)** — how the axe-core AAA checks fit into system specs.
 - **[Architecture](/docs/developer/architecture)** — the tenancy and authorization invariants many of the guard specs enforce.
-- **[Getting started](/docs/developer/getting-started)** — environment setup, including the pieces (`bin/setup`, compiled assets) the guards above assume.
+- **[Local Development](/docs/developer/local-development)** — environment setup, including the pieces (`bin/setup`, compiled assets) the guards above assume.
