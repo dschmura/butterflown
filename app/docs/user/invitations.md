@@ -58,8 +58,8 @@ A client invitation grants read-only access to specific resources within a singl
 
 The same email-match guard applies — a leaked client invitation link cannot be redeemed by a different email address.
 
-For details on what clients can see and how workspace members share resources with clients, see [Clientside](/docs/user/clientside).
+For details on what clients can see and how workspace members share resources with clients, see [Share with a Client](/docs/user/clientside).
 
 ---
 
-**Related:** [Workspaces](/docs/user/workspaces) · [Clientside](/docs/user/clientside)
+**Related:** [Workspaces](/docs/user/workspaces) · [Share with a Client](/docs/user/clientside)
