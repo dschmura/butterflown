@@ -8,7 +8,7 @@ RSpec.describe "Rails 8.2 notes for forks" do
   end
 
   it "gives a deployment the backfill's dry run in a form Kamal parses" do
-    guide = Rails.root.join("app/docs/developer/getting-started.md").read
+    guide = Rails.root.join("app/docs/developer/architecture.md").read
     line = guide[/^bin\/kamal app exec .*action_text:clear_filename_alts.*--env.*$/]
     expect(line).to be_present
 

@@ -1888,7 +1888,7 @@ RSpec.describe "Template invariants" do
       expect(ignored).to eq(hand_bumped),
         "Dependabot's bundler ignore must list exactly the git-pinned gems and the Hot Cell family (bumped by hand " \
         "in both lockfiles together). Missing: #{(hand_bumped - ignored).join(", ")}; no longer hand-bumped, so drop " \
-        "the ignore: #{(ignored - hand_bumped).join(", ")} (/docs/developer/getting-started, /docs/developer/hot-cell)"
+        "the ignore: #{(ignored - hand_bumped).join(", ")} (/docs/developer/architecture, /docs/developer/hot-cell)"
     end
   end
 

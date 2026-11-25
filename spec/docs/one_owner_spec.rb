@@ -13,7 +13,8 @@ RSpec.describe "docs topics with one owning page" do
       /^#+ Turning a house cop off/ => "forking",
       /users:unlock\[/ => "security",
       /^\| `(?:test_shard|js_advisory)` \|/ => "checks-on-github",
-      /^#+ Favicon and PWA Icons/ => "extending"
+      /^#+ Favicon and PWA Icons/ => "extending",
+      /^#+ Rails comes from a pinned commit/ => "architecture"
     }
   end
 
