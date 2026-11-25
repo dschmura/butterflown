@@ -1,12 +1,12 @@
 ---
-title: Getting Started
-description: Setup instructions and development workflow for ModelRails
+title: Local Development
+description: Set up your own machine to work on the code — what to install, bin/setup step by step, the development tools, and Google or GitHub sign-in in development
 keywords: setup install mise ruby bundle rspec tests oauth credentials development favicon icons branding ci lefthook git hooks accessibility
 ---
 
-# Getting Started
+# Local Development
 
-Starting a product? Follow the [quickstart](quickstart) first. This page is the reference for working in the code.
+Starting a product? Follow the [Quickstart](quickstart) first. This page is the reference for working on the code on your own machine.
 
 ## Prerequisites
 

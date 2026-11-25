@@ -277,4 +277,4 @@ The hole is easy to fall into: `assets:clobber` (which `bin/setup` runs delibera
 
 - **[Accessibility](/docs/developer/accessibility)** — how the axe-core AAA checks fit into system specs.
 - **[Architecture](/docs/developer/architecture)** — the tenancy and authorization invariants many of the guard specs enforce.
-- **[Getting started](/docs/developer/getting-started)** — environment setup, including the pieces (`bin/setup`, compiled assets) the guards above assume.
+- **[Local Development](/docs/developer/local-development)** — environment setup, including the pieces (`bin/setup`, compiled assets) the guards above assume.

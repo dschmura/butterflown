@@ -25,7 +25,7 @@ Depends on: <!-- unreleased PRs this one needs, e.g. #123, so they leave a relea
 - [ ] Controllers enforce Pundit authorization where the action is policy-scoped
 - [ ] RESTful routes only (no custom aliases, no single-action sub-resource controllers)
 - [ ] Comments only where code can't say it (gist + pointer; see `/docs/developer/conventions`) — the *why* is in this PR body
-- [ ] **Docs:** if you changed behavior, the relevant `app/docs/*` page is updated — and if you touched **auth, onboarding, invitations, or clientside** flows, re-check the Application Flows guide (`app/docs/user/application-flows.md`)
+- [ ] **Docs:** if you changed behavior, the relevant `app/docs/*` page is updated — and if you touched **auth, onboarding, invitations, or clientside** flows, re-check the Application Flows guide (`app/docs/developer/application-flows.md`)
 
 ## UI changes only
 

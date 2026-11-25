@@ -76,7 +76,7 @@ the tests in a second one. If you left the support address
 blank, one spec fails until you set it in `config/locales/en/pages.en.yml`.
 On the shared preset, the seed made an owner, `owner@<your_app>.test`: its
 sign-in link is waiting at [/letter_opener](/letter_opener).
-Details: [Getting Started](getting-started).
+Details: [Local Development](local-development).
 
 ## 3. Work by pull request
 
