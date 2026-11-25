@@ -230,7 +230,7 @@ bin/setup
 remote (push disabled), activates the merge driver, points `gh` at your fork,
 and writes the fork's recorded tenancy preset into their `.env`. Those are
 per-clone, not per-fork, which is why they live in setup rather than in the one-time script.
-It also installs the git hooks (see [Getting started](getting-started#gate-1-local-lefthook-pre-push));
+It also installs the git hooks (see [Before You Push](before-you-push));
 a clone that skipped `bin/setup` checks nothing until CI does.
 
 > Teammates need **read access to the upstream template repository** for the
