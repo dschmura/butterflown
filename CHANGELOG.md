@@ -6,6 +6,16 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ## v2026.11.25-2
 
+### Changed
+
+- Share with a Client (`/docs/user/clientside`) walks through turning on client access, sharing a document and inviting the client by the names on the screen, and says how to stop sharing; Project Collaboration points to it instead of listing routes.
+- Inviting a client asks only for their email; the required "Their company" field is gone, since nothing ever showed it and many clients (a student, an outside examiner) have no company.
+- A client invitation is marked by a new `invitations.client` column (migration included, existing client invitations backfilled) instead of by having a company name.
+
+### Added
+
+- A Clientside page in the Developer Guide (`/docs/developer/clientside`) holds how the client area works; the User Guide's page is now Share with a Client, and Extending points to the new page instead of repeating it.
+
 ### Fixed
 
 - A project's creator can invite clients to it, and owners and admins in the project now see its Client access link; before, a Member who turned Clientside on was told to ask an owner or admin, who had no way to reach the page.
