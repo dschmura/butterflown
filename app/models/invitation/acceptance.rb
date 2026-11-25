@@ -30,7 +30,7 @@ class Invitation < ApplicationRecord
       end
     end
 
-    def client_invite? = company_name.present?
+    def client_invite? = client?
 
     def accept!(user)
       transaction do
