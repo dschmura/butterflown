@@ -1,112 +1,54 @@
 ---
-title: Clientside
-description: External client access to a project — the ClientAccess model, per-project Clientside toggle, resource sharing, client invite flow, and the read-only client area.
-keywords: clientside client access external ClientAccess project sharing resource invite company company_name client area read-only
+title: Share with a Client
+description: Give someone outside your team a read-only view of chosen documents in one project — turn on client access, share documents, and invite the client.
+keywords: clientside client access external share client outside company invite read-only document resource
 ---
 
-# Clientside
+# Share with a Client
 
-Clientside lets a team share selected project resources with an external client. The client is a regular `User` who sees a focused, read-only area — they never enter workspace policies and consume no member seat.
+A client is someone outside your team, such as a customer or a contractor, who should see some of a project's documents and nothing else. They get a read-only view of the documents you share with them, in that one project. They don't join your workspace and don't take a member seat.
 
-> See the enable → share → invite → client-area flow drawn as a wireframe in [Application Flows](/docs/developer/application-flows).
+How this works underneath is on [Clientside](/docs/developer/clientside) in the Developer Guide.
 
-## Data model
+## Who can do this
 
-`ClientAccess` (`app/models/client_access.rb`) is the join record between a `User` and a `Project`:
+The person who created the project can turn on client access and invite clients. So can a workspace Owner or Admin who is a member of the project.
 
-- `belongs_to :project` and `belongs_to :user`
-- `include Discardable` — soft-deletable; a discarded access is treated as revoked
-- `company_name` (required)
-- `validates :user_id, uniqueness: { scope: :project_id }` — one access record per user per project
-- `validate :project_clientside_enabled, on: :create` — raises if Clientside is not enabled on the project at creation time
+Sharing a document is done by whoever can edit it: the person who wrote it, or the project's creator.
 
-Convenience predicates:
+## 1. Turn on client access
 
-- `Project#client?(user)` — `client_accesses.kept.exists?(user: user)`
-- `User#client_of?(project)` — available via the `has_many :client_accesses` association
+1. Open the project and choose **Client access**.
+2. Tick **Turn on Clientside for this project**, then choose **Save**.
 
-Clientside access is intentionally **not** a `Membership`. Clients never appear in workspace member lists, never consume a seat counted by `Workspace#max_members`, and are invisible to workspace-scoped Pundit policies.
+## 2. Choose what the client sees
 
-## Enabling Clientside on a project
+A client sees only the documents you both share and publish.
 
-Each project has a `clientside_enabled` boolean (default `false`). The project's creator and workspace members who can manage members (`ProjectPolicy#manage_clientside?`) toggle it via `Workspaces::Projects::ClientsidesController` (edit/update), reachable at the project's Clientside settings page.
+1. In the project, open **Docs & Files** and open the document.
+2. Choose **Edit**.
+3. Tick **Share with the client side**. The box appears only once client access is on.
+4. Set **Status** to **Published**. A draft stays hidden even when it's shared.
+5. Choose **Save changes**.
 
-## Sharing resources with a client
+Do this for each document the client should see.
 
-`Resource` gains a `shared_with_client` boolean. The team checks "Share with the client side" on a resource's edit form (the checkbox is only shown when Clientside is enabled on the project).
+## 3. Invite the client
 
-- `Project#client_visible_resources` — `resources.kept.published.where(shared_with_client: true).positioned`
+1. Open the project's **Client access** page and choose **Invite a client**.
+2. Enter their **Client email** and **Their company**, then choose **Send client invite**.
 
-A resource must be both shared **and** published to appear in the client area.
+The client gets an email with a **View the invitation** button. The link works for 7 days, and only for the email address you sent it to. Someone who already has an account accepts in one click; anyone else sets up a sign-in first.
 
-## Inviting a client
+## What the client sees
 
-`Invitation` supports a client variant. A client invite is identified by a non-blank `company_name`:
+Once they accept, the client lands on the project's own page, which lists the documents you shared and published under **Shared with you**. A client of more than one project finds each of them on their **Shared with you** list. They can read the documents but not change them, and they never see your workspace's members, other projects or settings.
 
-- `Invitation#client_invite?` — `company_name.present?`
-- Role is not required on a client invite (`validates :role, presence: true, unless: :client_invite?`)
-- `Invitation.invite_client!(project:, email:, company_name:, invited_by:)` creates the invitation and queues `InvitationMailer#invite_client`
+## Stop sharing
 
-Client invitations are sent from `Workspaces::Projects::ClientInvitationsController` (`new`/`create`), which allows the same people (`ProjectPolicy#manage_clientside?`) and verifies Clientside is enabled before rendering.
+- **One document:** untick **Share with the client side**, or set its **Status** back to **Draft**.
+- **Every client on the project:** on **Client access**, untick **Turn on Clientside for this project** and choose **Save**. If you turn it back on later, clients you invited before can see the shared documents again.
 
-### Acceptance
+There's no way yet to remove one client while keeping the others.
 
-When a client invite is accepted (`Invitation#accept_client_invitation!`):
-
-1. Confirms the project hasn't been deleted and Clientside is still enabled on it.
-2. Creates a `ClientAccess` (or undiscards an existing discarded one).
-3. Stamps `user.onboarded_at` unless the user is already onboarded.
-
-The `consume!` bearer-token guard (`EmailMismatch`) is reused — a leaked link cannot be redeemed by a different email address.
-
-**Existing user** accepting a client invite → one-click → lands in the client area.
-
-**New email** → sets up a login → client area.
-
-## Client area
-
-The `Clientside::` controller namespace hosts the read-only client experience:
-
-- **`Clientside::BaseController`** — inherits from `ApplicationController`; calls `skip_onboarding_requirement`; uses `layout "clientside"`; does **not** include `WorkspaceScoped` and never sets `Current.workspace`. All project access is resolved through the user's own `client_accesses`.
-
-  `set_client_project` resolves the slug **within** the user's own accessible projects (their kept `ClientAccess` set) — slug knowledge alone grants nothing — and then applies the lifecycle predicate `Project#client_accessible?`. A project is client-accessible only while it and its workspace are kept and the workspace is not locked; an **archived** project or workspace stays accessible (archived keeps existing collaborators). Anything else redirects with a generic no-access message that never reveals the project's or workspace's lifecycle state.
-
-  `ensure_clientside_enabled` redirects away if the project's Clientside has been turned off after the access was granted.
-
-- **`Clientside::ProjectsController`**
-  - `index` — lists the projects the user has a kept `ClientAccess` for, filtered through `Project.client_accessible` (archived-workspace projects still appear; deleted or locked ones don't)
-  - `show` — renders `@project.client_visible_resources` (read-only)
-
-- **`Clientside::Projects::ResourcesController`**
-  - `show` — renders a single resource, looked up through `@project.client_visible_resources`
-
-## Routing client-only users home
-
-`authenticated_home_path` (in `Authenticatable`) routes a user to `clientside_projects_path` when they have at least one kept `ClientAccess` and **no** kept workspace `Membership`. Users who also have workspace memberships land on `root_path` as normal.
-
-```ruby
-def authenticated_home_path
-  resume_session
-  user = Current.user
-  if user && user.client_accesses.kept.exists? && user.memberships.kept.none?
-    clientside_projects_path
-  else
-    root_path
-  end
-end
-```
-
-## Security boundary
-
-- A client can only see resources on a specific project they have been explicitly invited to.
-- Revoking access (discarding the `ClientAccess`) immediately stops the client from reaching that project — `set_client_project` finds no kept access and redirects.
-- Disabling Clientside on a project (`clientside_enabled: false`) blocks all client access to that project via `ensure_clientside_enabled`, even if `ClientAccess` records still exist.
-- Clients operate under the `clientside` layout with no workspace context — workspace data, member lists, and workspace settings are never in scope.
-
-## Fork seams
-
-- **Additional client-area pages** — add controllers under `Clientside::` inheriting from `Clientside::BaseController`.
-- **Richer client profiles** — add columns to `client_accesses` and surface them in the invite flow.
-- **Client notifications** — wire notifiers scoped to the client's `ClientAccess`.
-
-See [Project Collaboration](/docs/user/projects) for the workspace-side project model and [Security](/docs/developer/security) for the broader authentication and authorization posture.
+**Related:** [Project Collaboration](/docs/user/projects) · [Accept an Invitation](/docs/user/invitations)
