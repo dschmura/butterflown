@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Typed accessors over user_preferences.notification_preferences; the JSONB shape
-# is documented in /docs/developer/notifications (its Schema section).
+# is documented in /docs/developer/notifications (Schema section).
 class NotificationPreferences
   CATEGORIES = %w[security account_access workspace_activity project_activity billing].freeze
   # Digest is the email channel's frequency, not a channel of its own.
