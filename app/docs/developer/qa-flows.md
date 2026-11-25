@@ -370,7 +370,7 @@ This step only appears when the registry has more than one toggleable tool.
 2. Navigate to the project settings: `/workspaces/:slug/projects/:project_slug/clientside/edit`.
    **Expect:** A Clientside settings form with an enable/disable toggle.
 3. Enable Clientside and save (`PATCH /workspaces/:slug/projects/:project_slug/clientside`).
-   **Expect:** `project.clientside_enabled?` is now `true`. The project's Clientside settings page carries an **Invite a client** link to the client invitation form when your workspace role can manage members (Owner, Admin). A creator who is a workspace Member sees "Ask a workspace owner or admin to invite clients." instead.
+   **Expect:** `project.clientside_enabled?` is now `true`. The project's Clientside settings page carries an **Invite a client** link to the client invitation form. The page, and the link to it on the project page, are for the project's creator and for workspace roles that can manage members (Owner, Admin).
 
 ### Invite a client
 

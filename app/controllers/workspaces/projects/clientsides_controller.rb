@@ -5,11 +5,11 @@ module Workspaces
       include ProjectScoped
 
       def edit
-        authorize @project, :update?
+        authorize @project, :manage_clientside?
       end
 
       def update
-        authorize @project, :update?
+        authorize @project, :manage_clientside?
 
         if @project.update(clientside_params)
           redirect_to edit_workspace_project_clientside_path(@workspace, @project),

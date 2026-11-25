@@ -29,7 +29,7 @@ Clientside access is intentionally **not** a `Membership`. Clients never appear 
 
 ## Enabling Clientside on a project
 
-Each project has a `clientside_enabled` boolean (default `false`). Team members with project update permission toggle it via `Workspaces::Projects::ClientsidesController` (edit/update), reachable at the project's Clientside settings page.
+Each project has a `clientside_enabled` boolean (default `false`). The project's creator and workspace members who can manage members (`ProjectPolicy#manage_clientside?`) toggle it via `Workspaces::Projects::ClientsidesController` (edit/update), reachable at the project's Clientside settings page.
 
 ## Sharing resources with a client
 
@@ -47,7 +47,7 @@ A resource must be both shared **and** published to appear in the client area.
 - Role is not required on a client invite (`validates :role, presence: true, unless: :client_invite?`)
 - `Invitation.invite_client!(project:, email:, company_name:, invited_by:)` creates the invitation and queues `InvitationMailer#invite_client`
 
-Client invitations are sent from `Workspaces::Projects::ClientInvitationsController` (`new`/`create`), which requires `manage_members` permission and verifies Clientside is enabled before rendering.
+Client invitations are sent from `Workspaces::Projects::ClientInvitationsController` (`new`/`create`), which allows the same people (`ProjectPolicy#manage_clientside?`) and verifies Clientside is enabled before rendering.
 
 ### Acceptance
 

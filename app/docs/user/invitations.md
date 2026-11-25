@@ -14,7 +14,7 @@ There are three invitation types:
 |------|-------------|----------------------|
 | Workspace member invitation | Workspace owner or admin | Yes |
 | Project collaborator invitation | The project's creator | Yes |
-| Client invitation | Workspace owner or admin | Yes |
+| Client invitation | The project's creator, or a workspace owner or admin | Yes |
 
 ## Accepting an invitation
 
