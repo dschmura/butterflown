@@ -387,12 +387,16 @@ RSpec.describe Invitation, type: :model do
       create(:project, clientside_enabled: true)
     end
 
-    it "is a client invite when company_name is present" do
+    it "is a client invite when it is flagged as one" do
       Role.system_default!("owner")
       project = clientside_project
       inv = build(:invitation, :client, invitable: project)
       expect(inv.client_invite?).to be(true)
       expect(inv).to be_valid
+    end
+
+    it "is not a client invite just because a company name is set" do
+      expect(build(:invitation, company_name: "BigCo").client_invite?).to be(false)
     end
 
     it "allows a nil role only for client invites" do
@@ -411,7 +415,7 @@ RSpec.describe Invitation, type: :model do
                                   company_name: "BigCo", invited_by: inviter)
       }.to have_enqueued_mail(InvitationMailer, :invite_client)
       inv = Invitation.last
-      expect(inv.client_invite?).to be(true)
+      expect(inv.client).to be(true)
       expect(inv.role).to be_nil
       expect(inv.invitable).to eq(project)
     end

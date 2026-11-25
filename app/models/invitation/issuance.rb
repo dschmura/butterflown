@@ -29,6 +29,7 @@ class Invitation < ApplicationRecord
           invitable: project,
           email: email,
           company_name: company_name,
+          client: true,
           invited_by: invited_by
         )
         InvitationMailer.with(invitation: invitation).invite_client.deliver_later
