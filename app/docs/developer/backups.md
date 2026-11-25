@@ -11,10 +11,11 @@ uploaded files, and stores it in a folder or a bucket. The database copy comes
 from SQLite's own `VACUUM INTO`, which takes a consistent copy while the app
 keeps writing, and is checked with SQLite's integrity check before it's kept.
 
-Production boots without a destination, so an idea you're still testing can
-ship first. Until you set one, the boot log and every scheduled run say
-"Backups are off", and `backup:status` says the same. Set one before real
-people put real data in.
+A fork ships with a destination set: `BACKUP_PATH` points at a folder on the
+server, `/srv/backups/<your_app>`. Production also boots without one, so an
+idea you're still testing can ship first; then the boot log and every
+scheduled run say "Backups are off", and `backup:status` says the same. Keep
+one before real people put real data in.
 
 - **Backed up:** `storage/production.sqlite3`, which holds every account,
   workspace and record, and the uploaded files beside it on the storage volume.
@@ -30,12 +31,12 @@ people put real data in.
 
 ## Start with a folder
 
-Set `BACKUP_PATH` to a folder the container can write to. Where that folder
+`BACKUP_PATH` names a folder the container can write to. Where that folder
 lives decides what the backups survive:
 
 | The folder is on | It survives | It doesn't survive |
 | --- | --- | --- |
-| The server's own disk, such as `/srv/backups` | a bad migration, a deleted record | a dead disk |
+| The server's own disk, such as `/srv/backups/<your_app>` | a bad migration, a deleted record | a dead disk |
 | A second drive, or a NAS on your network | a dead server disk | a fire, flood or theft that takes the site |
 | A bucket elsewhere ([next section](#move-to-a-bucket-when-the-data-matters)) | losing the whole site | |
 
@@ -44,16 +45,17 @@ to it. For a NAS or a drive, mount it there first so it comes back at boot
 (NFS or SMB in `/etc/fstab`).
 
 ```bash
-ssh root@<server-ip> "mkdir -p /srv/backups && chown 1000:1000 /srv/backups"
+ssh -t <user>@<server-ip> sudo install -d -o 1000 -g 1000 /srv/backups/<your_app>
 ```
 
-Then pass it into the container and point `BACKUP_PATH` at it in
-`config/deploy.yml`:
+`config/deploy.yml` ships passing it into the container, with `BACKUP_PATH`
+pointing at it; `bin/fork` puts your app's name in the folder. For a NAS or a
+drive, change the volume's left side to its mount point:
 
 ```yaml
 volumes:
   - "modelrails_base_storage:/rails/storage"
-  - "/srv/backups:/backups"
+  - "/srv/backups/modelrails_base:/backups"
 
 env:
   clear:
@@ -66,7 +68,7 @@ env:
   the server can't reach, against someone who breaks in.
 - **On the database's disk:** when the folder shares a disk with the database,
   every backup logs a warning and `backup:status` repeats it. The backup still
-  runs. That's expected for `/srv/backups`. For a NAS it means the drive isn't
+  runs. That's expected for `/srv/backups/<your_app>`. For a NAS it means the drive isn't
   mounted, and the backups are landing on the server's own disk.
 
 The backups sit in the folder as ordinary files, under `backups/<deployment>/`,

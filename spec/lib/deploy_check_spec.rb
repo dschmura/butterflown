@@ -368,7 +368,9 @@ RSpec.describe DeployCheck do
     %w[config/deploy.yml config/environments/production.rb .kamal/secrets .tool-versions].each { |path| write(path, template.join(path).read) }
 
     expect(headlines(check.refusals)).to contain_exactly(/production.yml.enc doesn't exist/, /RAILS_HOST is unset/, /no proxy with ssl: true/)
-    expect(check.warnings.join).to include("192.168.0.1", "Backups are off")
+    expect(check.warnings.join).to include("192.168.0.1")
+    expect(check.warnings.join).not_to include("Backups are off", "BACKUP_PATH is")
+    expect(template.join("config/deploy.yml").read).to include(%("/srv/backups/modelrails_base:/backups"))
   end
 
   describe "#run" do
