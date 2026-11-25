@@ -1,10 +1,10 @@
 ---
-title: Accounts and Identity
-description: The three-tier identity and tenancy model — User, your workspace, and organization workspace — and the canonical vocabulary every fork inherits
+title: Users and Workspaces
+description: The three levels everything belongs to — a person (User), their own workspace, and an organization's workspace — and the words every fork uses for them
 keywords: identity user workspace tenant membership role current-workspace personal organization account tiers switcher WORKSPACE_ON_SIGNUP
 ---
 
-# Accounts and Identity
+# Users and Workspaces
 
 This page names the three-tier identity and account model **that already exists** in this template. Its correctness was built in; this document makes it visible to forks.
 
