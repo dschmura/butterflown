@@ -25,6 +25,8 @@ The floor is a whole-suite number everywhere. A bare `bundle exec rspec` is held
 
 Worker count comes from `PARALLEL_TEST_PROCESSORS` or the machine's core count.
 
+For a readable list of every example, add `--format documentation` to a focused run: `bundle exec rspec spec/path/to_spec.rb --format documentation`. The merged coverage report lands in `coverage/index.html`.
+
 ### Change lanes
 
 A change to a locale file, a docs page or a workflow other than CI's own usually breaks only the specs that read those files, so running the whole suite for it is mostly wasted. `lib/change_lanes.rb` sorts a branch's changed paths into lanes, and `bin/test-plan` turns the lanes into a list of specs:
@@ -66,6 +68,37 @@ CI runs the shards on every `full` change and on every push to `next` and `main`
 A cache miss is harmless: the split falls back to file size — still correct, just less balanced.
 
 ## Conventions and guards
+
+### Spec conventions: setup lives in the example, and when guards are warranted
+
+Two conventions keep the suite readable as it grows:
+
+**No `let` or `let!`.** An example builds what it needs itself, in local
+variables named for their role (`target = add_member(role: :admin)`). When
+several examples need the same thing, extract a helper method and call it
+where the record is needed, so each example still shows its own cast. This
+is thoughtbot's rule ("Avoid `let` (or `let!`) in RSpec. Prefer extracting
+helper methods, but do not re-implement the functionality of `let`."), and
+it replaced a milder "let diet" (#440) in November 2026. `let` hides an
+example's inputs at the top of a context; it grows into a shared fixture
+that every new context bends; and `let!` builds its record for every
+example, including the ones that never read it.
+
+Two moves look like fixes and aren't: a memoizing helper
+(`@workspace ||= create(:workspace)`) is `let` under another name, and
+moving setup into a new `before` block hides it the same way. A `let` or
+`let!` still in the suite comes out when its example is next edited. There is deliberately **no lint or count ratchet**: a
+counter is easy to game, and it teaches satisfying a number rather than
+design judgment. The convention is enforced in review.
+
+**When a guard spec IS warranted.** Everything in `spec/code_smells/` earns
+its place by naming, in its header, the shipped bug class it catches —
+tenancy leaks, unasserted flashes, worker-colliding constants, live-class
+migrations. That is the line: a guard fences *behavior that already bit
+someone*; a preference with no incident behind it stays a documented
+convention like the one above. Before writing a new guard, fill in the
+blank "this guard exists because ___ shipped" — if you can't, write docs
+instead.
 
 #### What a `SEED=` replay does and does not reproduce
 

@@ -105,76 +105,7 @@ later is a migration, not a config flip, so it is worth deciding up front.
 
 ## Running Tests
 
-```bash
-bin/parallel-rspec                       # Full suite across all cores (what CI runs)
-bin/test-plan --run                      # The specs your branch can break (what pre-push runs)
-bundle exec rspec spec/path/to_spec.rb   # Focused single-process run
-bundle exec rspec --format documentation # Verbose output
-```
-
-`bin/parallel-rspec` splits the suite across your CPU cores (each worker gets
-its own SQLite database and browser) and adds two integrity gates: the executed
-example count must match a dry-run enumeration, and the merged coverage must
-meet the 90% floor. Each run records per-file timings to
-`tmp/parallel_runtime_rspec.log`, so the next run balances workers by measured
-runtime instead of file size (it falls back to file size when the log is
-absent). Coverage report is generated at `coverage/index.html`.
-
-### Spec conventions: setup lives in the example, and when guards are warranted
-
-Two conventions keep the suite readable as it grows:
-
-**No `let` or `let!`.** An example builds what it needs itself, in local
-variables named for their role (`target = add_member(role: :admin)`). When
-several examples need the same thing, extract a helper method and call it
-where the record is needed, so each example still shows its own cast. This
-is thoughtbot's rule ("Avoid `let` (or `let!`) in RSpec. Prefer extracting
-helper methods, but do not re-implement the functionality of `let`."), and
-it replaced a milder "let diet" (#440) in November 2026. `let` hides an
-example's inputs at the top of a context; it grows into a shared fixture
-that every new context bends; and `let!` builds its record for every
-example, including the ones that never read it.
-
-Two moves look like fixes and aren't: a memoizing helper
-(`@workspace ||= create(:workspace)`) is `let` under another name, and
-moving setup into a new `before` block hides it the same way. A `let` or
-`let!` still in the suite comes out when its example is next edited. There is deliberately **no lint or count ratchet**: a
-counter is easy to game, and it teaches satisfying a number rather than
-design judgment. The convention is enforced in review.
-
-**When a guard spec IS warranted.** Everything in `spec/code_smells/` earns
-its place by naming, in its header, the shipped bug class it catches —
-tenancy leaks, unasserted flashes, worker-colliding constants, live-class
-migrations. That is the line: a guard fences *behavior that already bit
-someone*; a preference with no incident behind it stays a documented
-convention like the one above. Before writing a new guard, fill in the
-blank "this guard exists because ___ shipped" — if you can't, write docs
-instead.
-
-### One runner at a time
-
-Each test database is a single SQLite file, and `config/database.yml` installs a
-5-second busy handler. Two spec runs against the same file therefore **do not
-fail fast — they poison each other slowly**: every contended statement waits out
-the handler, so a 12-minute suite can take over an hour and shed failures across
-unrelated spec files that have nothing wrong with them.
-
-A guard in the spec boot path refuses to start into that, naming the process
-holding the database. It covers plain runs, parallel workers, and anything an
-editor or agent launches, so there is no separate command to remember.
-
-Two things worth knowing when it fires:
-
-- **`TEST_ENV_NUMBER` is `""` for worker 1**, so `bin/parallel-rspec` and a plain
-  `bundle exec rspec` share `storage/test.sqlite3`. A parallel run and a focused
-  run *do* collide.
-- **Stop a run by process group, not by name.** `pkill -f "bundle exec rspec"`
-  matches the shell wrapper and orphans the `rspec` child process, which keeps the
-  WAL lock — after which every later run fails in its first `create(...)`. Use
-  `kill -- -<pgid>`, then confirm with `lsof storage/test.sqlite3*`.
-
-When a run fails with `SQLite3::BusyException` or `ActiveRecord::StatementTimeout`,
-reach for `lsof storage/test.sqlite3*` before suspecting the code.
+Run the whole suite with `bin/parallel-rspec`, and the specs your branch can break with `bin/test-plan --run`. [Testing](testing#three-ways-to-run-the-suite) covers every way to run the suite, the spec conventions, and what to do when two runs collide.
 
 ## Development Tools
 
