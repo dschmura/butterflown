@@ -71,7 +71,7 @@ Recurring jobs are declared in `config/recurring.yml` and dispatched by Solid Qu
 
 | Job | Cadence | Queue | What it does |
 |---|---|---|---|
-| `database_backup` | Daily at 2am (`BACKUP_SCHEDULE`) | `default` | Backs up the app database and uploaded files once a destination is set; see [Deployment](/docs/developer/deployment#back-up-the-database) |
+| `database_backup` | Daily at 2am (`BACKUP_SCHEDULE`) | `default` | Backs up the app database and uploaded files once a destination is set; see [Backups](/docs/developer/backups) |
 | `clear_solid_queue_finished_jobs` | Every hour at :12 | `low` | Cleans up completed/failed jobs from Solid Queue's own tables in batches with 0.3s sleep between |
 | `workspace_invitation_expiring_sweep` | Every 6 hours | `default` | Notifies users whose invitations expire soon (per-day idempotency) |
 | `workspace_capacity_sweep` | Every 12 hours | `default` | Alerts workspace owners approaching member limits |

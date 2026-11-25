@@ -28,7 +28,7 @@ module RequiredProductionConfig
     return unless backups_off?(env)
 
     logger.warn("Backups are off: nothing copies the database or uploaded files anywhere. " \
-      "Set BACKUP_PATH (a folder) or OBJECT_STORAGE_BUCKET (a bucket); /docs/developer/deployment (Back up the database section).")
+      "Set BACKUP_PATH (a folder) or OBJECT_STORAGE_BUCKET (a bucket); /docs/developer/backups.")
   end
 
   # Every refusal, in the order a boot meets them, so a check before deploying can list them all.
@@ -68,7 +68,7 @@ module RequiredProductionConfig
           anything but AWS), plus object_storage.access_key_id and
           object_storage.secret_access_key in bin/rails credentials:edit --environment production
 
-      Details: /docs/developer/deployment (Back up the database section).
+      Details: /docs/developer/backups.
       Opting out for good: git rm config/initializers/required_production_config.rb
     MSG
   end
