@@ -12,7 +12,7 @@ RSpec.describe "Docs breadcrumb", type: :request do
     expect(nav[:class]).to include("mb-6")
     expect(nav).to have_css("ol a.focus-ring", count: 2)
     expect(nav).to have_link("Docs", href: "/docs/")
-    expect(nav).to have_link("Presets (Tenancy)", href: "/docs/#presets-tenancy")
+    expect(nav).to have_link("Getting Started", href: "/docs/#getting-started")
     # The current item is a bare span carrying aria-current, never a link.
     expect(nav).to have_css("span[aria-current='page']", text: "App Presets")
     expect(nav).to have_no_css("a[aria-current]")

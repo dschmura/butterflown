@@ -4,6 +4,46 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ## [Unreleased]
 
+## v2026.11.25
+
+### Changed
+
+- Identity System is now Avatars and Logos (`/docs/developer/avatars-and-logos`); the page names the `Identity` class in its first line.
+- Backups get their own page, Backups and Restore (`/docs/developer/backups`), split out of Deployment; the boot log, `deploy_check` and `backup:status` messages point to it.
+- Email setup (mailers, from address, SMTP, URL host, translation) moves from Email Flows to a new Developer Guide page, Email Delivery; Email Flows keeps the list of emails and how long their links work.
+- Getting Started is now Local Development (`/docs/developer/local-development`), the reference for working on the code on your own machine; the Quickstart is where a new product starts. What it repeated now lives in one place: running tests on Testing, the pre-push checks on Before You Push, the stack and the pinned Rails commit on Architecture, the favicon on Extending, and turning a house cop off on Forking.
+- The Onboarding Journey page moves from the User Guide to the Developer Guide, under Build features (`/docs/developer/onboarding`).
+- The Project Tools page moves from the User Guide to the Developer Guide, under Build features (`/docs/developer/project-tools`).
+- Local Development, Accessibility and Testing say in plain words what was idiom.
+- How your code reaches users and Releasing say in plain words what was idiom, and step 5 says how to tell a release has been named.
+- Extending, Architecture and Background Jobs say in plain words what was idiom; Background Jobs' "Graduation" section is now "Move jobs to a dedicated host".
+- Preset cards and headings carry their code names: Solo-default (personal), Single-tenant (shared), Open SaaS (personal + join links).
+- UI Patterns and Forking say that `_brand.css` does not recolor pages inside a workspace, which keep the workspace's own hue.
+- The Developer Guide index groups its pages by task: Getting Started, Ship a change, Run it in production, Build features, Reference. No page moves.
+- Releasing and the Quickstart send newcomers to How your code reaches users first, and that page tells a solo developer where their setup differs.
+- Accounts and Identity is now Users and Workspaces (`/docs/developer/users-and-workspaces`), the words the page itself asks forks to use.
+
+### Added
+
+- A Before You Push docs page says what to run before a push, how to check accessibility on the page you changed, and how to rerun the check that refused a push.
+- A Checks on GitHub page lists what CI runs on every push and pull request and on a schedule.
+- A Common Tasks docs page answers "I want to…" and "Something went wrong" questions in a line each, linking to the section that covers them.
+- A spec fails any link to a docs page that doesn't exist, in the docs or in app code, so a moved page's links are fixed in the same change.
+- The sign-in help answers "Link expired?": a sign-in link works once, for 15 minutes, and only the newest one works.
+- The user guide answers how to invite a colleague, remove someone who left or take someone off one project, and says that only Owners see every project.
+- A spec fails any "/docs/developer/<page> (Section)" pointer in code whose page has no heading or bold label by that name.
+- The Background Jobs docs show how a job emails a workspace's members through a notifier, so preferences, the digest and suspended users are handled.
+
+### Fixed
+
+- The Deployment docs card mentions backups and restore, and the docs say where on GitHub to set the repository variables that switch on CI deploys and automatic releases.
+- The forking guide proves a rename or an upstream sync with `bin/parallel-rspec`, the full-suite command the Quickstart and CI use.
+- The docs link and section guards now check every tracked file, and the `Gemfile`, `lefthook.yml` and `.rubocop/` comments point at the pages that replaced Getting Started.
+- `public/icon.png` shows the brand mark instead of Rails' red-circle placeholder, like the rest of the icon set.
+- Common Tasks no longer says the pre-push hook audits accessibility on a view you changed; it links to Before You Push, as Local Development does.
+- The docs index shows a titled, described card for the APIs, Webhooks and MCP page, and a spec fails on any docs page without one.
+- The mail setup docs name `bin/production-setup` for a first production setup, and the Quickstart warns that a new Postmark account mails only your own domain until it's approved.
+
 ## v2026.11.24
 
 ### Added

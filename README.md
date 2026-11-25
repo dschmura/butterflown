@@ -153,7 +153,7 @@ The coverage report is written to `coverage/index.html`.
 ### OAuth
 
 Google and GitHub sign-in are optional; magic links work without them.
-[OAuth Setup](app/docs/developer/getting-started.md#oauth-setup-optional) shows
+[OAuth Setup](app/docs/developer/local-development.md#oauth-setup-optional) shows
 the credentials they read.
 
 ### Project structure

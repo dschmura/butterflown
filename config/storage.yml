@@ -6,7 +6,7 @@ local:
   service: Disk
   root: <%= Rails.root.join("storage") %>
 
-# Any S3-compatible bucket; database backups land here. /docs/developer/deployment (Back up the database)
+# Any S3-compatible bucket; database backups land here. /docs/developer/backups
 object_storage:
   service: S3
   bucket: <%= ENV["OBJECT_STORAGE_BUCKET"] %>

@@ -181,7 +181,7 @@ RSpec.describe RequiredProductionConfig do
         raise "expected check! to raise"
       rescue RuntimeError => e
         expect(e.message).to include("credentials:edit --environment production")
-        expect(e.message).to include("/docs/developer/deployment")
+        expect(e.message).to include("/docs/developer/backups")
         expect(e.message).to include("git rm config/initializers/required_production_config.rb")
         expect(e.message).to include("BACKUP_PATH")
       end

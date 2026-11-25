@@ -3,24 +3,15 @@
 module RuboCop
   module Cop
     module ModelRails
-      # The stack has a floor: Rails 8.1+, Propshaft, import maps, Hotwire,
-      # built-in authentication, Solid Queue/Cache/Cable. A Gemfile line that
-      # brings in what the floor replaces, or pins rails below it, is an
-      # offense. See /docs/developer/getting-started (The stack).
-      #
-      #   # bad
-      #   gem "devise"
-      #   gem "rails", "~> 7.2"
-      #
-      #   # good
-      #   gem "rails", "~> 8.1.3"
+      # The stack has a floor (Rails 8.1+ and what Rails ships); a Gemfile line below it is an offense.
+      # See /docs/developer/architecture (The stack).
       class StackFloor < Base
         MSG_GEM = "`%<gem>s` is below the stack floor: the app uses %<replacement>s. " \
                   "Fix: remove the gem and build on what the stack already has. " \
-                  "Pattern: Rails 8.1+ floor. Read: /docs/developer/getting-started (The stack)."
+                  "Pattern: Rails 8.1+ floor. Read: /docs/developer/architecture (The stack)."
         MSG_RAILS = "`rails` is pinned below the stack floor (`%<requirement>s`): the app is Rails 8.1 or newer. " \
                     "Fix: raise the requirement and run the upgrade. " \
-                    "Pattern: Rails 8.1+ floor. Read: /docs/developer/getting-started (The stack)."
+                    "Pattern: Rails 8.1+ floor. Read: /docs/developer/architecture (The stack)."
 
         NO_BUNDLER = "import maps and tailwindcss-rails, no bundler"
         REPLACED = {

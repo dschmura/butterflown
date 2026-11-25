@@ -56,6 +56,13 @@ Map Tailwind color families to custom properties. **To retheme the entire app, m
 
 Example: set `--primary-700: var(--color-purple-700)` (and the other `--primary-*` shades) in a `:root` block in `_brand.css` to switch from sky to purple.
 
+#### What `_brand.css` does not reach
+
+`_brand.css` recolors the pages outside a workspace, such as sign-in. The pages inside a workspace keep the workspace's own color, because the layout overrides the interactive color there (see [Workspace Branding](#workspace-branding)):
+
+- An organization workspace uses the hue picked on its workspace profile, or hue 210 (sky) until someone picks one. Changing the primary family in `_brand.css` does not change that hue.
+- A personal workspace takes its color from the neutral family, `--neutral-*` (slate by default), so it follows `_brand.css` only if you remap neutral.
+
 ### 2. Semantic Tokens (`_semantic.css`)
 
 Role-based aliases that define **what colors are for**, not what they are. Dark mode is handled entirely in this layer — views never need `dark:` prefixes for token-backed colors.

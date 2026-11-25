@@ -19,11 +19,29 @@ RSpec.describe "Documentation index coverage" do
       "Uncategorized docs (add to config/initializers/markdowndocs.rb): #{orphans.sort.join(', ')}"
   end
 
+  it "gives every app/docs file a title and description, so its index card isn't blank" do
+    base = Rails.root.join("app/docs")
+    blank_cards = doc_slugs.reject do |slug|
+      front_matter = base.join("#{slug}.md").read[/\A---\n(.*?)\n---\n/m, 1]
+      front_matter && YAML.safe_load(front_matter).values_at("title", "description").all?(&:present?)
+    end
+
+    expect(blank_cards).to be_empty, "Docs missing a front-matter title or description: #{blank_cards.sort.join(', ')}"
+  end
+
   it "lists the Quickstart first among the developer pages under Getting Started" do
     developer_pages = Markdowndocs.configuration.categories.fetch("Getting Started").grep(%r{\Adeveloper/})
 
     expect(developer_pages.first).to eq("developer/quickstart")
     expect(Rails.root.join("app/docs/developer/quickstart.md").read).to start_with("---\ntitle: Quickstart\n")
+  end
+
+  it "groups the developer pages by what the reader is doing, with the shipping walkthrough first under Ship a change" do
+    categories = Markdowndocs.configuration.categories
+    developer_groups = categories.select { |_, slugs| slugs.any? { |slug| slug.start_with?("developer/") } }.keys
+
+    expect(developer_groups).to eq([ "Getting Started", "Ship a change", "Run it in production", "Build features", "Reference" ])
+    expect(categories.fetch("Ship a change").first).to eq("developer/how-code-ships")
   end
 
   %w[development production].zip(%w[developer user]).each do |environment, mode|

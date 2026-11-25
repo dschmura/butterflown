@@ -1,4 +1,4 @@
-# Lefthook git hooks: the local half of CI, never skipped — see /docs/developer/getting-started (Gate 1).
+# Lefthook git hooks: the local half of CI, never skipped — see /docs/developer/before-you-push.
 # A push with no changed files to check (a rebase replay) runs none of them but docker_build; CI is the gate then.
 
 pre-commit:

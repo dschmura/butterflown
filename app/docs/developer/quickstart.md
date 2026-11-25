@@ -76,7 +76,7 @@ the tests in a second one. If you left the support address
 blank, one spec fails until you set it in `config/locales/en/pages.en.yml`.
 On the shared preset, the seed made an owner, `owner@<your_app>.test`: its
 sign-in link is waiting at [/letter_opener](/letter_opener).
-Details: [Getting Started](getting-started).
+Details: [Local Development](local-development).
 
 ## 3. Work by pull request
 
@@ -131,6 +131,9 @@ says and run it again: it skips what's already done.
 - **Mail:** `bin/mail-setup` asks for your mail provider and its login,
   creates the production credentials if they don't exist yet, and updates
   `config/deploy.yml`. It's skipped once production has a mail login.
+  Postmark reviews a new account before it mails anyone outside your own
+  domain, so until it's approved, sign in with an address at that domain
+  ([Postmark, the worked default](deployment#postmark-the-worked-default)).
 - **Encryption keys:** `bin/encryption-setup` adds them to the production
   credentials without printing them.
 - **fnox:** `bin/fnox-setup` creates `~/.config/fnox/age.txt` if it isn't there yet,
@@ -323,7 +326,7 @@ are optional, and each one is a switch you turn on when you want it:
 [Changing the defaults](changing-the-defaults#how-changes-ship) says where.
 
 **Check:** the release appears under your repo's Releases. Details:
-[Releasing](releasing) and [Deployment: Deploy from CI](deployment#6-deploy-from-ci).
+[How your code reaches users](how-code-ships), [Releasing](releasing) and [Deployment: Deploy from CI](deployment#6-deploy-from-ci).
 
 ## 9. Take template updates
 

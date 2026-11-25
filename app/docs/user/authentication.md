@@ -1,7 +1,7 @@
 ---
 title: Authentication
 description: How to sign in and out — magic links, passkeys, and OAuth (Google / GitHub)
-keywords: sign in sign out magic link passkey passwordless oauth google github account recovery first sign-in
+keywords: sign in sign out magic link passkey passwordless oauth google github account recovery first sign-in expired invalid link
 code:
   signup:
     - app/views/sessions/
@@ -20,9 +20,16 @@ This app is **passwordless-first**: you sign in by entering your email address, 
 2. Check your inbox for a sign-in email (subject: "Your sign-in link"). It arrives within a few seconds.
 3. Click the link in the email — you'll land on a quick "Confirm sign-in" page ("You're about to sign in as `you@example.com`"). Press **Sign in** to finish.
 
-The confirmation step means a link that's merely *opened* (by a mail scanner or preview) can't sign anyone in — only the button press does. The link is single-use and expires after a short window. If it expires, return to the sign-in page and request a fresh one.
+The confirmation step means a link that's merely *opened* (by a mail scanner or preview) can't sign anyone in — only the button press does. The link works once, for 15 minutes.
 
 For more on the emails this process sends, see [Email Flows](/docs/user/emails).
+
+### Link expired?
+
+If the link shows "This magic link is invalid or has expired.", it was more
+than 15 minutes old, it was already used, or a newer link replaced it. Go back
+to the sign-in page and enter your email address again to get a new link.
+Only the newest link works, so use the one in the latest email.
 
 ### Passkeys (fingerprint / Face ID / device PIN)
 

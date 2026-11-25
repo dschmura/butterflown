@@ -6,7 +6,9 @@ keywords: release candidate staging production hotfix revert tag next main merge
 
 # Releasing
 
-This flow is built around attention. You test your own work as thoroughly as
+New here? Start with [How your code reaches users](how-code-ships), which follows one PR from your branch to production step by step. This page is the reference for running releases.
+
+You test your own work as thoroughly as
 you like before anyone else spends time on it. On a team, a reviewer
 approves each PR's code before it merges; how the PRs behave together is
 judged once per release, on staging, where a person's judgment is what's
@@ -202,10 +204,10 @@ to it, or a hotfix that couldn't wait for one.
   </g>
 </svg>
 
-Every PR is a story. On your branch it's a draft only you have read (the
-book kind, not a GitHub draft PR). Merged
-into `next`, it joins a pile of stories that CI checks again, all together, after every merge.
-`bin/release cut` binds the pile into a book on staging, where people read
+Every PR is a story. On your branch it's a draft only you have read
+(the book kind, not a GitHub draft PR). Merged into `next`, it joins a pile of
+stories (`next`) that CI checks again, all together, after every merge.
+`bin/release cut` binds the pile into a book (the release branch) on staging, where people read
 the stories together for the first time, and `bin/release ship` publishes
 it. The version it replaces goes to the archive, tagged, ready to republish
 if you need to roll back. [Forking](forking#protect-the-branches) sets up the branch
@@ -266,10 +268,11 @@ agent can follow, and the other way round, so write them once for both.
 
 > **One story per PR.** A PR is easiest to check, to review and to pull out
 > when it does one thing. Keep a refactor apart from the behavior change it
-> makes easy, and send it first. Leave the drive-by fix you noticed on the way
-> for its own PR. When a PR turns out to hold two stories, split it before
-> anyone reviews it. An agent widens a PR as it works unless asked not to, so
-> ask it for the one change and read its diff for anything else.
+> makes easy, and open that PR first. Leave an unrelated fix you noticed on
+> the way for its own PR. When a PR turns out to hold two stories, split it
+> before anyone reviews it. An AI agent adds unrelated changes as it works
+> unless asked not to, so ask it for the one change and read its diff for
+> anything else.
 
 A PR may have to come out of a release ([Hold back a
 PR](#hold-back-a-pr)). That's cheap only when it comes out cleanly:
@@ -332,8 +335,8 @@ been tagged, and names the line. A late line belongs in a new file in
 bin/release cut
 ```
 
-Run it once the changelog PR has merged. The release is `next` as it stood
-the last time no changelog entry was waiting, in `changelog.d/` or under
+Run it once the changelog PR has merged. The release is the newest commit on
+`next` with no changelog entries waiting, in `changelog.d/` or under
 `[Unreleased]`: the commit that named the release, or a later one if the PRs
 merged since added no entry. The first PR that adds one waits for the next
 release, its file still in `changelog.d/`, and `cut` says how many commits
@@ -472,7 +475,8 @@ changes `main` already has, and can conflict on them.
 By hand, a release starts when someone runs `bin/release prepare`. A fork can
 have it start whenever staging is free instead, so nothing waits in `next`
 longer than one review on staging. Add a `RELEASE_TOKEN` secret (below), set
-the `AUTO_RELEASE` repository variable to `true`, and
+the `AUTO_RELEASE` repository variable to `true`
+([where](changing-the-defaults#how-changes-ship)), and
 `.github/workflows/next_release.yml` takes the first two steps itself:
 
 1. When any PR merges into `next`, it runs `bin/release prepare --if-needed`.
