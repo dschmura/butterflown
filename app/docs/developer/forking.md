@@ -400,7 +400,7 @@ on every sync.
 | `config/required_production_config.local.yml`, `config/credentials/production.local.yml.example` | Your own production inputs, described in the catalog's format (never their values), and the credentials example file generated from them |
 | `README.md` | Your product's README |
 
-**Clientside (external client area).** Clientside is available in every preset and is enabled per-project, not per-deployment — a fork enables it on a project-by-project basis via the project's Clientside settings toggle. No fork-owned file change is required to activate it; the toggle is in the project settings UI. See [Clientside](/docs/user/clientside) for details.
+**Clientside (external client area).** Clientside is available in every preset and is enabled per-project, not per-deployment — a fork enables it on a project-by-project basis via the project's Clientside settings toggle. No fork-owned file change is required to activate it; the toggle is in the project settings UI. See [Clientside](/docs/developer/clientside) for details.
 
 ### Vocabulary — you own the words, upstream owns the sentences
 
