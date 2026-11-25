@@ -1,15 +1,7 @@
 name: Fork vocabulary
 
-# Weekly, not per-PR. The seam's promise is "a fork that renames its nouns
-# keeps this suite green", and the assertions that break it turn up anywhere —
-# models, views, system specs — so the useful run is the whole suite, which is
-# too slow to pay for on every pull request. Gate C
-# (spec/code_smells/spec_copy_assertions_use_i18n_spec.rb) stays the fast
-# per-PR lane and catches the shapes it knows; this catches the rest (#1112).
-#
-# NOTE for forks: this repository is public, and GitHub disables scheduled
-# workflows in a public repository after 60 days with no repository activity.
-# A private fork is not subject to that. See /docs/developer/getting-started.
+# Weekly, not per-PR: the whole suite under a renamed vocabulary is too slow for every pull request (#1112).
+# What it proves, and why a quiet public fork loses it: /docs/developer/checks-on-github.
 on:
   schedule:
     - cron: "0 5 * * 1"
