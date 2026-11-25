@@ -1,6 +1,4 @@
 class Invitation < ApplicationRecord
-  self.ignored_columns += %w[company_name] # unused; dropped by a later migration
-
   class NotAcceptable < StandardError; end
   # Subclasses NotAcceptable so boundary rescues keep working; callers that care can still tell a wrong address apart.
   class EmailMismatch < NotAcceptable; end
