@@ -126,34 +126,9 @@ New projects receive the registry's default enabled set (`Registry.default_keys`
 
 See [Project Tools](/docs/developer/project-tools) for the full reference.
 
-## Clientside (External Client Access)
+## Share with a client
 
-A project can optionally expose a read-only **client area** to external users who are _not_ workspace members.
-
-**Enabling clientside:**
-
-`GET /workspaces/:slug/projects/:slug/clientside/edit` · `PATCH /workspaces/:slug/projects/:slug/clientside`
-`Controller: Workspaces::Projects::ClientsidesController`
-
-Toggle the `clientside_enabled` flag on the project. When disabled, client invitations cannot be sent and the client area is inaccessible.
-
-**Inviting clients:**
-
-`GET /workspaces/:slug/projects/:slug/client_invitations/new`
-`POST /workspaces/:slug/projects/:slug/client_invitations`
-`Controller: Workspaces::Projects::ClientInvitationsController`
-
-Send an invitation to an external email address and company name. The invitation flow reuses the shared `Invitation` bearer-token system — `Invitation.invite_client!` creates the record and sends the email.
-
-**Client access model:**
-
-Each accepted invitation creates a `ClientAccess` record linking the external `User` to the project. Clients are regular authenticated Users but are never workspace members — they hold no `Membership`, consume no seat, and are invisible to Pundit workspace policies. The relationship is tracked as `Project has_many :client_accesses`.
-
-**What clients can see:**
-
-Clients access the project through the separate `Clientside::` controller namespace. They can only see resources the project's `client_visible_resources` returns: not deleted, `published` and `shared_with_client` (`resources.shared_with_client` column), in position order.
-
-See [Clientside](/docs/user/clientside) for the full reference.
+A project can give someone outside your team, such as a customer, a read-only view of the documents you choose. They never join the workspace. [Share with a Client](/docs/user/clientside) has the steps.
 
 ## Project Lifecycle
 
@@ -163,7 +138,7 @@ Like workspaces, projects are **Active** by default and can be **Archived** (rev
 
 **Route:** `POST /workspaces/:workspace_slug/projects/:slug/archival` (archive) · `DELETE .../archival` (restore)
 
-Archiving moves a project out of the active list — "you can bring it back anytime from the **Archived** section." An archived project stays readable to its members and to external clients on shared resources (see [Clientside](/docs/user/clientside)). **Restore** returns it to Active.
+Archiving moves a project out of the active list — "you can bring it back anytime from the **Archived** section." An archived project stays readable to its members and to external clients on shared resources (see [Share with a Client](/docs/user/clientside)). **Restore** returns it to Active.
 
 ### Delete (permanent)
 
