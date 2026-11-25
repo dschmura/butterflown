@@ -36,6 +36,14 @@ RSpec.describe "Documentation index coverage" do
     expect(Rails.root.join("app/docs/developer/quickstart.md").read).to start_with("---\ntitle: Quickstart\n")
   end
 
+  it "groups the developer pages by what the reader is doing, with the shipping walkthrough first under Ship a change" do
+    categories = Markdowndocs.configuration.categories
+    developer_groups = categories.select { |_, slugs| slugs.any? { |slug| slug.start_with?("developer/") } }.keys
+
+    expect(developer_groups).to eq([ "Getting Started", "Ship a change", "Run it in production", "Build features", "Reference" ])
+    expect(categories.fetch("Ship a change").first).to eq("developer/how-code-ships")
+  end
+
   %w[development production].zip(%w[developer user]).each do |environment, mode|
     it "opens the docs index on the #{mode} guide in #{environment}" do
       original = Markdowndocs.configuration.default_mode
