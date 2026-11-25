@@ -676,7 +676,7 @@ class ForkFlow
 
   def support_email = @support_email || "support@#{snake}.example"
 
-  DOMAIN_QUESTION = "Domain? (where the app will live, e.g. app.example.com; blank to set later)"
+  DOMAIN_QUESTION = "Domain? (where the app will live; blank to set later)"
 
   def collect_domain
     if (given = @opts[:domain])
@@ -1212,7 +1212,7 @@ if $PROGRAM_NAME == __FILE__
     o.on("--origin URL", "Your repository's git URL (becomes the origin remote)") { |v| options[:origin] = v }
     o.on("--template URL", "The template's git URL when it is a mirror under another name (recorded in .fork.yml; an origin or upstream equal to it counts as the template)") { |v| options[:template] = v }
     o.on("--support-email ADDRESS", "Where users write for help (default: a placeholder CI refuses)") { |v| options[:support_email] = v }
-    o.on("--domain DOMAIN", "Where the app will live, e.g. app.example.com (sets RAILS_HOST in config/deploy.yml)") { |v| options[:domain] = v }
+    o.on("--domain DOMAIN", "Where the app will live: its bare hostname (sets RAILS_HOST in config/deploy.yml)") { |v| options[:domain] = v }
     o.on("--github [OWNER[/NAME]]", "Create the GitHub repo (default owner: you; name: the project), push next, protect it") { |v| options[:github] = v || true }
     o.on("--no-github", "Skip GitHub; print the steps instead") { options[:github] = false }
     o.on("--public", "New GitHub repo is public (default)") { options[:visibility] = "public" }

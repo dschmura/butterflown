@@ -1677,10 +1677,16 @@ RSpec.describe ForkFlow do
       end
 
       support = printed.string.index("Support address")
-      domain = printed.string.index("Domain? (where the app will live, e.g. app.example.com; blank to set later) []")
+      domain = printed.string.index("Domain? (where the app will live; blank to set later) []")
       expect(domain).to be > support
       expect(capture_git("show", "HEAD:config/deploy.yml")).to include("\n    RAILS_HOST: app.acme-garden.com")
       expect(deploy_yml).not_to include("# RAILS_HOST")
+    end
+
+    it "never suggests a domain it would refuse" do
+      suggested = ForkFlow::DOMAIN_QUESTION.scan(/[\w.-]+\.[a-z]+/i)
+
+      expect(suggested.select { |host| RequiredProductionConfig::PLACEHOLDER_HOST.match?(host) }).to be_empty
     end
 
     it "asks again when the answer is not a bare hostname" do

@@ -47,6 +47,7 @@ bin/fork
 `bin/fork` runs **before** `bin/setup`. It asks for:
 
 - the project name (default: the folder's name, snake_cased),
+- the display name people see (default: the project name, capitalized),
 - the tenancy preset,
 - the support address users write to,
 - the domain the app will live at, which becomes `RAILS_HOST` in
