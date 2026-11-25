@@ -63,7 +63,7 @@ class Identity
   end
 
   # One save: everything lands or nothing does. Leaving "upload" IRREVERSIBLY purges both
-  # attachments, only after that save succeeds. See /docs/developer/identity-system (Saving a change).
+  # attachments, only after that save succeeds. See /docs/developer/avatars-and-logos (Saving a change).
   def apply(image: nil, image_original: nil, crop_coordinates: nil, source: nil, color: nil, name: nil)
     incoming_image = image.presence
     incoming_original = image_original.presence

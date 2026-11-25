@@ -1,12 +1,12 @@
 ---
-title: Identity System
-description: Avatar and logo management with upload, crop, Gravatar, initials, and color customization
+title: Avatars and Logos
+description: A user's avatar and a workspace's logo — upload, crop, Gravatar, initials and color — through one picker, the Identity class in the code
 keywords: avatar logo identity picker crop upload gravatar initials color hue oklch image cropper active storage
 ---
 
-# Identity System
+# Avatars and Logos
 
-ModelRails uses a unified identity picker for both user avatars and workspace logos. The same UI pattern — source selection, image cropping, and color customization — applies to both.
+ModelRails uses one picker for both user avatars and workspace logos; in the code it is the `Identity` class (`app/lib/identity.rb`). The same UI pattern — source selection, image cropping, and color customization — applies to both.
 
 ## Architecture
 
