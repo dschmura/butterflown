@@ -24,7 +24,7 @@ Markdowndocs.configure do |config|
     "Building & Extending"       => %w[developer/extending developer/project-tools developer/forking developer/components developer/ui-patterns developer/form-drafts developer/i18n developer/machine-clients],
     "Operations"                 => %w[developer/operations developer/deployment developer/how-code-ships developer/releasing developer/background-jobs developer/security developer/hot-cell developer/required-production-config],
     "Quality & Testing"          => %w[developer/testing developer/accessibility developer/qa-flows developer/conventions],
-    "Auth & Notifications (internals)" => %w[developer/passkeys developer/notifications],
+    "Auth & Notifications (internals)" => %w[developer/passkeys developer/notifications developer/email-delivery],
     "Troubleshooting"            => %w[developer/troubleshooting]
   }
 
