@@ -1,4 +1,4 @@
-# Stdlib only, like ChangeLanes. See /docs/developer/getting-started (Gate 1).
+# Stdlib only, like ChangeLanes. See /docs/developer/before-you-push (When a push is refused).
 module ProtectedBranchCheck
   BRANCHES = %w[next main].freeze
 

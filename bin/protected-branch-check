@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # Usage: bin/protected-branch-check [REMOTE] < pre-push's ref lines
-# Refuses a push GitHub's rulesets would refuse; see /docs/developer/getting-started (Gate 1).
+# Refuses a push GitHub's rulesets would refuse; see /docs/developer/before-you-push (When a push is refused).
 require "open3"
 require_relative "../lib/clean_git_env"
 require_relative "../lib/protected_branch_check"

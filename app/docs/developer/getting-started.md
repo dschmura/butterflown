@@ -163,27 +163,7 @@ The project uses a two-gate CI pipeline:
 
 ### Gate 1: Local (Lefthook pre-push)
 
-Pushing for the first time, or a push was refused? Start with [Before You Push](/docs/developer/before-you-push).
-
-Runs automatically when you `git push`. `bin/setup` installs the hooks; in a clone made before it did, run `bundle exec lefthook install` once. The checks run one at a time, in this order, and the first failure stops the push:
-
-| Check | Tool |
-|-------|------|
-| Protected branch | `bin/protected-branch-check`, first. A push to an existing `next` or `main` stops here within a second and prints the commands that move your commits to a branch and open a pull request; GitHub would refuse it anyway, but only after every check below had run. A push that creates the branch passes, and so does `git -c branch-rules.off=next push …` for a branch with no ruleset yet, which is how `bin/fork` pushes a Fork-button fork's `next` |
-| Stylesheet | `tailwindcss:build`, before the specs, so system specs never read a half-written stylesheet |
-| Security scan | Brakeman |
-| Gem CVEs | bundler-audit, only when the branch changes `Gemfile.lock` or `hotcell/Gemfile.lock`, after updating the advisory database to the latest, as CI's fresh clone does; it needs the network. It audits the Hot Cell image's lockfile too |
-| Code style | RuboCop |
-| ERB templates | erb_lint, only when the branch changes an `.erb` file |
-| Markdown | `mdl`, only when the branch changes a `.md` file |
-| Workflows | `jactionlint`, only when the branch changes something under `.github/` or `mise.toml`/`mise.lock` |
-| Specs the change can break | `bin/test-plan --run` (see [Change lanes](/docs/developer/testing#change-lanes)), including the axe-core WCAG 2.2 AAA audit on every system spec it selects; the full suite runs in CI |
-| Hot Cell image | `docker build --pull hotcell`, only when the branch changes something under `hotcell/`; the build installs libheif's HEVC and AV1 decoders by name and fails unless libvips registers its HEIF loader |
-| Production image | `docker build`, last, and only when the branch changes a build input (`Dockerfile`, `.dockerignore`, `Gemfile`, `Gemfile.lock`, `.tool-versions`, `bin/docker-entrypoint`); refuses the push if Docker isn't running |
-
-Pre-commit hooks also auto-fix Ruby style issues on staged files.
-
-Don't skip the hooks. When one fails, run that check on its own to see why — each one's command is in `lefthook.yml`, and the specs are `bin/test-plan --run` — fix it, and push again. `LEFTHOOK=0` and `--no-verify` do turn the hooks off, but skipping them only means the same checks fail later: CI runs the same checks on the pull request, and the image build runs again on every push to `main`.
+`git push` runs the pre-push checks first. [Before You Push](/docs/developer/before-you-push) lists each one in the order it runs, when it's skipped, and how to rerun it.
 
 ### Gate 2: GitHub Actions (on push/PR)
 
