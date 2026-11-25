@@ -6,41 +6,49 @@ keywords: clientside client access external share client outside company invite 
 
 # Share with a Client
 
-Clientside lets a team share selected project resources with an external client, who sees a focused, read-only area and never joins the workspace. How it works underneath is on [Clientside](/docs/developer/clientside) in the Developer Guide.
+A client is someone outside your team, such as a customer or a contractor, who should see some of a project's documents and nothing else. They get a read-only view of the documents you share with them, in that one project. They don't join your workspace and don't take a member seat.
 
-## Enabling Clientside on a project
+How this works underneath is on [Clientside](/docs/developer/clientside) in the Developer Guide.
 
-Each project has a `clientside_enabled` boolean (default `false`). The project's creator and workspace members who can manage members (`ProjectPolicy#manage_clientside?`) toggle it via `Workspaces::Projects::ClientsidesController` (edit/update), reachable at the project's Clientside settings page.
+## Who can do this
 
-## Sharing resources with a client
+The person who created the project can turn on client access and invite clients. So can a workspace Owner or Admin who is a member of the project.
 
-`Resource` gains a `shared_with_client` boolean. The team checks "Share with the client side" on a resource's edit form (the checkbox is only shown when Clientside is enabled on the project).
+Sharing a document is done by whoever can edit it: the person who wrote it, or the project's creator.
 
-- `Project#client_visible_resources` — `resources.kept.published.where(shared_with_client: true).positioned`
+## 1. Turn on client access
 
-A resource must be both shared **and** published to appear in the client area.
+1. Open the project and choose **Client access**.
+2. Tick **Turn on Clientside for this project**, then choose **Save**.
 
-## Inviting a client
+## 2. Choose what the client sees
 
-`Invitation` supports a client variant. A client invite is identified by a non-blank `company_name`:
+A client sees only the documents you both share and publish.
 
-- `Invitation#client_invite?` — `company_name.present?`
-- Role is not required on a client invite (`validates :role, presence: true, unless: :client_invite?`)
-- `Invitation.invite_client!(project:, email:, company_name:, invited_by:)` creates the invitation and queues `InvitationMailer#invite_client`
+1. In the project, open **Docs & Files** and open the document.
+2. Choose **Edit**.
+3. Tick **Share with the client side**. The box appears only once client access is on.
+4. Set **Status** to **Published**. A draft stays hidden even when it's shared.
+5. Choose **Save changes**.
 
-Client invitations are sent from `Workspaces::Projects::ClientInvitationsController` (`new`/`create`), which allows the same people (`ProjectPolicy#manage_clientside?`) and verifies Clientside is enabled before rendering.
+Do this for each document the client should see.
 
-### Acceptance
+## 3. Invite the client
 
-**Existing user** accepting a client invite → one-click → lands in the client area.
+1. Open the project's **Client access** page and choose **Invite a client**.
+2. Enter their **Client email** and **Their company**, then choose **Send client invite**.
 
-**New email** → sets up a login → client area.
+The client gets an email with a **View the invitation** button. The link works for 7 days, and only for the email address you sent it to. Someone who already has an account accepts in one click; anyone else sets up a sign-in first.
 
-## Security boundary
+## What the client sees
 
-- A client can only see resources on a specific project they have been explicitly invited to.
-- Revoking access (discarding the `ClientAccess`) immediately stops the client from reaching that project — `set_client_project` finds no kept access and redirects.
-- Disabling Clientside on a project (`clientside_enabled: false`) blocks all client access to that project via `ensure_clientside_enabled`, even if `ClientAccess` records still exist.
-- Clients operate under the `clientside` layout with no workspace context — workspace data, member lists, and workspace settings are never in scope.
+Once they accept, the client lands on the project's own page, which lists the documents you shared and published under **Shared with you**. A client of more than one project finds each of them on their **Shared with you** list. They can read the documents but not change them, and they never see your workspace's members, other projects or settings.
 
-See [Project Collaboration](/docs/user/projects) for the workspace-side project model.
+## Stop sharing
+
+- **One document:** untick **Share with the client side**, or set its **Status** back to **Draft**.
+- **Every client on the project:** on **Client access**, untick **Turn on Clientside for this project** and choose **Save**. If you turn it back on later, clients you invited before can see the shared documents again.
+
+There's no way yet to remove one client while keeping the others.
+
+**Related:** [Project Collaboration](/docs/user/projects) · [Accept an Invitation](/docs/user/invitations)
