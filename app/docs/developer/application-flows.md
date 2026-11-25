@@ -218,7 +218,7 @@ Five concepts the flows plug into — knowing these is usually enough to avoid f
 
 ## 5 · Clientside
 
-<svg viewBox="0 0 600 410" width="100%" role="img" aria-label="Clientside, four steps. Step 1 Client access, a toggle Turn on Clientside and Save. Step 2 Edit document, a checked Share with the client side. Step 3 Invite a client, Client email and Their company and Send client invite. Step 4 the accent-highlighted client area, Acme Co Client area, Shared with you, read-only items." fill="none" stroke="currentColor" font-family="ui-sans-serif, system-ui, sans-serif">
+<svg viewBox="0 0 600 410" width="100%" role="img" aria-label="Clientside, four steps. Step 1 Client access, a toggle Turn on Clientside and Save. Step 2 Edit document, a checked Share with the client side. Step 3 Invite a client, Client email and Send client invite. Step 4 the accent-highlighted client area, Acme Co Client area, Shared with you, read-only items." fill="none" stroke="currentColor" font-family="ui-sans-serif, system-ui, sans-serif">
   <defs><marker id="flowarrow-g5" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="currentColor" stroke="none"/></marker></defs>
   <rect x="20" y="20" width="270" height="150" rx="11" stroke-width="1.5"/>
   <line x1="20" y1="44" x2="290" y2="44" stroke-width="1"/>
@@ -246,9 +246,7 @@ Five concepts the flows plug into — knowing these is usually enough to avoid f
   <text x="40" y="262" font-size="12.5" font-weight="700" fill="currentColor" stroke="none">Invite a client</text>
   <text x="40" y="284" font-size="9" fill="currentColor" stroke="none" opacity="0.7">Client email</text>
   <rect x="40" y="289" width="220" height="17" rx="4" stroke-width="1"/><text x="48" y="301" font-size="9.5" fill="currentColor" stroke="none" opacity="0.45">dana@bigco.com</text>
-  <text x="40" y="320" font-size="9" fill="currentColor" stroke="none" opacity="0.7">Their company</text>
-  <rect x="40" y="325" width="220" height="15" rx="4" stroke-width="1"/><text x="48" y="336" font-size="9.5" fill="currentColor" stroke="none" opacity="0.45">BigCo</text>
-  <rect class="text-accent" x="40" y="344" width="140" height="13" rx="5" stroke-width="2.25"/><text class="text-accent" x="110" y="353.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="currentColor" stroke="none">Send client invite</text>
+  <rect class="text-accent" x="40" y="318" width="140" height="13" rx="5" stroke-width="2.25"/><text class="text-accent" x="110" y="327.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="currentColor" stroke="none">Send client invite</text>
   <circle cx="20" cy="210" r="11" stroke-width="1.5"/><text x="20" y="214" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor" stroke="none">3</text>
   <rect class="text-accent" x="310" y="210" width="270" height="150" rx="11" stroke-width="2"/>
   <line x1="310" y1="234" x2="580" y2="234" stroke-width="1"/>

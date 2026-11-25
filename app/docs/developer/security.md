@@ -454,7 +454,7 @@ product decision, not a migration.
 | `magic_link_tokens.email` | deterministic, downcased | one unconsumed token per address |
 | `invitation_blocks.email` | deterministic, downcased | block lookup by address; unique `(email, inviter)` index |
 | `users.pending_email`, `first_name`, `last_name` | non-deterministic | never looked up |
-| `authentications.email`, `invitations.company_name`, `client_accesses.company_name` | non-deterministic | never looked up |
+| `authentications.email` | non-deterministic | never looked up |
 | `activity_logs.actor_name` | non-deterministic | the actor's name snapshot; never looked up |
 
 `workspaces.name` stays plaintext deliberately: the slug is the name,

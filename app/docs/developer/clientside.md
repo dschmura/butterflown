@@ -1,7 +1,7 @@
 ---
 title: Clientside
 description: How the external-client area works — the ClientAccess record, who may turn it on and invite, resource sharing, invite acceptance, the client-area controllers, and where a fork extends it.
-keywords: clientside client access external ClientAccess project sharing resource invite company company_name client area read-only manage_clientside fork seams
+keywords: clientside client access external ClientAccess project sharing resource invite client area read-only manage_clientside fork seams
 ---
 
 # Clientside
@@ -16,7 +16,6 @@ Clientside lets a team share selected project resources with an external client.
 
 - `belongs_to :project` and `belongs_to :user`
 - `include Discardable`: soft-deletable; a discarded access is treated as revoked
-- `company_name` (required)
 - `validates :user_id, uniqueness: { scope: :project_id }`: one access record per user per project
 - `validate :project_clientside_enabled, on: :create`: invalid if Clientside is not enabled on the project at creation time
 
@@ -50,11 +49,11 @@ A resource must be both shared **and** published to appear in the client area.
 
 ## Inviting a client
 
-`Invitation` supports a client variant, identified by a non-blank `company_name`:
+`Invitation` supports a client variant, marked by the `client` column:
 
-- `Invitation#client_invite?`: `company_name.present?`
+- `Invitation#client_invite?`: `client?`
 - Role is not required on a client invite (`validates :role, presence: true, unless: :client_invite?`)
-- `Invitation.invite_client!(project:, email:, company_name:, invited_by:)` creates the invitation and queues `InvitationMailer#invite_client`
+- `Invitation.invite_client!(project:, email:, invited_by:)` creates the invitation and queues `InvitationMailer#invite_client`
 
 `ClientInvitationsController` verifies Clientside is enabled before rendering the form.
 
@@ -115,7 +114,7 @@ end
 ## Fork seams
 
 - **Additional client-area pages**: add controllers under `Clientside::` inheriting from `Clientside::BaseController`.
-- **Richer client profiles**: add columns to `client_accesses` and surface them in the invite flow.
+- **Richer client profiles**: add columns to `client_accesses` (the template asks only for an email) and surface them in the invite flow.
 - **Client notifications**: wire notifiers scoped to the client's `ClientAccess`.
 
 See [Security](/docs/developer/security) for the broader authentication and authorization posture.

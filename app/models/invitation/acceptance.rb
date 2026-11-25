@@ -69,7 +69,7 @@ class Invitation < ApplicationRecord
       if access&.discarded?
         access.undiscard!
       elsif access.nil?
-        invitable.client_accesses.create!(user: user, company_name: company_name)
+        invitable.client_accesses.create!(user: user)
       end
       user.update!(onboarded_at: Time.current) unless user.onboarded?
     end

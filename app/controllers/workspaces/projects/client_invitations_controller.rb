@@ -16,7 +16,6 @@ module Workspaces
         Invitation.invite_client!(
           project: @project,
           email: client_invitation_params[:email],
-          company_name: client_invitation_params[:company_name],
           invited_by: Current.user
         )
         redirect_to edit_workspace_project_clientside_path(@workspace, @project),
@@ -40,7 +39,7 @@ module Workspaces
       end
 
       def client_invitation_params
-        params.require(:client_invitation).permit(:email, :company_name)
+        params.require(:client_invitation).permit(:email)
       end
     end
   end
