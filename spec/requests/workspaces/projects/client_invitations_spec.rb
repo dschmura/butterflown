@@ -86,6 +86,19 @@ RSpec.describe "Client invitations (team side)", type: :request do
     end
   end
 
+  it "lets the project's creator invite when their workspace role cannot manage members" do
+    creator = create(:user)
+    workspace = create(:user).workspaces.sole
+    create(:membership, user: creator, workspace: workspace)
+    project = create(:project, workspace: workspace, created_by: creator, clientside_enabled: true)
+    sign_in(creator)
+
+    expect {
+      post workspace_project_client_invitations_path(workspace, project),
+        params: { client_invitation: { email: "dana@bigco.com", company_name: "BigCo" } }
+    }.to change { project.invitations.where.not(company_name: nil).count }.by(1)
+  end
+
   context "as a viewer (no manage_members permission)" do
     def sign_in_viewer_of(project)
       viewer = create(:user)

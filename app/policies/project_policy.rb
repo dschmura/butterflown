@@ -18,6 +18,11 @@ class ProjectPolicy < ApplicationPolicy
     project_membership&.creator?
   end
 
+  # A client sees only this project, so its creator may invite one (#1872).
+  def manage_clientside?
+    project_membership&.creator? || can?("manage_members")
+  end
+
   def archive?
     lifecycle_manageable?
   end

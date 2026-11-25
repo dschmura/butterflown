@@ -7,12 +7,12 @@ module Workspaces
       before_action :ensure_clientside_enabled
 
       def new
-        authorize Invitation
+        authorize @project, :manage_clientside?
         @invitation = Invitation.new
       end
 
       def create
-        authorize Invitation
+        authorize @project, :manage_clientside?
         Invitation.invite_client!(
           project: @project,
           email: client_invitation_params[:email],

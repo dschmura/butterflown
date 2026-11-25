@@ -34,6 +34,8 @@
       <%= link_to t("project_tools.settings.link"), edit_workspace_project_tools_path(@workspace, @project),
             class: "min-h-input flex items-center px-4 py-2 rounded-md border border-border
                     text-text-body hover:border-interactive focus-ring" %>
+    <% end %>
+    <% if policy(@project).manage_clientside? %>
       <%= link_to t("clientside.settings.link"), edit_workspace_project_clientside_path(@workspace, @project),
             class: "min-h-input flex items-center px-4 py-2 rounded-md border border-border
                     text-text-body hover:border-interactive focus-ring" %>
