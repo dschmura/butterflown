@@ -6,6 +6,8 @@ keywords: release candidate staging production hotfix revert tag next main merge
 
 # Releasing
 
+New here? Start with [How your code reaches users](how-code-ships), which follows one PR from your branch to production step by step. This page is the reference for running releases.
+
 You test your own work as thoroughly as
 you like before anyone else spends time on it. On a team, a reviewer
 approves each PR's code before it merges; how the PRs behave together is

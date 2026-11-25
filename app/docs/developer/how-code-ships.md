@@ -15,7 +15,7 @@ follow each PR's hand checks. A problem there comes back as a fix PR.
 This page shows a team setup: approvals on, and the `AUTO_RELEASE`,
 `DEPLOY_STAGING` and `DEPLOY_PRODUCTION` switches on. A new fork starts with all
 four off: no approvals, no staging, and releases and deploys run by hand.
-[What changes when a switch is off](#when-a-switch-is-off).
+Working alone? Read [What changes when a switch is off](#when-a-switch-is-off) first.
 
 <div class="mb-8 w-fit max-w-full rounded-lg border border-danger-border bg-danger-surface px-4 py-2 text-danger"><strong class="text-danger">Users hitting a bug right now?</strong> See <a class="font-bold text-danger!" href="#urgent-fix">Urgent fix</a> below.</div>
 
