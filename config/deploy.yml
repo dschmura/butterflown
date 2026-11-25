@@ -72,7 +72,7 @@ env:
   clear:
     # RAILS_HOST: app.yourdomain.com   # required; production refuses to boot without it
 
-    # Daily backups of the database and uploads, to a folder or a bucket: /docs/developer/deployment
+    # Daily backups of the database and uploads, to a folder or a bucket: /docs/developer/backups
     # BACKUP_PATH: /backups               # the folder mounted under volumes: below
 
     # BACKUP_SCHEDULE: every day at 2am   # any Solid Queue schedule

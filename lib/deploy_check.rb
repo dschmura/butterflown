@@ -132,7 +132,7 @@ class DeployCheck
 
     "BACKUP_PATH is #{paths.join(' and ')}, but no volume in config/deploy.yml mounts it, so backups stay inside the container " \
       "and go with it on the next deploy. Uncomment the \"/srv/backups:/backups\" line under volumes:, " \
-      "or mount your own folder there: /docs/developer/deployment (Back up the database section)."
+      "or mount your own folder there: /docs/developer/backups."
   end
 
   def mounted?(path) = mounted_paths.any? { |mount| path.chomp("/") == mount || path.start_with?("#{mount}/") }
@@ -285,7 +285,7 @@ class DeployCheck
       return unless RequiredProductionConfig.backups_off?(@env)
 
       "Backups are off. Set BACKUP_PATH (a folder) or OBJECT_STORAGE_BUCKET (a bucket) under env.clear: " \
-        "/docs/developer/deployment (Back up the database section)."
+        "/docs/developer/backups."
     end
 
     def workspace_creation_warning

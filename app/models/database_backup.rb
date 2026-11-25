@@ -7,7 +7,7 @@ class DatabaseBackup
   class Corrupt < StandardError; end
 
   OFF = "Backups are off: set BACKUP_PATH to a folder, or OBJECT_STORAGE_BUCKET to a bucket. " \
-        "/docs/developer/deployment (Back up the database)"
+        "/docs/developer/backups"
   DATABASE_ENTRY = "database.sqlite3"
   FILES_ENTRY = "files/"
 

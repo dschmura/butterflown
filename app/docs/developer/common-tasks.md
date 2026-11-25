@@ -43,7 +43,7 @@ If your question isn't here, the [docs index](/docs) lists every page.
 - **Take the template's updates into my fork.**
   [Pull upstream updates](/docs/developer/forking#pull-upstream-updates)
 - **Back up the production database.**
-  [Back up the database](/docs/developer/deployment#back-up-the-database)
+  [Back up the database](/docs/developer/backups)
 
 ## Something went wrong
 
