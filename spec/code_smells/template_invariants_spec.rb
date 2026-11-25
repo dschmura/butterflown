@@ -1277,7 +1277,7 @@ RSpec.describe "Template invariants" do
     end
 
     it "names the template outside the rename targets only where it means the template", :template_only do
-      means_the_template = %w[.rubocop/app.yml app/assets/tailwind/tokens/_brand.css config/initializers/biscuit.rb config/routes/app.rb]
+      means_the_template = %w[app/assets/tailwind/tokens/_brand.css config/initializers/biscuit.rb config/routes/app.rb]
       named = IO.popen(clean_git_env, [ "git", "-C", root.to_s, "grep", "-l", "-F", ForkFlow::TEMPLATE_TOKEN ], &:read).split("\n")
       unrenamed = (named - ForkFlow::RENAME_FILES - [ ForkFlow::CHANGELOG ] - means_the_template).reject do |path|
         (ForkFlow::TEMPLATE_OWNED_PATHS + ForkFlow::YOURS_TO_REWRITE_PATHS.map(&:first)).any? { |owned| path.match?(owned) }

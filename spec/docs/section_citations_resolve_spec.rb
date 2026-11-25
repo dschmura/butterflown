@@ -6,8 +6,8 @@ require "rails_helper"
 RSpec.describe "section citations in code" do
   let(:normalize) { ->(text) { text.delete("`*").gsub(/\s+/, " ").strip.downcase } }
   let(:files) do
-    Rails.root.glob("{app,lib,config,bin,.github}/**/*").select(&:file?)
-      .reject { |path| path.to_s.include?("/app/docs/") || path.extname == ".enc" }
+    tracked_files.grep_v(%r{\A(app/docs|spec|changelog\.d)/|\ACHANGELOG\.md\z})
+      .map { |path| Rails.root.join(path) }.select { |path| path.file? && !path.binread.include?("\0") }
   end
   let(:citations) do
     files.flat_map do |file|
@@ -17,7 +17,10 @@ RSpec.describe "section citations in code" do
   end
 
   def targets(page)
-    source = Rails.root.join("app/docs/developer/#{page}.md").read
+    path = Rails.root.join("app/docs/developer/#{page}.md")
+    return [] unless path.exist?
+
+    source = path.read
     labels = source.scan(/^#+ (.+)$/).flatten + source.scan(/\*\*([^*\n]+?)\.?\*\*/).flatten
     labels.flat_map { |label| [ normalize.(label), normalize.(label.sub(/\A\d+\. /, "")) ] }
   end
