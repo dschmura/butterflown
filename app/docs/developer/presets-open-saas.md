@@ -1,12 +1,12 @@
 ---
-title: Open SaaS
+title: Open SaaS (personal + join links)
 description: Stand up and verify the Open SaaS preset — per-customer org workspaces, shareable join links, two signup postures
 keywords: open-saas preset multi-tenant signup posture open_link join link flow a flow b allowlist tightening
 ---
 
 [App Presets](/docs/developer/presets) › Open SaaS
 
-# Open SaaS
+# Open SaaS (`personal` + join links)
 
 The public-SaaS / multi-workspace shape: per-workspace control over how new members join. Workspace admins choose between **invite-only** and a **shareable open link** for each workspace they own. Built incrementally across Reshape 2 slices.
 

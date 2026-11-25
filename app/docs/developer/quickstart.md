@@ -326,7 +326,7 @@ are optional, and each one is a switch you turn on when you want it:
 [Changing the defaults](changing-the-defaults#how-changes-ship) says where.
 
 **Check:** the release appears under your repo's Releases. Details:
-[Releasing](releasing) and [Deployment: Deploy from CI](deployment#6-deploy-from-ci).
+[How your code reaches users](how-code-ships), [Releasing](releasing) and [Deployment: Deploy from CI](deployment#6-deploy-from-ci).
 
 ## 9. Take template updates
 
