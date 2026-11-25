@@ -15,17 +15,15 @@ Markdowndocs.configure do |config|
   # it renders only by direct URL and is invisible on the /docs index.
   # spec/docs/index_coverage_spec.rb fails CI if a doc is left orphaned.
   template_categories = {
-    "Getting Started"            => %w[user/welcome developer/quickstart developer/common-tasks developer/before-you-push developer/getting-started developer/changing-the-defaults developer/codespaces],
+    "Getting Started"            => %w[user/welcome developer/quickstart developer/common-tasks developer/getting-started developer/changing-the-defaults developer/presets developer/codespaces developer/forking
+                                       developer/presets-solo developer/presets-single-tenant developer/presets-open-saas developer/presets-none],
     "Accounts & Authentication"  => %w[user/authentication user/accounts],
     "Workspaces & Collaboration" => %w[user/workspaces user/projects user/invitations user/clientside],
     "Features"                   => %w[user/notifications user/emails],
-    "Presets (Tenancy)"          => %w[developer/presets developer/presets-solo developer/presets-single-tenant developer/presets-open-saas developer/presets-none developer/onboarding],
-    "Architecture & Data Model"  => %w[developer/architecture developer/application-flows developer/accounts-and-identity developer/identity-system developer/membership-lifecycle],
-    "Building & Extending"       => %w[developer/extending developer/project-tools developer/forking developer/components developer/ui-patterns developer/form-drafts developer/i18n developer/machine-clients],
-    "Operations"                 => %w[developer/operations developer/deployment developer/backups developer/how-code-ships developer/releasing developer/background-jobs developer/security developer/hot-cell developer/required-production-config],
-    "Quality & Testing"          => %w[developer/testing developer/accessibility developer/qa-flows developer/conventions],
-    "Auth & Notifications (internals)" => %w[developer/passkeys developer/notifications developer/email-delivery],
-    "Troubleshooting"            => %w[developer/troubleshooting]
+    "Ship a change"              => %w[developer/how-code-ships developer/before-you-push developer/testing developer/accessibility developer/releasing developer/conventions],
+    "Run it in production"       => %w[developer/deployment developer/backups developer/required-production-config developer/email-delivery developer/background-jobs developer/operations developer/security developer/hot-cell],
+    "Build features"             => %w[developer/extending developer/project-tools developer/onboarding developer/components developer/ui-patterns developer/form-drafts developer/i18n developer/machine-clients],
+    "Reference"                  => %w[developer/architecture developer/application-flows developer/accounts-and-identity developer/identity-system developer/membership-lifecycle developer/passkeys developer/notifications developer/qa-flows developer/troubleshooting]
   }
 
   # Fork seam: a downstream fork registers its own docs pages in
