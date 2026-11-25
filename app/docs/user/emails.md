@@ -1,7 +1,7 @@
 ---
 title: Email Flows
-description: All transactional emails, their triggers, token expiry windows, and customization
-keywords: email mailer authentication invitation magic link verification token expiry smtp
+description: Every email the app sends, what triggers it, and how long its link works
+keywords: email authentication invitation magic link verification token expiry link expired
 code:
   signup:
     - app/controllers/sessions/lookups_controller.rb
@@ -14,17 +14,9 @@ code:
 
 # Email Flows
 
-ModelRails sends transactional emails for authentication, invitations, and account management. All emails are delivered asynchronously via `deliver_later` (Solid Queue) and are fully internationalized.
+ModelRails sends transactional emails for authentication, invitations, and account management. This page lists each one, what sends it and how long its link works.
 
-## Mailers
-
-| Mailer | Purpose |
-|--------|---------|
-| `AuthenticationMailer` | Email verification, email change, connected-account verification, sign-in collision alerts |
-| `InvitationMailer` | Workspace and project invitations |
-| `MagicLinkMailer` | Passwordless sign-in and registration links |
-| `ReauthenticationMailer` | Confirmation codes for re-authenticating before a sensitive change |
-| `NotificationMailer` | Notification emails and digests — see [Notifications](/docs/user/notifications) |
+Setting up mail for your own deployment, or changing what the emails say? See [Email Delivery](/docs/developer/email-delivery).
 
 ## Email Reference
 
@@ -108,42 +100,3 @@ sign-in options and [Application Flows](/docs/developer/application-flows) for t
 3. If authenticated: accepted immediately, provided the account's email matches the invited address.
 4. If not authenticated: the token is stashed, the invitee registers, and the invitation is claimed when they verify the invited email — not at signup.
 5. All paths go through `Invitation.consume!`, which enforces the email match (emailless magic-link invitations excepted) before `Invitation#accept!` creates the workspace membership (and project membership if applicable).
-
-## Configuration
-
-### From Address
-
-`ApplicationMailer` resolves the from address in this order:
-
-1. `MAIL_FROM` in the environment
-2. `Rails.application.credentials.dig(:mailer, :from)`
-3. `noreply@` the mailer's default host (`RAILS_HOST`)
-
-### SMTP Setup
-
-The first time you set up production, run `bin/production-setup`
-([Quickstart §4](/docs/developer/quickstart#4-production-secrets-and-mail)): it
-sets up mail and the encryption keys production needs to boot. To change mail
-provider later, run `bin/mail-setup` on its own. Or set this by hand.
-
-Where mail goes comes from the environment (`SMTP_ADDRESS`, `SMTP_PORT`,
-`SMTP_DOMAIN`); the login lives in the per-environment credentials:
-
-```yaml
-# bin/rails credentials:edit --environment production
-smtp:
-  user_name: your-user
-  password: your-password
-```
-
-`lib/mail_delivery.rb` builds `config.action_mailer.smtp_settings` from both,
-and production refuses to boot when either is missing. Provider recipes:
-[Deployment](/docs/developer/deployment#4-configure-outbound-mail).
-
-### Default URL Host
-
-Production reads `config.action_mailer.default_url_options` from `RAILS_HOST` (`config/environments/production.rb`); development and test use `localhost` (a Codespace, its forwarded host). Email links use this to generate absolute URLs.
-
-## Localization
-
-Email subjects, greetings, body text, and button labels live under each mailer's key in `config/locales/en/`: `mailers.en.yml` (authentication and re-authentication), `invitations.en.yml` and `clientside.en.yml` (invitations), `magic_links.en.yml`, and `notifications.en.yml`. To translate emails, create locale files for your target language following the same key structure.

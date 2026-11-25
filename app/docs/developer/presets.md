@@ -1,6 +1,6 @@
 ---
 title: App Presets
-description: How modelrails_base supports multiple product shapes (Solo-default, Single-tenant, Open SaaS, Workspace-optional) through configuration, and how to pick one
+description: How modelrails_base supports multiple product shapes — Solo-default (personal), Single-tenant (shared), Open SaaS (personal + join links), Workspace-optional (none) — through configuration, and how to pick one
 keywords: presets configuration tenancy multi-tenant single-tenant SaaS signup onboarding workspace setup posture none workspace-optional
 ---
 

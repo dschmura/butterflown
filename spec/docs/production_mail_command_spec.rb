@@ -13,13 +13,20 @@ RSpec.describe "the docs on production mail" do
   it "names bin/production-setup for a first setup wherever it says how to set production mail up" do
     places = {
       "developer/deployment §4" => section.("developer/deployment", "4. Configure outbound mail"),
-      "user/emails SMTP Setup" => section.("user/emails", "SMTP Setup")
+      "developer/email-delivery SMTP Setup" => section.("developer/email-delivery", "SMTP Setup")
     }
 
     places.each do |place, text|
       expect(text).to include("bin/production-setup"), "#{place} doesn't name bin/production-setup"
       expect(text.index("bin/production-setup")).to be < text.index("bin/mail-setup"), "#{place} names bin/mail-setup first"
     end
+  end
+
+  it "keeps mail setup out of the User Guide, which points developers to Email Delivery" do
+    emails = docs.join("user/emails.md").read
+
+    expect(emails.scan(/^## (.*)$/).flatten).not_to include("Mailers", "Configuration", "Localization")
+    expect(emails).to include("(/docs/developer/email-delivery)")
   end
 
   it "warns in the Quickstart that a new Postmark account mails only its own domain until approved" do
