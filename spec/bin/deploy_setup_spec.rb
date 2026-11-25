@@ -13,8 +13,9 @@ RSpec.describe DeploySetup do
   around do |example|
     Dir.mktmpdir do |dir|
       @tmp = Pathname.new(dir)
+      @root = @tmp.join("root")
       %w[root/bin root/config stubs].each { |name| @tmp.join(name).mkpath }
-      root.join("config/deploy.yml").write(Rails.root.join("config/deploy.yml").read)
+      @root.join("config/deploy.yml").write(Rails.root.join("config/deploy.yml").read)
       stub("ssh", 'echo "ssh $*" >> LOG; echo x86_64')
       stub("fnox", 'echo "fnox $* <$(cat)>" >> LOG')
       stub("gh", "echo PRIVATE")
@@ -23,25 +24,24 @@ RSpec.describe DeploySetup do
     end
   end
 
-  def root = @tmp.join("root")
-  def deploy_yml = root.join("config/deploy.yml").read
-  def calls = @tmp.join("calls.log").exist? ? @tmp.join("calls.log").read : ""
+  def deploy_yml = @root.join("config/deploy.yml").read
+  def calls = @tmp.join("stub_calls.log").exist? ? @tmp.join("stub_calls.log").read : ""
 
   def stub(name, body)
-    @tmp.join("stubs", name).write("#!/bin/sh\n#{body.gsub('LOG', @tmp.join('calls.log').to_s)}\n")
+    @tmp.join("stubs", name).write("#!/bin/sh\n#{body.gsub('LOG', @tmp.join('stub_calls.log').to_s)}\n")
     @tmp.join("stubs", name).chmod(0o755)
   end
 
   def unstub(name) = @tmp.join("stubs", name).delete
 
   def stub_rails(exit_code:)
-    root.join("bin/rails").write("#!/bin/sh\necho \"rails $*\" >> #{@tmp.join('calls.log')}\nexit #{exit_code}\n")
-    root.join("bin/rails").chmod(0o755)
+    @root.join("bin/rails").write("#!/bin/sh\necho \"rails $*\" >> #{@tmp.join('stub_calls.log')}\nexit #{exit_code}\n")
+    @root.join("bin/rails").chmod(0o755)
   end
 
   def run_setup(*answers)
     env = { "PATH" => "#{@tmp.join('stubs')}:/usr/bin:/bin" }
-    described_class.new(root: root.to_s, env:, input: StringIO.new(answers.map { "#{it}\n" }.join), output:).run
+    described_class.new(root: @root.to_s, env:, input: StringIO.new(answers.map { "#{it}\n" }.join), output:).run
   end
 
   def deploy(kamal_host: nil)
@@ -85,7 +85,7 @@ RSpec.describe DeploySetup do
   describe "keeping the server out of the repository" do
     it "defaults to yes on a public repository and stores the address with fnox" do
       stub("gh", "echo PUBLIC")
-      root.join("fnox.toml").write("")
+      @root.join("fnox.toml").write("")
 
       run_setup("203.0.113.10", "", "", "", "app.example.com")
 
@@ -166,7 +166,7 @@ RSpec.describe DeploySetup do
   end
 
   it "offers RAILS_HOST as the domain when it is already set" do
-    root.join("config/deploy.yml").write(deploy_yml.sub("    # RAILS_HOST: app.yourdomain.com", "    RAILS_HOST: shop.example.com #"))
+    @root.join("config/deploy.yml").write(deploy_yml.sub("    # RAILS_HOST: app.yourdomain.com", "    RAILS_HOST: shop.example.com #"))
 
     run_setup("203.0.113.10", "", "", "", "")
 
@@ -176,7 +176,7 @@ RSpec.describe DeploySetup do
 
   describe "the shared preset" do
     it "asks for the owner's email and turns off creating more workspaces" do
-      root.join(".fork.yml").write("preset: shared\nname: acme\n")
+      @root.join(".fork.yml").write("preset: shared\nname: acme\n")
 
       run_setup("203.0.113.10", "", "", "", "app.example.com", "owner@example.com")
 
@@ -185,7 +185,7 @@ RSpec.describe DeploySetup do
     end
 
     it "asks nothing about owners on the personal preset" do
-      root.join(".fork.yml").write("preset: personal\nname: acme\n")
+      @root.join(".fork.yml").write("preset: personal\nname: acme\n")
 
       run_setup("203.0.113.10", "", "", "", "app.example.com")
 
@@ -195,7 +195,7 @@ RSpec.describe DeploySetup do
   end
 
   it "offers what it wrote as the defaults the next time, and rewrites in place" do
-    root.join(".fork.yml").write("preset: shared\nname: acme\n")
+    @root.join(".fork.yml").write("preset: shared\nname: acme\n")
     run_setup("203.0.113.10", "", "deploy", "y", "8081", "8444", "app.example.com", "owner@example.com")
     first = deploy_yml
     output.truncate(0)
@@ -208,7 +208,7 @@ RSpec.describe DeploySetup do
   end
 
   it "names what it couldn't change, and where to set it by hand, rather than guessing" do
-    root.join("config/deploy.yml").write(deploy_yml.sub(/^# proxy:\n#   ssl: true\n#   host: app.example.com\n/, ""))
+    @root.join("config/deploy.yml").write(deploy_yml.sub(/^# proxy:\n#   ssl: true\n#   host: app.example.com\n/, ""))
 
     expect(run_setup("203.0.113.10", "", "", "", "app.example.com")).to eq(0)
 
@@ -217,13 +217,13 @@ RSpec.describe DeploySetup do
   end
 
   it "prints its usage for --help and changes nothing" do
-    root.join("bin/deploy-setup").write(Rails.root.join("bin/deploy-setup").read)
-    root.join("bin/deploy-setup").chmod(0o755)
-    root.join("lib").mkpath
-    root.join("lib/fork_config.rb").write(Rails.root.join("lib/fork_config.rb").read)
+    @root.join("bin/deploy-setup").write(Rails.root.join("bin/deploy-setup").read)
+    @root.join("bin/deploy-setup").chmod(0o755)
+    @root.join("lib").mkpath
+    @root.join("lib/fork_config.rb").write(Rails.root.join("lib/fork_config.rb").read)
     before = deploy_yml
 
-    printed, = Open3.capture2e(root.join("bin/deploy-setup").to_s, "--help", chdir: root.to_s)
+    printed, = Open3.capture2e(@root.join("bin/deploy-setup").to_s, "--help", chdir: @root.to_s)
 
     expect(printed).to include("Usage: bin/deploy-setup")
     expect(deploy_yml).to eq(before)
