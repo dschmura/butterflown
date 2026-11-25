@@ -524,7 +524,7 @@ class Workspaces::Projects::MessagesController < ApplicationController
 end
 ```
 
-The `EnforcesProjectTool` concern reads `@project.tool_enabled?(key)`, and `enforces_tool` registers its guard where it is declared, so `ProjectScoped` must be included first; a guard that finds no `@project` lets the request through. See [Project Tools](/docs/user/project-tools) for the full how-to.
+The `EnforcesProjectTool` concern reads `@project.tool_enabled?(key)`, and `enforces_tool` registers its guard where it is declared, so `ProjectScoped` must be included first; a guard that finds no `@project` lets the request through. See [Project Tools](/docs/developer/project-tools) for the full how-to.
 
 ## Clientside (external-client area)
 
