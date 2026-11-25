@@ -6,7 +6,7 @@ require "rails_helper"
 RSpec.describe "section citations in code" do
   let(:normalize) { ->(text) { text.delete("`*").gsub(/\s+/, " ").strip.downcase } }
   let(:files) do
-    Rails.root.glob("{app,lib,config,bin}/**/*").select(&:file?)
+    Rails.root.glob("{app,lib,config,bin,.github}/**/*").select(&:file?)
       .reject { |path| path.to_s.include?("/app/docs/") || path.extname == ".enc" }
   end
   let(:citations) do

@@ -6,7 +6,7 @@ require "rails_helper"
 RSpec.describe "links to docs pages" do
   let(:pages) { Rails.root.glob("app/docs/{user,developer}/*.md").to_set { |path| "#{path.parent.basename}/#{path.basename('.md')}" } }
   let(:citing_files) do
-    Rails.root.glob("{app,lib,config}/**/*.{md,rb,erb,yml}") + Rails.root.glob("bin/*").select(&:file?) + [ Rails.root.join("README.md") ]
+    Rails.root.glob("{app,lib,config,.github}/**/*.{md,rb,erb,yml}") + Rails.root.glob("bin/*").select(&:file?) + [ Rails.root.join("README.md") ]
   end
 
   it "point at a page that exists, wherever the app cites a /docs/ path" do

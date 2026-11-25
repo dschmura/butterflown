@@ -22,8 +22,8 @@ RSpec.describe "the before-you-push page" do
     expect(source).to include("bin/test-plan --run", "axe", "system spec")
   end
 
-  it "is linked from the pre-push section of Getting Started and from Common Tasks" do
-    expect(docs.join("getting-started.md").read).to include("](/docs/developer/before-you-push)")
+  it "is linked from the pre-push section of Local Development and from Common Tasks" do
+    expect(docs.join("local-development.md").read).to include("](/docs/developer/before-you-push)")
     expect(docs.join("common-tasks.md").read).to include("](/docs/developer/before-you-push#")
   end
 end

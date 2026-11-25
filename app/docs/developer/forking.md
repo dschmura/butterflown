@@ -293,7 +293,7 @@ bin/rails credentials:edit --environment production
 `bin/mail-setup` handles the mail half of this: it creates the production credentials if
 they don't exist, adds the provider's login, and updates `config/deploy.yml`.
 
-Add OAuth keys and `mailer.from` (structure in [Getting Started](/docs/developer/getting-started)),
+Add OAuth keys and `mailer.from` (structure in [Local Development](/docs/developer/local-development)),
 and to production the mail provider's login as `smtp.user_name` and `smtp.password`
 ([Deployment](/docs/developer/deployment#4-configure-outbound-mail)) and, once
 backups go to a bucket, its key as `object_storage.access_key_id` and
@@ -730,7 +730,7 @@ Three guardrails before you open the PR:
   before regenerating (see [Components](components)). The suite's invariant
   fails if the ignore is removed. Rails and `rspec-rails` come from git
   commits too, and are ignored and moved by hand the same way (see
-  [Getting started](getting-started)).
+  [Local Development](local-development)).
 - **Fetching a URL a user typed?** Read the outbound-request (SSRF) posture
   in [Security](security) first — the template deliberately ships no
   fetch-by-URL feature, and the first fork that adds one owns the pinning.

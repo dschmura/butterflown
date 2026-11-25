@@ -265,8 +265,8 @@ These are optional. The app reads each one only when it's there:
 | Key | Where it comes from | Can it be regenerated? | Where it's backed up |
 | --- | --- | --- | --- |
 | `mailer.from` | Your choice of sender address. `MAIL_FROM` in `config/deploy.yml` overrides it, and with neither set the sender is `noreply@` your `RAILS_HOST` | Yes, any time | Inside `production.yml.enc` |
-| `oauth.google.client_id`, `oauth.google.client_secret` | A Google OAuth client ([OAuth Setup](getting-started#oauth-setup-optional)) | Yes, at Google; replace both | Inside `production.yml.enc` |
-| `oauth.github.client_id`, `oauth.github.client_secret` | A GitHub OAuth app ([OAuth Setup](getting-started#oauth-setup-optional)) | Yes, at GitHub; replace both | Inside `production.yml.enc` |
+| `oauth.google.client_id`, `oauth.google.client_secret` | A Google OAuth client ([OAuth Setup](local-development#oauth-setup-optional)) | Yes, at Google; replace both | Inside `production.yml.enc` |
+| `oauth.github.client_id`, `oauth.github.client_secret` | A GitHub OAuth app ([OAuth Setup](local-development#oauth-setup-optional)) | Yes, at GitHub; replace both | Inside `production.yml.enc` |
 | `object_storage.access_key_id`, `object_storage.secret_access_key` | Your backup bucket's provider ([Move to a bucket](backups#move-to-a-bucket-when-the-data-matters)) | Yes, at the provider | Inside `production.yml.enc` |
 | `aws.access_key_id`, `aws.secret_access_key` | AWS. Only the commented-out `amazon:` service in `config/storage.yml` reads them | Yes, at AWS | Inside `production.yml.enc` |
 
@@ -1245,7 +1245,7 @@ that constraint belongs to the app, not to the deploy tool.
 
 ## See also
 
-- [Getting Started](/docs/developer/getting-started) — Dev environment
+- [Local Development](/docs/developer/local-development) — Dev environment
 - [Checks on GitHub](/docs/developer/checks-on-github) — what CI runs on every pull request and on a schedule
 - [Background Jobs](/docs/developer/background-jobs) — Solid Queue topology, named queues, recurring jobs
 - [Security](/docs/developer/security) — Auth, headers, rate limiting
