@@ -1,10 +1,5 @@
-# Project tools registry — the fork extension seam.
-#
-# Register a tool here AFTER you've built its surface (model + controller +
-# routes + views). `path_helper` is a project-scoped route helper the project
-# tab bar calls as `helper(workspace, project)`.
-#
-# See app/docs/user/project-tools.md. The base template ships only :docs.
+# The fork seam for project tools: build a tool's surface first, then register it here.
+# See app/docs/developer/project-tools.md. The base template ships only :docs.
 Rails.application.config.to_prepare do
   ProjectTools::Registry.reset!
 
