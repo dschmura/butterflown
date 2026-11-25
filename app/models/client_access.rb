@@ -7,8 +7,6 @@ class ClientAccess < ApplicationRecord
   belongs_to :project
   belongs_to :user
 
-  self.ignored_columns += %w[company_name] # unused; dropped by a later migration
-
   validates :user_id, uniqueness: { scope: :project_id }
   validate :project_clientside_enabled, on: :create
 
