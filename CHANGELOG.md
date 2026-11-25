@@ -12,8 +12,8 @@ All notable changes to ModelRails are documented here, organized by phase.
 - Backups get their own page, Backups and Restore (`/docs/developer/backups`), split out of Deployment; the boot log, `deploy_check` and `backup:status` messages point to it.
 - Email setup (mailers, from address, SMTP, URL host, translation) moves from Email Flows to a new Developer Guide page, Email Delivery; Email Flows keeps the list of emails and how long their links work.
 - Getting Started is now Local Development (`/docs/developer/local-development`), the reference for working on the code on your own machine; the Quickstart is where a new product starts. What it repeated now lives in one place: running tests on Testing, the pre-push checks on Before You Push, the stack and the pinned Rails commit on Architecture, the favicon on Extending, and turning a house cop off on Forking.
-- The Onboarding Journey page moves from the User Guide to the Developer Guide, beside Presets: None (`/docs/developer/onboarding`).
-- The Project Tools page moves from the User Guide to the Developer Guide, under Building & Extending (`/docs/developer/project-tools`).
+- The Onboarding Journey page moves from the User Guide to the Developer Guide, under Build features (`/docs/developer/onboarding`).
+- The Project Tools page moves from the User Guide to the Developer Guide, under Build features (`/docs/developer/project-tools`).
 - Local Development, Accessibility and Testing say in plain words what was idiom.
 - How your code reaches users and Releasing say in plain words what was idiom, and step 5 says how to tell a release has been named.
 - Extending, Architecture and Background Jobs say in plain words what was idiom; Background Jobs' "Graduation" section is now "Move jobs to a dedicated host".
