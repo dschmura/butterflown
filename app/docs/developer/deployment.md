@@ -658,8 +658,8 @@ Check: `fnox check --all` passes, and `bin/kamal deploy` works as before.
 ### Keep the deploy host out of a public repository
 
 `config/deploy.yml` names your server, and anyone can read a public
-repository. Store the server's address with fnox instead, typing it at the
-hidden prompt:
+repository. `bin/deploy-setup` offers to keep the address in fnox instead, and
+does both steps below. By hand, store it, typing it at the hidden prompt:
 
 ```bash
 fnox set KAMAL_HOST --provider age-production
@@ -669,26 +669,23 @@ Then read it in `config/deploy.yml`. The template ships this `servers:` block
 (before):
 
 ```yaml
-# Deploy to these servers.
 servers:
   web:
     hosts:
       - 192.168.0.1
 ```
 
-Replace those lines with these (after). The comment line stays a comment:
+Replace the host's line with this one (after), all on one line:
 
 ```yaml
-# Deploy to these servers.
-# <% deploy_host = ENV.fetch("KAMAL_HOST") { `fnox get KAMAL_HOST 2>/dev/null`[/\S+/] || "deploy-host.invalid" } %>
 servers:
   web:
     hosts:
-      - <%= deploy_host %>
+      - <%= ENV.fetch("KAMAL_HOST") { `fnox get KAMAL_HOST 2>/dev/null`[/\S+/] || "deploy-host.invalid" } %>
 ```
 
-Kamal runs the whole file through ERB before it reads the YAML, comment lines
-included, so the second line sets `deploy_host` and adds nothing to the YAML.
+Kamal runs the whole file through ERB before it reads the YAML, so the line
+becomes the address.
 
 `KAMAL_HOST` in the environment wins over fnox, so a CI job can pass it as a
 secret instead. With neither, the name is `deploy-host.invalid`, which never

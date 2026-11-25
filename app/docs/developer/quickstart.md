@@ -223,23 +223,35 @@ that means for this check.
 
 ## 6. Configure the deploy and go live
 
-Edit `config/deploy.yml`:
+Run `bin/deploy-setup`. It asks these questions, offering what
+`config/deploy.yml` already says as each default, and writes the answers there:
 
-- `servers:` → `web:` → `hosts:`: the server's address, exactly one.
-- `builder.arch`: the server's, `amd64` or `arm64`.
-  `ssh <user>@<server> uname -m` prints `x86_64` for amd64, `aarch64` for arm64.
-- `ssh:`: uncomment it, with `user:`, when `<user>` isn't root.
-- `RAILS_HOST`: your domain.
+- **Server address?** The one host under `servers:` → `web:` → `hosts:`.
+- **Keep the server address out of the repository?** Yes by default when the
+  repository is public: the address goes into fnox, and `config/deploy.yml`
+  reads it from there
+  ([Keep the deploy host out of a public repository](deployment#keep-the-deploy-host-out-of-a-public-repository)).
+- **SSH user?** `root` by default; any other user uncomments `ssh:`.
+- The server's arch, `amd64` or `arm64`, for `builder.arch`: it asks the server
+  over SSH, and asks you only when SSH can't reach it.
+- **Does something in front of the server handle HTTPS?** No turns on
+  kamal-proxy's SSL. Yes asks for kamal-proxy's two ports instead (below).
+- **Domain?** `proxy:`'s `host:` and `RAILS_HOST`.
+- On the shared preset, **Owner's email?** `TENANCY_OWNER_EMAIL`, and it sets
+  `TENANCY_WORKSPACE_CREATION: disabled`.
+
+It ends by running `bin/rails deploy:check`. If your `config/deploy.yml` no
+longer has a line it expects, it names the setting to change by hand.
+Then edit `config/deploy.yml` for the backups:
+
 - `BACKUP_PATH: /backups`, and the `/srv/backups:/backups` line under
   `volumes:`, so the backup folder reaches the app.
-- `proxy:`: uncomment it, with `ssl: true` and `host:` your domain.
-- On the shared preset: `TENANCY_OWNER_EMAIL` (you) and
-  `TENANCY_WORKSPACE_CREATION: disabled`.
 
 Then whichever of these fit:
 
 **Something in front handles HTTPS**, such as another web server or a tunnel.
-kamal-proxy runs without SSL, on other ports, so `proxy:` reads:
+kamal-proxy runs without SSL, on other ports, so `bin/deploy-setup` writes this
+`proxy:`:
 
 ```yaml
 proxy:
@@ -268,15 +280,15 @@ yourdomain.com {
 **A host that already runs an app.** The volume line is
 `/srv/backups/<your_app>:/backups`, the folder step 5 made.
 
-**A public repository.** Anyone can read `config/deploy.yml`, so keep the
-server's address in fnox instead, and replace the `servers:` block as
-[Keep the deploy host out of a public repository](deployment#keep-the-deploy-host-out-of-a-public-repository)
-shows. Then `bin/kamal config | grep -A1 :hosts:` prints your server's address.
+**The address kept in fnox.** Commit `fnox.toml`. Then
+`bin/kamal config | grep -A1 :hosts:` prints your server's address, not
+`deploy-host.invalid`.
 
 Then, in this order:
 
-1. `bin/rails deploy:check` says "Nothing here stops a deploy." Kamal runs the
-   same check before every build, and stops a deploy that would fail.
+1. `bin/rails deploy:check` says "Nothing here stops a deploy." Run it again
+   after any edit. Kamal runs the same check before every build, and stops a
+   deploy that would fail.
 2. Point your domain at the public address that receives your visitors'
    requests: the server's, or the front's when it runs on another machine.
    Behind a home router, that's the router's. Wait until
