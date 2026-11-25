@@ -10,7 +10,12 @@ RSpec.describe AddClientToInvitations do
   let(:project) { create(:project) }
   let(:inviter) { create(:user) }
 
-  before { ActiveRecord::Migration.suppress_messages { migration.down } }
+  before do
+    ActiveRecord::Migration.suppress_messages { migration.down }
+    # The backfill reads company_name, which a later migration drops.
+    connection = ActiveRecord::Base.connection
+    connection.add_column(:invitations, :company_name, :string) unless connection.column_exists?(:invitations, :company_name)
+  end
 
   after do
     ActiveRecord::Base.connection.schema_cache.clear!
