@@ -37,9 +37,9 @@ Setting up mail for your own deployment, or changing what the emails say? See [E
 | ----- | ------- | ------------- | --------- | ------ |
 | Workspace invitation | Admin invites a member by email | `InvitationMailer.with(invitation:).invite` | Invitee's email | 7 days |
 | Project invitation | Project creator invites a collaborator | `InvitationMailer.with(invitation:).invite` | Invitee's email | 7 days |
-| Client invitation | Workspace Owner or Admin invites an external client to a project | `InvitationMailer.with(invitation:).invite_client` | Client's email | 7 days |
+| Client invitation | The project's creator, or a workspace Owner or Admin, invites an external client to a project | `InvitationMailer.with(invitation:).invite_client` | Client's email | 7 days |
 
-`invite_client` is a client-flavoured variant: it invites the client to *collaborate* rather than to join, and leaves the project's name to the page the link opens. It carries the same decline link as the other two, so a client invitee can decline — and block that sender — from the email. See [Clientside](/docs/user/clientside) for the client area this invitation leads to.
+`invite_client` is a client-flavoured variant: it invites the client to *collaborate* rather than to join, and leaves the project's name to the page the link opens. It carries the same decline link as the other two, so a client invitee can decline — and block that sender — from the email. See [Share with a Client](/docs/user/clientside) for the client area this invitation leads to.
 
 ### Magic Link Emails
 

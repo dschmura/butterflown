@@ -19,7 +19,7 @@ class Invitation < ApplicationRecord
         existing.unsuppressed.exists? || existing.where(invited_by: invited_by).exists?
       end
 
-      def invite_client!(project:, email:, company_name:, invited_by:)
+      def invite_client!(project:, email:, invited_by:)
         # The same signal the `pending_live` index raises, so the pre-check and a
         # lost race land on the controller's one rescue and one flash.
         raise ActiveRecord::RecordNotUnique, "pending invitation already exists" if
@@ -28,7 +28,7 @@ class Invitation < ApplicationRecord
         invitation = create!(
           invitable: project,
           email: email,
-          company_name: company_name,
+          client: true,
           invited_by: invited_by
         )
         InvitationMailer.with(invitation: invitation).invite_client.deliver_later

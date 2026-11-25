@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_09_25_134500) do
+ActiveRecord::Schema[8.2].define(version: 2026_11_25_170000) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.string "name", null: false
     t.text "body"
@@ -90,7 +90,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_09_25_134500) do
   create_table "client_accesses", force: :cascade do |t|
     t.integer "project_id", null: false
     t.integer "user_id", null: false
-    t.string "company_name", null: false
+    t.string "company_name"
     t.datetime "discarded_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -131,6 +131,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_09_25_134500) do
     t.string "project_role"
     t.string "company_name"
     t.datetime "suppressed_at"
+    t.boolean "client", default: false, null: false
     t.index ["accepted_by_id"], name: "index_invitations_on_accepted_by_id"
     t.index ["email", "invitable_type", "invitable_id", "invited_by_id"], name: "index_invitations_pending_ghosts", unique: true, where: "status = 'pending' AND suppressed_at IS NOT NULL"
     t.index ["email", "invitable_type", "invitable_id"], name: "index_invitations_pending_live", unique: true, where: "status = 'pending' AND suppressed_at IS NULL"

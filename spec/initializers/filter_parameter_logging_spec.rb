@@ -12,12 +12,4 @@ RSpec.describe "personal-data parameters are filtered" do
 
     expect(output).to include('first_name: [FILTERED]', 'last_name: [FILTERED]')
   end
-
-  it "filters a client's company name" do
-    expect(ClientAccess.new(company_name: "BigCo").inspect).to include('company_name: [FILTERED]')
-  end
-
-  it "filters the company name on a client invitation" do
-    expect(Invitation.new(company_name: "BigCo").inspect).to include('company_name: [FILTERED]')
-  end
 end

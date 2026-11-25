@@ -75,4 +75,28 @@ RSpec.describe ProjectPolicy do
       expect(described_class.new(owner_user, project).destroy?).to be true
     end
   end
+
+  describe "#manage_clientside?" do
+    let(:member_creator) { create(:user) }
+    let(:member_project) { create(:project, workspace: workspace, created_by: member_creator) }
+
+    before { create(:membership, user: member_creator, workspace: workspace) }
+
+    it "allows the project's creator whose workspace role cannot manage members" do
+      expect(described_class.new(member_creator, member_project).manage_clientside?).to be true
+    end
+
+    it "allows an admin outside the project" do
+      admin = create(:membership, :admin, workspace: workspace).user
+      expect(described_class.new(admin, member_project).manage_clientside?).to be true
+    end
+
+    it "denies a project member who is not the creator" do
+      expect(described_class.new(editor_user, project).manage_clientside?).to be false
+    end
+
+    it "denies a workspace member outside the project" do
+      expect(described_class.new(non_member_user, project).manage_clientside?).to be false
+    end
+  end
 end

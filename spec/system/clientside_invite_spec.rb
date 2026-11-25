@@ -20,14 +20,13 @@ RSpec.describe "Client invite flow", type: :system do
       "AAA violations on invite form: #{axe_violations_in_both_themes(axe_options).join("\n")}"
 
     fill_in I18n.t("clientside.invitations.new.email_label"), with: "dana@bigco.com"
-    fill_in I18n.t("clientside.invitations.new.company_label"), with: "BigCo"
+    expect(page).not_to have_field("client_invitation[company_name]")
     click_button I18n.t("clientside.invitations.new.submit")
     expect(page).to have_text(I18n.t("clientside.invitations.sent"))
 
-    invitation = Invitation.where(invitable: project).where.not(company_name: nil).last
+    invitation = Invitation.where(invitable: project).where(client: true).last
     expect(invitation).to be_present
     expect(invitation.email).to eq("dana@bigco.com")
-    expect(invitation.company_name).to eq("BigCo")
   end
 
   # Confirms the client accept path: the accept page renders AAA-clean
@@ -36,7 +35,6 @@ RSpec.describe "Client invite flow", type: :system do
     invitation = Invitation.invite_client!(
       project: project,
       email: "dana@bigco.com",
-      company_name: "BigCo",
       invited_by: owner
     )
 

@@ -106,7 +106,7 @@ Controllers that must be reachable mid-wizard (the wizard steps themselves, sign
 
 See [Onboarding](/docs/developer/onboarding) for a full walkthrough, screenshots, and i18n keys.
 
-> **External Clientside clients** (users with client accesses and no workspace memberships) skip onboarding entirely — they are routed to `clientside_projects_path` via `authenticated_home_path`. See [Clientside](/docs/user/clientside).
+> **External Clientside clients** (users with client accesses and no workspace memberships) skip onboarding entirely — they are routed to `clientside_projects_path` via `authenticated_home_path`. See [Clientside](/docs/developer/clientside).
 
 ## Setup
 

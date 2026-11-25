@@ -4,7 +4,7 @@ RSpec.describe "Client landing via email verification", type: :request do
   it "lands a verified client-only user in the client area" do
     project = create(:project, clientside_enabled: true)
     client = create(:user, :unverified_email, :with_zero_workspaces)
-    project.client_accesses.create!(user: client, company_name: "BigCo")
+    project.client_accesses.create!(user: client)
     sign_in(client)
     auth = client.authentications.email.first
     token = auth.generate_token_for(:email_verification)

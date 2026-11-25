@@ -45,7 +45,7 @@ FactoryBot.define do
     trait :client do
       association :invitable, factory: :project, clientside_enabled: true
       role { nil }
-      company_name { "BigCo" }
+      client { true }
       email { "dana@bigco.com" }
     end
   end
