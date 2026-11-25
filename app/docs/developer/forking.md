@@ -389,7 +389,7 @@ on every sync.
 | `app/views/pages/**`, `app/controllers/pages_controller.rb` | Your marketing/static pages. A layout of your own for them must render `shared/toasts`: email verification lands on `/` with its message |
 | `spec/system/pages/**`, `spec/requests/pages_spec.rb` | The tests for those pages — rewrite them with the pages |
 | `config/routes/app.rb` | Your product's routes (loaded by `draw(:app)`) |
-| `.rubocop/app.yml` | Your RuboCop overrides — turn a house cop off here, with the reason ([Getting started](getting-started#turning-a-house-cop-off-in-your-fork)) |
+| `.rubocop/app.yml` | Your RuboCop overrides — turn a house cop off here, with the reason ([below](#turning-a-house-cop-off-in-your-fork)) |
 | `config/markdowndocs_categories.local.yml` | Registers your own docs pages on this `/docs` index |
 | `app/assets/tailwind/tokens/_brand.css` | Brand-color overrides — swap the primary palette family (the file's header says how) |
 | `app/views/shared/_site_mark.html.erb` | The brand mark — a file that is one `<svg>` ([Extending](extending#customizing-the-site-logo)) |
@@ -463,6 +463,18 @@ These constants are yours to change and are **not** merge-frozen: an upstream ch
 - `NotificationPreferences::NEVER_CAP_DAYS` — what a pre-PR-5 "Never" choice reads as
 - `ActivityLogRetentionSweepJob::SECURITY_RETENTION_FLOOR` — how long credential-event audit rows are kept, regardless of the general window
 - `hotcell/config.rb` and the Hot Cell accessory's `cpus`/`memory` — the sandbox's limits, sized to your host ([Hot Cell](/docs/developer/hot-cell), Tune it)
+
+### Turning a house cop off in your fork
+
+Base ships eight house cops under `lib/rubocop` (`ModelRails/*`), configured in the base-owned `.rubocop/house.yml` and on by default. They are rules about how base writes code — the same kind of thing as the omakase config it inherits — and your fork is free to disagree with any of them. Do it in the fork-owned `.rubocop/app.yml`, which upstream never touches (`merge=ours`), with the reason on the line above:
+
+```yaml
+# Our admin area keeps a few verb routes on purpose; see ADR-7.
+ModelRails/RestfulActions:
+  Enabled: false
+```
+
+That is a decision with a name, which is what a reviewer or an agent reads first. It is not the place for offenses in code you inherited or wrote before a cop landed: those belong in `.rubocop_todo.yml`, which grandfathers by path and shrinks as files are fixed, while `app.yml` changes the rule itself. Never edit `.rubocop/house.yml` or `.rubocop.yml` in a fork; both are base-owned and every upstream sync would conflict.
 
 ### How the merge driver actually behaves
 
