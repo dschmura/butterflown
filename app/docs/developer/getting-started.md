@@ -94,15 +94,6 @@ When the container first boots, `.devcontainer/setup.sh` invokes `bin/setup` (th
 
 Native development (no devcontainer) continues to work the same way as before — `mise install`, `bin/setup`, `bin/dev`. The devcontainer is an addition, not a replacement.
 
-## Choose your app preset
-
-modelrails_base supports several distinct product shapes — solo prosumer, internal single-tenant, multi-tenant SaaS — all built on the same multi-tenant data layer underneath. Before you start customizing, read [App Presets](/docs/developer/presets) to identify which shape matches what you're building. The defaults you just installed are the **Solo-default** preset (`personal`).
-
-If you are forking the template, `bin/fork --preset personal|shared|none` records the
-choice in `.fork.yml`, which is committed: production reads it from there, and `bin/setup`
-copies it into each clone's `.env` — see [Forking](/docs/developer/forking). Switching
-later is a migration, not a config flip, so it is worth deciding up front.
-
 ## Running Tests
 
 Run the whole suite with `bin/parallel-rspec`, and the specs your branch can break with `bin/test-plan --run`. [Testing](testing#three-ways-to-run-the-suite) covers every way to run the suite, the spec conventions, and what to do when two runs collide.
@@ -150,23 +141,6 @@ Biscuit's gem normally renders a floating "Manage cookies" button in the bottom-
 
 Every change reaches `next` by a pull request from its own branch: [Quickstart step 3](quickstart#3-work-by-pull-request) shows the commands, and [How your code reaches users](how-code-ships) follows a PR from there to production.
 
-## Favicon and PWA Icons
-
-The app ships with a multi-format favicon setup in `public/`:
-
-| File | Purpose |
-|------|---------|
-| `favicon.ico` | Legacy browsers (any size) |
-| `icon.svg` | Modern browsers (scalable, crisp at all sizes) |
-| `apple-touch-icon.png` | iOS home screen bookmark |
-| `icon-192.png` | PWA icon (192x192) |
-| `icon-512.png` | PWA icon and splash screen (512x512) |
-| `manifest.webmanifest` | PWA manifest (app name, icons, theme) |
-
-These are referenced in both `app/views/layouts/application.html.erb` and `app/views/layouts/markdowndocs/application.html.erb` via link tags in `<head>`.
-
-To replace with your own branding, swap the files in `public/` keeping the same filenames and sizes. Update `name` and `short_name` in `manifest.webmanifest` to match your app name.
-
 ## OAuth Setup (optional)
 
 Email/password and magic-link sign-in work without this — set up OAuth only if you want Google/GitHub sign-in. Add credentials for Google and GitHub OAuth (per-environment; the template ships no credential files, and the first run generates the blob and key):
@@ -184,9 +158,3 @@ oauth:
     client_id: your_id
     client_secret: your_secret
 ```
-
-## Next steps
-
-1. **[Choose your app shape →](/docs/developer/presets)** — Solo-default, Single-tenant, Open SaaS, or Workspace-optional. This is the most important decision; it sets signup, onboarding, and workspace behavior.
-2. **[Quickstart →](/docs/developer/quickstart)** — every step from a clone to a deployed product you can sign in to.
-3. **[Extend the framework →](/docs/developer/extending)** — add your own workspace-scoped models, authorization, and features.
