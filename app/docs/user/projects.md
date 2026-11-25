@@ -124,7 +124,7 @@ Per-project state is stored as a JSON array of key strings in `projects.enabled_
 
 New projects receive the registry's default enabled set (`Registry.default_keys`). The only built-in tool currently shipped is `:docs`.
 
-See [Project Tools](/docs/user/project-tools) for the full reference.
+See [Project Tools](/docs/developer/project-tools) for the full reference.
 
 ## Clientside (External Client Access)
 

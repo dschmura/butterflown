@@ -100,4 +100,4 @@ To customize onboarding in a fork:
 - **Skip onboarding entirely** — override `User#onboarded?` to always return `true`, or remove the `RequiresOnboarding` include from `ApplicationController`.
 - **Different landing** — override `authenticated_home_path` in `Authenticatable` (see [Workspace-optional (none)](/docs/developer/presets-none)).
 
-See [Project Tools](/docs/user/project-tools) for how the tools interstitial fits into the step flow.
+See [Project Tools](/docs/developer/project-tools) for how the tools interstitial fits into the step flow.

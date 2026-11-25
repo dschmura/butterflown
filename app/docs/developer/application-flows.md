@@ -27,7 +27,7 @@ code:
 
 # Application Flows
 
-For **developers and designers extending this template**. Each flow shows the screens as a wireframe; the **"Why"** beneath it — rendered as normal, readable prose — explains the framework decision, the seam you'd extend, or the guarantee it gives you. The end-user flows are intentionally tight, so this page is for *builders*, not users. For the full detail behind each journey, follow the per-flow links to [Email & verification](/docs/user/emails), [Onboarding](/docs/user/onboarding), [Project tools](/docs/user/project-tools), [Workspaces](/docs/user/workspaces), and [Clientside](/docs/user/clientside).
+For **developers and designers extending this template**. Each flow shows the screens as a wireframe; the **"Why"** beneath it — rendered as normal, readable prose — explains the framework decision, the seam you'd extend, or the guarantee it gives you. The end-user flows are intentionally tight, so this page is for *builders*, not users. For the full detail behind each journey, follow the per-flow links to [Email & verification](/docs/user/emails), [Onboarding](/docs/developer/onboarding), [Project tools](/docs/developer/project-tools), [Workspaces](/docs/user/workspaces), and [Clientside](/docs/user/clientside).
 
 ## The model behind every flow
 
