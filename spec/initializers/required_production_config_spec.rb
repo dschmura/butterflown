@@ -274,6 +274,10 @@ RSpec.describe RequiredProductionConfig do
   end
 
   describe ".refusals" do
+    it "says deploy, not redeploy, since deploy:check shows them before the first deploy" do
+      expect(described_class.refusals({}, {}, {}).join).not_to include("redeploy")
+    end
+
     it "lists every refusal at once, in the order a boot meets them" do
       refusals = described_class.refusals({ "OBJECT_STORAGE_BUCKET" => "app-backups" }, {}, {})
 

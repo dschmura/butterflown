@@ -57,7 +57,7 @@ class ProductionSetup
         Commit #{CONTENT} and fnox.toml.
         Back up #{KEY} and ~/.config/fnox/age.txt in your password manager. Never commit either.
         git diff, git show and git log -p show the credentials decrypted, so don't run them on a shared screen.
-      Next: bin/rails deploy:check, then the quickstart's step 5 (/docs/developer/quickstart)
+      Next: the quickstart's step 5 (/docs/developer/quickstart). bin/rails deploy:check refuses until step 6.
     DONE
   end
 
