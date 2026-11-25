@@ -12,7 +12,8 @@ RSpec.describe "docs topics with one owning page" do
       /^\| (?:Protected branch|`protected_branch`) \|/ => "before-you-push",
       /^#+ Turning a house cop off/ => "forking",
       /users:unlock\[/ => "security",
-      /^\| `(?:test_shard|js_advisory)` \|/ => "checks-on-github"
+      /^\| `(?:test_shard|js_advisory)` \|/ => "checks-on-github",
+      /^#+ Favicon and PWA Icons/ => "extending"
     }
   end
 

@@ -352,7 +352,24 @@ The lockup around it, `app/views/shared/_site_logo.html.erb`, is template-owned:
 <% end %>
 ```
 
-Use `h-*` on the child, not `size-*`: a wordmark is wider than tall, and a square box letterboxes it. The favicon and PWA icons in `public/` are the same artwork again, in the sizes [Getting started](getting-started#favicon-and-pwa-icons) lists; `public/icon.svg` colors itself with `prefers-color-scheme` rather than the app's `.dark` class because a favicon renders outside the document.
+Use `h-*` on the child, not `size-*`: a wordmark is wider than tall, and a square box letterboxes it. The favicon and PWA icons in `public/` are the same artwork again, in the sizes [listed below](#favicon-and-pwa-icons); `public/icon.svg` colors itself with `prefers-color-scheme` rather than the app's `.dark` class because a favicon renders outside the document.
+
+## Favicon and PWA Icons
+
+The app ships with a multi-format favicon setup in `public/`:
+
+| File | Purpose |
+|------|---------|
+| `favicon.ico` | Legacy browsers (any size) |
+| `icon.svg` | Modern browsers (scalable, crisp at all sizes) |
+| `apple-touch-icon.png` | iOS home screen bookmark |
+| `icon-192.png` | PWA icon (192x192) |
+| `icon-512.png` | PWA icon and splash screen (512x512) |
+| `manifest.webmanifest` | PWA manifest (app name, icons, theme) |
+
+The `<link>` tags that load them are in `app/views/shared/_layout_head.html.erb` and the docs layout, `app/views/layouts/markdowndocs/application.html.erb`.
+
+To replace with your own branding, swap the files in `public/` keeping the same filenames and sizes. Update `name` and `short_name` in `manifest.webmanifest` to match your app name.
 
 ## Branding the Header Bar
 
