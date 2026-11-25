@@ -9,7 +9,9 @@ RSpec.describe "docs topics with one owning page" do
     {
       /^#+ Spec conventions\b/ => "testing",
       /^#+ (?:One runner at a time|"Another process is holding the test database")/ => "testing",
-      /^\| (?:Protected branch|`protected_branch`) \|/ => "before-you-push"
+      /^\| (?:Protected branch|`protected_branch`) \|/ => "before-you-push",
+      /^#+ Turning a house cop off/ => "forking",
+      /users:unlock\[/ => "security"
     }
   end
 

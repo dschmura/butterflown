@@ -142,21 +142,6 @@ State persists across reloads via `localStorage`. The filter is applied to `<bod
 
 Biscuit's gem normally renders a floating "Manage cookies" button in the bottom-left corner. The app hides that button via CSS and replaces it with an in-footer button that triggers the gem's reopen action through DOM click dispatch. See `app/javascript/controllers/footer_controller.js` and the Footer Structure section of `ui-patterns.md` for the full pattern.
 
-## Key Commands
-
-| Command | Purpose |
-|---------|---------|
-| `bin/dev` | Start development server |
-| `bin/parallel-rspec` | Run full test suite in parallel (CI parity) |
-| `bin/test-plan --run` | Run the specs your branch's changes can break |
-| `bundle exec rspec` | Run focused specs single-process |
-| `bundle exec brakeman` | Security scan |
-| `rails 'users:unlock[email]'` | Unlock a locked account |
-| `rails 'users:verify[email]'` | Manually verify an email |
-| `rails 'users:suspend[email]'` | Suspend a user |
-
-The quotes around a bracketed task are for zsh, the shell a Mac opens by default: unquoted square brackets are a glob pattern, and the command stops at "no matches found" before Rails sees it.
-
 ## CI and Git Hooks
 
 The project uses a two-gate CI pipeline:
@@ -195,35 +180,7 @@ Six checks answer questions a per-PR run cannot, because what they watch changes
 
 ### Development Workflow
 
-1. Create a feature branch from `next`: `git switch -c my-feature origin/next`
-2. Write tests, implement, verify locally: `bin/test-plan --run` (or `bin/parallel-rspec` for the whole suite)
-3. Commit (pre-commit hook auto-fixes Ruby style and refuses YAML that won't parse)
-4. Push (pre-push runs the checks your change can break)
-5. Open a PR into `next` on GitHub (Actions run second round of checks)
-
-`next` gathers merged work until a release ships it to `main`; see [Releasing](/docs/developer/releasing).
-
-### Turning a house cop off in your fork
-
-Base ships eight house cops under `lib/rubocop` (`ModelRails/*`), configured in the base-owned `.rubocop/house.yml` and on by default. They are rules about how base writes code — the same kind of thing as the omakase config it inherits — and your fork is free to disagree with any of them. Do it in the fork-owned `.rubocop/app.yml`, which upstream never touches (`merge=ours`), with the reason on the line above:
-
-```yaml
-# Our admin area keeps a few verb routes on purpose; see ADR-7.
-ModelRails/RestfulActions:
-  Enabled: false
-```
-
-That is a decision with a name, which is what a reviewer or an agent reads first. It is not the place for offenses in code you inherited or wrote before a cop landed: those belong in `.rubocop_todo.yml`, which grandfathers by path and shrinks as files are fixed, while `app.yml` changes the rule itself. Never edit `.rubocop/house.yml` or `.rubocop.yml` in a fork; both are base-owned and every upstream sync would conflict.
-
-### Linting Commands
-
-```bash
-bundle exec rubocop                    # Check Ruby style
-bundle exec rubocop --autocorrect-all  # Auto-fix Ruby style
-bundle exec rake markdown:check        # Check markdown
-bundle exec rake markdown:lint         # Auto-fix + check markdown
-bundle exec rake erb:check             # Check ERB templates
-```
+Every change reaches `next` by a pull request from its own branch: [Quickstart step 3](quickstart#3-work-by-pull-request) shows the commands, and [How your code reaches users](how-code-ships) follows a PR from there to production.
 
 ## Favicon and PWA Icons
 

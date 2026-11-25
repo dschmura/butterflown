@@ -10,7 +10,7 @@ keywords: before push pre-push lefthook hook refused failed check rerun job test
 of the table below. The first check that fails stops the push. `bin/setup`
 installs the hooks; in a clone made before it did, run
 `bundle exec lefthook install` once. A pre-commit hook also fixes Ruby style
-in the files you stage. This page covers what to run before you
+in the files you stage, and refuses YAML that won't parse. This page covers what to run before you
 push, and what to do when a push is refused.
 
 ## Run the specs your change can break
