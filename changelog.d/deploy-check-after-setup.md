@@ -1,1 +1,0 @@
-- bin/production-setup sends you on to the quickstart's step 5 and warns that bin/rails deploy:check refuses until step 6, and the RAILS_HOST and mail refusals say "then deploy", which fits a first deploy.
