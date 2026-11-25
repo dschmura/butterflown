@@ -24,7 +24,7 @@ RSpec.describe "the Clientside docs" do
   it "walks the user through the screens by the labels they show" do
     labels = %w[
       clientside.settings.link clientside.settings.save clientside.invitations.new.link
-      clientside.invitations.new.email_label clientside.invitations.new.company_label clientside.invitations.new.submit
+      clientside.invitations.new.email_label clientside.invitations.new.submit
       workspaces.projects.resources.edit.share_with_client workspaces.projects.resources.edit.submit
       invitation_mailer.invite_client.action clientside.projects.show.shared_with_you
     ].map { |key| I18n.t(key) } + [ I18n.t("clientside.settings.toggle_label", project: "project") ]

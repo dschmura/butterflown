@@ -1,7 +1,7 @@
 ---
 title: Share with a Client
 description: Give someone outside your team a read-only view of chosen documents in one project — turn on client access, share documents, and invite the client.
-keywords: clientside client access external share client outside company invite read-only document resource
+keywords: clientside client access external share client outside invite read-only document resource
 ---
 
 # Share with a Client
@@ -36,7 +36,7 @@ Do this for each document the client should see.
 ## 3. Invite the client
 
 1. Open the project's **Client access** page and choose **Invite a client**.
-2. Enter their **Client email** and **Their company**, then choose **Send client invite**.
+2. Enter their **Client email**, then choose **Send client invite**.
 
 The client gets an email with a **View the invitation** button. The link works for 7 days, and only for the email address you sent it to. Someone who already has an account accepts in one click; anyone else sets up a sign-in first.
 

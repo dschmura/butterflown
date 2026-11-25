@@ -375,9 +375,9 @@ This step only appears when the registry has more than one toggleable tool.
 ### Invite a client
 
 1. From the Clientside settings page, navigate to the new client invitation form: `/workspaces/:slug/projects/:project_slug/client_invitations/new`.
-   **Expect:** A form with fields for the client's email address and company name.
+   **Expect:** A form with one field, the client's email address.
 2. Fill in the fields and submit (`POST /workspaces/:slug/projects/:project_slug/client_invitations`).
-   `Workspaces::Projects::ClientInvitationsController#create` calls `Invitation.invite_client!(project:, email:, company_name:, invited_by: Current.user)`, which creates a client-type `Invitation` and dispatches an invitation email via `InvitationMailer.with(invitation:).invite_client`.
+   `Workspaces::Projects::ClientInvitationsController#create` calls `Invitation.invite_client!(project:, email:, invited_by: Current.user)`, which creates a client-type `Invitation` and dispatches an invitation email via `InvitationMailer.with(invitation:).invite_client`.
    **Expect:** You are redirected back to the Clientside settings page with a "sent" notice. Check `/letter_opener` for the invitation email.
 
 ### Existing user accepts

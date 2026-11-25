@@ -1,4 +1,6 @@
 class Invitation < ApplicationRecord
+  self.ignored_columns += %w[company_name] # unused; dropped by a later migration
+
   class NotAcceptable < StandardError; end
   # Subclasses NotAcceptable so boundary rescues keep working; callers that care can still tell a wrong address apart.
   class EmailMismatch < NotAcceptable; end
@@ -28,7 +30,6 @@ class Invitation < ApplicationRecord
   normalizes :email, with: ->(e) { EmailNormalizer.normalize(e) || e }
   # Encrypted at rest (#902); deterministic because the pending-live unique index and bulk_invite! look up by email.
   encrypts :email, deterministic: true, downcase: true
-  encrypts :company_name
   # Rebuilt into URLs later (reminder, notification mailer), so it can't be a
   # digest; deterministic keeps find_by/the index working (#953). No downcase: base64.
   encrypts :token, deterministic: true

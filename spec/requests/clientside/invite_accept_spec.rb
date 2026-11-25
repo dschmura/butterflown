@@ -5,7 +5,7 @@ RSpec.describe "Accepting a client invitation", type: :request do
   let(:inviter) { project.created_by }
   let(:invitation) do
     Invitation.invite_client!(project: project, email: "dana@bigco.com",
-                              company_name: "BigCo", invited_by: inviter)
+                              invited_by: inviter)
   end
 
   it "an existing user gets a ClientAccess and lands in the client area" do

@@ -304,7 +304,7 @@ reaches production, and the app refuses to boot without it. `.kamal/secrets`
 takes `RAILS_MASTER_KEY` from the deploying environment, else reads
 `config/credentials/production.key`.
 
-Personal data — email addresses, names, company names — is encrypted at rest
+Personal data — email addresses and names — is encrypted at rest
 with Active Record Encryption, and **production refuses to boot without the
 keys**. Generate them once and paste the block into the production credentials:
 

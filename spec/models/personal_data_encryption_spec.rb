@@ -92,13 +92,6 @@ RSpec.describe "personal data at rest" do
       expect(envelope?(invitation.ciphertext_for(:email))).to be(true)
       expect { twin.save!(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
     end
-
-    it "stores company_name as ciphertext" do
-      invitation = create(:invitation, :client)
-
-      expect(envelope?(invitation.ciphertext_for(:company_name))).to be(true)
-      expect(invitation.reload.company_name).to eq("BigCo")
-    end
   end
 
   describe MagicLinkToken do
@@ -109,15 +102,6 @@ RSpec.describe "personal data at rest" do
 
       MagicLinkToken.create_for_email("ADA@Example.com")
       expect(MagicLinkToken.find_valid(first)).to be_nil
-    end
-  end
-
-  describe ClientAccess do
-    it "stores company_name as ciphertext" do
-      access = create(:client_access, company_name: "BigCo")
-
-      expect(envelope?(access.ciphertext_for(:company_name))).to be(true)
-      expect(access.reload.company_name).to eq("BigCo")
     end
   end
 

@@ -15,8 +15,6 @@
 
     <%= form.email_field :email, label: t("clientside.invitations.new.email_label"),
           required: true, autocomplete: "off" %>
-    <%= form.text_field :company_name, label: t("clientside.invitations.new.company_label"),
-          required: true %>
     <%= form.submit t("clientside.invitations.new.submit"), class: "btn-primary w-full" %>
   <% end %>
 </div>

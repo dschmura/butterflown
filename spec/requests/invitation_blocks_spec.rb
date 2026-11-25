@@ -113,7 +113,7 @@ RSpec.describe "Invitation blocks", type: :request do
 
       perform_enqueued_jobs(only: ActionMailer::MailDeliveryJob) do
         Invitation.invite_client!(project: create(:project, clientside_enabled: true),
-                                  email: "dana@bigco.com", company_name: "BigCo",
+                                  email: "dana@bigco.com",
                                   invited_by: inviter)
       end
       expect(ActionMailer::Base.deliveries).to be_empty

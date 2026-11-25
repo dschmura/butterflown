@@ -28,8 +28,8 @@ RSpec.describe "Client invitations (team side)", type: :request do
     workspace = project.workspace
     expect {
       post workspace_project_client_invitations_path(workspace, project),
-        params: { client_invitation: { email: "dana@bigco.com", company_name: "BigCo" } }
-    }.to change { project.invitations.where.not(company_name: nil).count }.by(1)
+        params: { client_invitation: { email: "dana@bigco.com" } }
+    }.to change { project.invitations.where(client: true).count }.by(1)
     expect(response).to redirect_to(edit_workspace_project_clientside_path(workspace, project))
   end
 
@@ -37,7 +37,7 @@ RSpec.describe "Client invitations (team side)", type: :request do
     project = team_project
     workspace = project.workspace
     post workspace_project_client_invitations_path(workspace, project),
-      params: { client_invitation: { email: "", company_name: "BigCo" } }
+      params: { client_invitation: { email: "" } }
     expect(response).to have_http_status(:unprocessable_entity)
     expect(flash[:alert]).to eq(I18n.t("clientside.invitations.invalid"))
   end
@@ -46,13 +46,13 @@ RSpec.describe "Client invitations (team side)", type: :request do
     project = team_project
     workspace = project.workspace
     post workspace_project_client_invitations_path(workspace, project),
-      params: { client_invitation: { email: "dana@bigco.com", company_name: "BigCo" } }
+      params: { client_invitation: { email: "dana@bigco.com" } }
     expect(response).to redirect_to(edit_workspace_project_clientside_path(workspace, project))
 
     expect {
       post workspace_project_client_invitations_path(workspace, project),
-        params: { client_invitation: { email: "dana@bigco.com", company_name: "BigCo" } }
-    }.not_to change { project.invitations.where.not(company_name: nil).count }
+        params: { client_invitation: { email: "dana@bigco.com" } }
+    }.not_to change { project.invitations.where(client: true).count }
     expect(response).to have_http_status(:unprocessable_entity)
   end
 
@@ -65,7 +65,7 @@ RSpec.describe "Client invitations (team side)", type: :request do
     def re_invite_outcome(workspace, project, email)
       2.times do |attempt|
         post workspace_project_client_invitations_path(workspace, project),
-          params: { client_invitation: { email: email, company_name: "BigCo" } }
+          params: { client_invitation: { email: email } }
         # Performs the mailer guard, which stamps the blocked row. only:, because
         # the user factory also queues CheckGravatarJob (network I/O).
         perform_enqueued_jobs(only: ActionMailer::MailDeliveryJob) if attempt.zero?
@@ -95,8 +95,8 @@ RSpec.describe "Client invitations (team side)", type: :request do
 
     expect {
       post workspace_project_client_invitations_path(workspace, project),
-        params: { client_invitation: { email: "dana@bigco.com", company_name: "BigCo" } }
-    }.to change { project.invitations.where.not(company_name: nil).count }.by(1)
+        params: { client_invitation: { email: "dana@bigco.com" } }
+    }.to change { project.invitations.where(client: true).count }.by(1)
   end
 
   context "as a viewer (no manage_members permission)" do
@@ -121,7 +121,7 @@ RSpec.describe "Client invitations (team side)", type: :request do
       sign_in_viewer_of(project)
       expect {
         post workspace_project_client_invitations_path(workspace, project),
-          params: { client_invitation: { email: "attacker@example.com", company_name: "Evil Corp" } }
+          params: { client_invitation: { email: "attacker@example.com" } }
       }.not_to change { Invitation.count }
       expect(response).to have_http_status(:redirect)
     end

@@ -5,7 +5,6 @@
 # See the ActiveSupport::ParameterFilter documentation for supported notations and behaviors.
 Rails.application.config.filter_parameters += [
   :passw, :email, :secret, :token, :_key, :crypt, :salt, :certificate, :otp, :ssn, :cvv, :cvc,
-  # Personal data beyond the Rails default: names and company names are
-  # request parameters on the profile, signup, and client-invitation forms.
-  :first_name, :last_name, :company_name
+  # Personal data beyond the Rails default: names on the profile and signup forms.
+  :first_name, :last_name
 ]

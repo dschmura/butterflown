@@ -395,13 +395,13 @@ RSpec.describe Invitation, type: :model do
       expect(inv).to be_valid
     end
 
-    it "is not a client invite just because a company name is set" do
-      expect(build(:invitation, company_name: "BigCo").client_invite?).to be(false)
+    it "is not a client invite unless it is flagged as one" do
+      expect(build(:invitation).client_invite?).to be(false)
     end
 
     it "allows a nil role only for client invites" do
       Role.system_default!("owner")
-      member = build(:invitation, role: nil, company_name: nil)
+      member = build(:invitation, role: nil)
       expect(member).not_to be_valid
       expect(member.errors[:role]).to be_present
     end
@@ -412,7 +412,7 @@ RSpec.describe Invitation, type: :model do
       inviter = create(:user)
       expect {
         Invitation.invite_client!(project: project, email: "dana@bigco.com",
-                                  company_name: "BigCo", invited_by: inviter)
+                                  invited_by: inviter)
       }.to have_enqueued_mail(InvitationMailer, :invite_client)
       inv = Invitation.last
       expect(inv.client).to be(true)
@@ -425,7 +425,7 @@ RSpec.describe Invitation, type: :model do
       project = clientside_project
       inviter = create(:user)
       inv = Invitation.invite_client!(project: project, email: "dana@bigco.com",
-                                      company_name: "BigCo", invited_by: inviter)
+                                      invited_by: inviter)
       client = create(:user, :with_zero_workspaces, email_address: "dana@bigco.com")
       expect { inv.accept!(client) }.to change { project.client_accesses.kept.count }.by(1)
       expect(project.client?(client)).to be(true)
@@ -438,7 +438,7 @@ RSpec.describe Invitation, type: :model do
       project = clientside_project
       inviter = create(:user)
       inv = Invitation.invite_client!(project: project, email: "dana@bigco.com",
-                                      company_name: "BigCo", invited_by: inviter)
+                                      invited_by: inviter)
       other = create(:user, :with_zero_workspaces, email_address: "evil@example.com")
       expect { Invitation.consume!(token: inv.token, user: other, expected_email: other.email_address) }
         .to raise_error(Invitation::EmailMismatch)
@@ -449,9 +449,9 @@ RSpec.describe Invitation, type: :model do
       project = clientside_project
       inviter = create(:user)
       inv = Invitation.invite_client!(project: project, email: "dana@bigco.com",
-                                      company_name: "BigCo", invited_by: inviter)
+                                      invited_by: inviter)
       client = create(:user, :with_zero_workspaces, email_address: "dana@bigco.com")
-      project.client_accesses.create!(user: client, company_name: "BigCo").discard!
+      project.client_accesses.create!(user: client).discard!
       project.update!(clientside_enabled: false)
 
       expect { inv.accept!(client) }.to raise_error(Invitation::NotAcceptable, /clientside is disabled/i)
@@ -462,7 +462,7 @@ RSpec.describe Invitation, type: :model do
       project = clientside_project
       inviter = create(:user)
       inv = Invitation.invite_client!(project: project, email: "happy@bigco.com",
-                                      company_name: "BigCo", invited_by: inviter)
+                                      invited_by: inviter)
       client = create(:user, :with_zero_workspaces, email_address: "happy@bigco.com")
       expect { inv.accept!(client) }.to change { project.client_accesses.kept.count }.by(1)
       expect(inv.reload).to be_accepted
@@ -480,7 +480,7 @@ RSpec.describe Invitation, type: :model do
       project = clientside_project
       inviter = create(:user)
       inv = Invitation.invite_client!(project: project, email: "dana@bigco.com",
-                                      company_name: "BigCo", invited_by: inviter)
+                                      invited_by: inviter)
       client = create(:user, :with_zero_workspaces, email_address: "dana@bigco.com")
       project.discard!
 
@@ -498,7 +498,7 @@ RSpec.describe Invitation, type: :model do
       project = clientside_project
       inviter = create(:user)
       inv = Invitation.invite_client!(project: project, email: "arch@bigco.com",
-                                      company_name: "BigCo", invited_by: inviter)
+                                      invited_by: inviter)
       client = create(:user, :with_zero_workspaces, email_address: "arch@bigco.com")
       project.workspace.archive!
 

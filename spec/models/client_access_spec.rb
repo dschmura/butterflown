@@ -1,15 +1,13 @@
 require "rails_helper"
 
 RSpec.describe ClientAccess, type: :model do
-  it "is valid with a company name on a clientside-enabled project" do
+  it "is valid on a clientside-enabled project" do
     access = build(:client_access)
     expect(access).to be_valid
   end
 
-  it "requires a company name" do
-    access = build(:client_access, company_name: "")
-    expect(access).not_to be_valid
-    expect(access.errors[:company_name]).to be_present
+  it "asks for nothing about the client but who they are" do
+    expect(described_class.attribute_names).not_to include("company_name")
   end
 
   it "is unique per (project, user)" do
@@ -37,7 +35,7 @@ RSpec.describe ClientAccess, type: :model do
     workspace = project.workspace
     before = workspace.memberships.kept.count
     client = create(:user)
-    described_class.create!(project: project, user: client, company_name: "BigCo")
+    described_class.create!(project: project, user: client)
     expect(workspace.memberships.kept.count).to eq(before)
     expect(workspace.users).not_to include(client)
   end

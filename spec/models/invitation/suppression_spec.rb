@@ -238,7 +238,7 @@ RSpec.describe "Invitation suppression schema", type: :model do
 
       outcomes = %w[blocked@bigco.com open@bigco.com].map do |email|
         Invitation.invite_client!(project: project, email: email,
-                                  company_name: "BigCo", invited_by: inviter)
+                                  invited_by: inviter)
         # The mailer guard stamps the blocked row here — the ghost that freed
         # the live slot. only:, because the user factory also queues
         # CheckGravatarJob, which does network I/O the suite disallows.
@@ -247,7 +247,7 @@ RSpec.describe "Invitation suppression schema", type: :model do
         raised = nil
         expect {
           Invitation.invite_client!(project: project, email: email,
-                                    company_name: "BigCo", invited_by: inviter)
+                                    invited_by: inviter)
         }.to raise_error { |e| raised = e.class }
         [ raised, project.invitations.where(email: email).count ]
       end
@@ -266,7 +266,7 @@ RSpec.describe "Invitation suppression schema", type: :model do
 
       outcomes = %w[stale@bigco.com fresh@bigco.com].map do |email|
         first = Invitation.invite_client!(project: project, email: email,
-                                          company_name: "BigCo", invited_by: inviter)
+                                          invited_by: inviter)
         # Stamps the blocked row. only:, because the user factory also queues
         # CheckGravatarJob, which does network I/O the suite disallows.
         perform_enqueued_jobs(only: ActionMailer::MailDeliveryJob)
@@ -275,7 +275,7 @@ RSpec.describe "Invitation suppression schema", type: :model do
         raised = nil
         begin
           Invitation.invite_client!(project: project, email: email,
-                                    company_name: "BigCo", invited_by: inviter)
+                                    invited_by: inviter)
         rescue StandardError => e
           raised = e.class
         end
