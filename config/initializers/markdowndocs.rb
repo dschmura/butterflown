@@ -23,7 +23,7 @@ Markdowndocs.configure do |config|
     "Ship a change"              => %w[developer/how-code-ships developer/before-you-push developer/testing developer/accessibility developer/releasing developer/conventions],
     "Run it in production"       => %w[developer/deployment developer/backups developer/required-production-config developer/email-delivery developer/background-jobs developer/operations developer/security developer/hot-cell],
     "Build features"             => %w[developer/extending developer/project-tools developer/onboarding developer/components developer/ui-patterns developer/form-drafts developer/i18n developer/machine-clients],
-    "Reference"                  => %w[developer/architecture developer/application-flows developer/users-and-workspaces developer/identity-system developer/membership-lifecycle developer/passkeys developer/notifications developer/qa-flows developer/troubleshooting]
+    "Reference"                  => %w[developer/architecture developer/application-flows developer/users-and-workspaces developer/avatars-and-logos developer/membership-lifecycle developer/passkeys developer/notifications developer/qa-flows developer/troubleshooting]
   }
 
   # Fork seam: a downstream fork registers its own docs pages in

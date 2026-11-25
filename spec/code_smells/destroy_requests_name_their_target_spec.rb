@@ -203,7 +203,7 @@ RSpec.describe "Code smell: destroy requests name their target" do
       "These DELETE requests have a target the census cannot read as a route with a DELETE action:\n  " \
       "#{unresolved.map { |entry| site.call(entry) }.join("\n  ")}\n" \
       "fix: pass a route helper (`workspace_logo_path(workspace)`), not a variable, method call or bare path, " \
-      "and check the route defines destroy.\nrule: /docs/developer/identity-system (Removing an Image), #1402\n" \
+      "and check the route defines destroy.\nrule: /docs/developer/avatars-and-logos (Removing an Image), #1402\n" \
       "blind spots:\n  - #{unwalked.join("\n  - ")}"
   end
 
@@ -223,7 +223,7 @@ RSpec.describe "Code smell: destroy requests name their target" do
       "discarded the workspace:\n  #{unconfirmed.map { |entry| site.call(entry) }.join("\n  ")}\n" \
       "fix: point the control at the child resource it names, or confirm the destroy with shared/confirm_dialog " \
       "(or turbo_confirm).\n" \
-      "rule: /docs/developer/identity-system (Removing an Image)\nblind spots:\n  - #{unwalked.join("\n  - ")}"
+      "rule: /docs/developer/avatars-and-logos (Removing an Image)\nblind spots:\n  - #{unwalked.join("\n  - ")}"
   end
 
   it "finds at least as many DELETE requests as it was written against" do
