@@ -57,7 +57,8 @@ RSpec.describe ForkFlow do
       ".gitignore" => ".env\n",
       "CHANGELOG.md" => "# Changelog\n\n## [Unreleased]\n\n### Fixed\n\n- A template fix.\n\n## v2026.10.27\n\n- Template history.\n",
       "config/application.rb" => "module ModelrailsBase\n  class Application < Rails::Application\n  end\nend\n",
-      "config/deploy.yml" => "service: modelrails_base\nimage: you/modelrails_base\n",
+      "config/deploy.yml" => "service: modelrails_base\nimage: you/modelrails_base\nenv:\n  clear:\n" \
+                             "    # RAILS_HOST: app.yourdomain.com   # required; production refuses to boot without it\n",
       "config/deploy.staging.yml" => "volumes:\n  - \"modelrails_base_staging_storage:/rails/storage\"\n",
       "config/locales/en/brand.en.yml" => %(en:\n  application:\n    name: "ModelRails"\n),
       "config/locales/en/pages.en.yml" => %(en:\n  pages:\n    brand: "ModelRails"\n    address: "support@example.com"\n),
@@ -1664,6 +1665,86 @@ RSpec.describe ForkFlow do
     it "refuses a --display-name containing a double quote or backslash" do
       expect { run_fork(name: "acmegarden", display_name: %(Bob "Shop"), yes: true) }
         .to raise_error(SystemExit, /Display name can't contain " or \\/)
+    end
+  end
+
+  describe "the domain" do
+    def deploy_yml = repo.join("config/deploy.yml").read
+
+    it "asks for the domain after the support address and sets RAILS_HOST in the rename commit" do
+      run_fork({ github: false }, terminal("acmegarden\n\n\nhelp@acme-garden.com\napp.acme-garden.com\n")) do |flow|
+        allow(flow).to receive(:offer_setup!).and_return(false)
+      end
+
+      support = printed.string.index("Support address")
+      domain = printed.string.index("Domain? (where the app will live, e.g. app.example.com; blank to set later) []")
+      expect(domain).to be > support
+      expect(capture_git("show", "HEAD:config/deploy.yml")).to include("\n    RAILS_HOST: app.acme-garden.com")
+      expect(deploy_yml).not_to include("# RAILS_HOST")
+    end
+
+    it "asks again when the answer is not a bare hostname" do
+      run_fork({ github: false }, terminal("acmegarden\n\n\n\napp.acme-garden.com/login\napp.example.com\napp.acme-garden.com\n")) do |flow|
+        allow(flow).to receive(:offer_setup!).and_return(false)
+      end
+
+      expect(printed.string).to include(%("app.acme-garden.com/login" has a path, port or space))
+        .and include(%("app.example.com" is a placeholder))
+      expect(deploy_yml).to include("    RAILS_HOST: app.acme-garden.com\n")
+    end
+
+    it "takes --domain, trimming a scheme, a trailing slash and a trailing dot" do
+      run_fork(name: "my_app", domain: " https://App.Acme-Garden.com./ ", yes: true)
+
+      expect(deploy_yml).to include("    RAILS_HOST: app.acme-garden.com\n")
+    end
+
+    it "refuses a --domain with a path, port or space, or a placeholder production refuses" do
+      [ "app.acme-garden.com/login", "app.acme-garden.com:3000", "app acme.com", "app.example.com", "my_app.example" ].each do |domain|
+        expect { run_fork(name: "my_app", domain:, yes: true) }.to raise_error(SystemExit, /bin\/fork: .*#{Regexp.escape(domain)}/)
+        expect(capture_git("log", "--oneline").lines.size).to eq(1)
+      end
+    end
+
+    it "leaves the commented RAILS_HOST line alone when no domain is given" do
+      run_fork(name: "my_app", yes: true)
+
+      expect(deploy_yml).to include("    # RAILS_HOST: app.yourdomain.com")
+    end
+
+    it "says so, and leaves RAILS_HOST to the owner, when deploy.yml no longer has the commented line" do
+      repo.join("config/deploy.yml").write("service: modelrails_base\nenv:\n  clear:\n    LOG_LEVEL: info\n")
+      git("commit", "-qam", "hand-edited deploy")
+
+      flow = run_fork(name: "my_app", domain: "app.acme-garden.com", yes: true)
+
+      expect(printed.string).to include("config/deploy.yml has no commented RAILS_HOST line")
+      expect(flow.todos.join).to include("RAILS_HOST: app.acme-garden.com under env.clear in config/deploy.yml")
+      expect(deploy_yml).not_to include("RAILS_HOST")
+    end
+
+    it "sets RAILS_HOST on a forked repo, once" do
+      run_fork(name: "my_app", yes: true)
+
+      run_fork(domain: "app.acme-garden.com", yes: true)
+      expect(capture_git("log", "-1", "--format=%s")).to eq("Set RAILS_HOST to app.acme-garden.com")
+      expect(capture_git("show", "--name-only", "--format=", "HEAD")).to eq("config/deploy.yml")
+      head = capture_git("rev-parse", "HEAD")
+
+      run_fork(domain: "app.acme-garden.com", yes: true)
+      expect(capture_git("rev-parse", "HEAD")).to eq(head)
+      expect(printed.string).to include("RAILS_HOST is app.acme-garden.com (already done)")
+    end
+
+    it "reports the RAILS_HOST edit under --dry-run without making it" do
+      run_fork(name: "my_app", domain: "app.acme-garden.com", dry_run: true, yes: true)
+
+      expect(printed.string).to include("[dry-run] would: config/deploy.yml: RAILS_HOST: app.acme-garden.com")
+      expect(deploy_yml).to include("# RAILS_HOST: app.yourdomain.com")
+    end
+
+    it "matches the commented line the template's own deploy.yml carries" do
+      expect(Rails.root.join("config/deploy.yml").read).to match(ForkFlow::RAILS_HOST_STUB)
     end
   end
 

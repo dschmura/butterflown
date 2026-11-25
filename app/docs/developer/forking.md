@@ -49,6 +49,8 @@ bin/fork
 - the project name (default: the folder's name, snake_cased),
 - the tenancy preset,
 - the support address users write to,
+- the domain the app will live at, which becomes `RAILS_HOST` in
+  `config/deploy.yml` (blank leaves it for later),
 - whether to create the GitHub repo, its owner (you or one of your
   organizations), and whether it's public (the default) or private,
 - whether a second person approves PRs (default: no, you merge your own).
@@ -64,7 +66,7 @@ can read what it did, and finish by hand if you ever need to. Without the `gh`
 CLI, it lists the GitHub steps instead.
 
 ```bash
-bin/fork --name my_app --display-name "My App" --preset personal --support-email help@my-app.com --github YOU --yes
+bin/fork --name my_app --display-name "My App" --preset personal --support-email help@my-app.com --domain app.my-app.com --github YOU --yes
 bin/fork --dry-run    # print the plan, change nothing
 ```
 
@@ -322,8 +324,8 @@ wherever the credentials key is backed up, because losing it loses every
 email lookup. Which columns, and why some are deterministic:
 [Security](/docs/developer/security#personal-data-at-rest).
 
-For production you'll also set `RAILS_HOST` and choose a signup mode — see
-`.env.example`, [Presets](presets), and [Deployment](deployment). The tenancy
+For production you'll also set `RAILS_HOST` (unless you gave `bin/fork` a
+domain) and choose a signup mode — see `.env.example`, [Presets](presets), and [Deployment](deployment). The tenancy
 preset needs nothing more: production uses the one `bin/fork` recorded in
 `.fork.yml`, and a `WORKSPACE_ON_SIGNUP` set in the environment overrides it.
 

@@ -40,17 +40,19 @@ brackets.
    ([Presets](presets)). Leave it blank to decide later.
 4. **Support address?** Where users write for help. Leave it blank to set it
    later.
-5. **Create the GitHub repo and push next to it?** [Y], asked when the GitHub
+5. **Domain?** Where the app will live, the hostname people will type. It
+   becomes `RAILS_HOST` in `config/deploy.yml`. Leave it blank to set it later.
+6. **Create the GitHub repo and push next to it?** [Y], asked when the GitHub
    CLI is signed in. Yes brings two more: **GitHub owner** (you, or one of your
    organizations) and **Public or private?** [public]. On GitHub's free plan,
    private also asks **Make it public instead?**, because a free private repo
    can't have branch rules. A checkout that already has an `origin` of your
    own, such as a clone of a GitHub fork, gets **Push next to origin and
    protect it?** [Y] instead.
-6. **Does a second person approve PRs?** [N]. Yes makes every PR wait for one
+7. **Does a second person approve PRs?** [N]. Yes makes every PR wait for one
    approval.
-7. **Run bin/setup now?** [Y]. That's step 2.
-8. **Start the app and open the quickstart?** [Y], asked once `bin/setup`
+8. **Run bin/setup now?** [Y]. That's step 2.
+9. **Start the app and open the quickstart?** [Y], asked once `bin/setup`
    succeeds. Yes starts `bin/dev` and opens this page in your browser.
 
 It moves `next` to the template's latest release, renames the app in one
@@ -229,7 +231,7 @@ Edit `config/deploy.yml`:
 - `builder.arch`: the server's, `amd64` or `arm64`.
   `ssh <user>@<server> uname -m` prints `x86_64` for amd64, `aarch64` for arm64.
 - `ssh:`: uncomment it, with `user:`, when `<user>` isn't root.
-- `RAILS_HOST`: your domain.
+- `RAILS_HOST`: your domain, already set if you gave `bin/fork` one.
 - `BACKUP_PATH: /backups`, and the `/srv/backups:/backups` line under
   `volumes:`, so the backup folder reaches the app.
 - `proxy:`: uncomment it, with `ssl: true` and `host:` your domain.
