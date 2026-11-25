@@ -108,7 +108,7 @@ RSpec.describe "the deployment guide" do
   it "names only backup tasks that exist" do
     require "rake"
     RakeTasks.load_once
-    named = guide.scan(/bin\/rails '?(backup:\w+)/).flatten.uniq
+    named = (guide + Rails.root.join("app/docs/developer/backups.md").read).scan(/bin\/rails '?(backup:\w+)/).flatten.uniq
 
     expect(named).to include("backup:now", "backup:status", "backup:restore")
     expect(named.reject { |task| Rake::Task.task_defined?(task) }).to be_empty
@@ -137,12 +137,23 @@ RSpec.describe "the deployment guide" do
     expect(guide).to include(printed.lines.first[/[^#]+/].strip)
   end
 
-  it "has every section the production preflight points to" do
-    sections = Rails.root.join("config/initializers/required_production_config.rb").read.scan(%r{/docs/developer/deployment \((.+?) section\)}).flatten
-    headings = guide.scan(/^#+ (?:\d+\. )?(.+)$/).flatten
+  it "has every section that production's own messages point an operator to" do
+    printers = %w[config/initializers/required_production_config.rb lib/deploy_check.rb app/models/database_backup.rb config/storage.yml]
+    cited = printers.flat_map { |file| Rails.root.join(file).read.scan(%r{/docs/developer/([a-z0-9-]+) \(([^)\n]+?)(?: section)?\)}) }
+    missing = cited.uniq.reject do |page, name|
+      Rails.root.join("app/docs/developer/#{page}.md").read.scan(/^#+ (?:\d+\. )?(.+)$/).flatten.any? { |heading| heading.split(":").first == name }
+    end
 
-    expect(sections).to include("Back up the database")
-    expect(sections - headings).to be_empty
+    expect(cited.map(&:first)).to include("deployment")
+    expect(missing).to be_empty, "cited sections with no heading: #{missing.map { |page, name| "#{page} (#{name})" }.join('; ')}"
+  end
+
+  it "sends every backup message to the Backups page" do
+    printers = %w[config/initializers/required_production_config.rb lib/deploy_check.rb app/models/database_backup.rb config/storage.yml
+                  config/required_production_config.yml config/deploy.yml]
+    stale = printers.select { |file| Rails.root.join(file).read.match?(/[Bb]ack up the database|[Bb]ackups?[^\n]*docs\/developer\/deployment/) }
+
+    expect(stale).to be_empty, "still sends backups to Deployment: #{stale.join(', ')}"
   end
 
   it "gives a deploy-host check that matches what kamal config prints" do

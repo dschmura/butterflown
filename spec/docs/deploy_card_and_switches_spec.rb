@@ -11,8 +11,8 @@ RSpec.describe "the deployment card and where the CI switches live" do
     end
   end
 
-  it "names backups on Deployment's index card" do
-    front = YAML.safe_load(deployment[/\A---\n(.*?)\n---\n/m, 1])
+  it "names backups and restore on the Backups card" do
+    front = YAML.safe_load(docs.join("backups.md").read[/\A---\n(.*?)\n---\n/m, 1])
 
     expect(front["description"]).to match(/back(ing)? up/i)
     expect(front["keywords"].split).to include("backup", "restore")

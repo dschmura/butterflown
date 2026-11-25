@@ -297,7 +297,7 @@ Add OAuth keys and `mailer.from` (structure in [Getting Started](/docs/developer
 and to production the mail provider's login as `smtp.user_name` and `smtp.password`
 ([Deployment](/docs/developer/deployment#4-configure-outbound-mail)) and, once
 backups go to a bucket, its key as `object_storage.access_key_id` and
-`object_storage.secret_access_key` ([Deployment](/docs/developer/deployment#move-to-a-bucket-when-the-data-matters)).
+`object_storage.secret_access_key` ([Backups](/docs/developer/backups#move-to-a-bucket-when-the-data-matters)).
 Commit your `.yml.enc` files; the `.key` files stay gitignored. Kamal builds the
 image from a clone of the commit, so an uncommitted credentials file never
 reaches production, and the app refuses to boot without it. `.kamal/secrets`
