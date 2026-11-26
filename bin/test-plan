@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
-# Usage: bin/test-plan [--base REF] [--github-output] [--run [--dry-run]]
+# Usage: bin/test-plan [--base REF] [--github-output] [--run [--dry-run]] | --green-skip [--github-output]
 # Prints this branch's change lanes and the specs they select; see /docs/developer/testing.
 require "optparse"
 require "open3"
+require "json"
 require_relative "../lib/change_lanes"
 require_relative "../lib/clean_git_env"
 
@@ -12,6 +13,7 @@ OptionParser.new do |parser|
   parser.on("--github-output") { options[:github_output] = true }
   parser.on("--run") { options[:run] = true }
   parser.on("--dry-run") { options[:dry_run] = true }
+  parser.on("--green-skip") { options[:green_skip] = true }
 end.parse!
 
 def git(*args)
@@ -24,8 +26,50 @@ def ref?(ref)
   system(CleanGitEnv::HASH, "git", "rev-parse", "--verify", "--quiet", "#{ref}^{commit}", out: File::NULL)
 end
 
+def changelog_only?(diff)
+  diff.lines(chomp: true).all? do |line|
+    status, path = line.split("\t", 2)
+    path == "CHANGELOG.md" ? status != "D" : path.match?(%r{\Achangelog\.d/(?!README\.md\z)[^/]+\.md\z})
+  end
+end
+
+def passing_push_run(sha)
+  query = "repos/#{ENV.fetch("GITHUB_REPOSITORY")}/actions/workflows/ci.yml/runs?head_sha=#{sha}&event=push&status=success"
+  out, status = Open3.capture2("gh", "api", query)
+  return unless status.success?
+
+  JSON.parse(out).fetch("workflow_runs").find do |run|
+    run.values_at("head_sha", "event", "conclusion") == [ sha, "push", "success" ]
+  end
+rescue KeyError, JSON::ParserError, SystemCallError
+  nil
+end
+
+# A commit that changes only the changelog from a parent CI passed on needs no tests; anything else, or any doubt, does.
+def green_skip(github_output:)
+  verdicts = git("rev-list", "--parents", "-n", "1", "HEAD").split.drop(1).map do |parent|
+    next "#{parent} differs beyond the changelog" unless changelog_only?(git("diff", "--name-status", "--no-renames", parent, "HEAD"))
+
+    run = passing_push_run(parent)
+    next "#{parent} differs only in the changelog, but no passing CI push run was found for it" unless run
+
+    break "skip the tests: HEAD differs from #{parent} only in the changelog, and CI passed on it (#{run["html_url"]})"
+  end
+  skip = verdicts.is_a?(String)
+  message = skip ? verdicts : "run the tests: #{verdicts.join("; ")}"
+
+  puts "green-skip: #{message}"
+  File.write(ENV["GITHUB_STEP_SUMMARY"], "green-skip: #{message}\n", mode: "a") if ENV["GITHUB_STEP_SUMMARY"]
+  File.write(ENV.fetch("GITHUB_OUTPUT"), skip ? "full=false\nskip=true\n" : "skip=false\n", mode: "a") if github_output
+end
+
 root = git("rev-parse", "--show-toplevel").chomp
 Dir.chdir(root)
+
+if options[:green_skip]
+  green_skip(github_output: options[:github_output])
+  exit
+end
 base = options[:base] || %w[origin/next origin/main].find { |ref| ref?(ref) }
 changed = if base
   git("diff", "--name-only", "--no-renames", git("merge-base", base, "HEAD").chomp) +
