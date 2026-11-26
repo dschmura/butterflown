@@ -101,26 +101,43 @@ RSpec.describe "bin/test-plan" do
 
     after { FileUtils.rm_rf(fakebin) }
 
+    let(:sleeps) { fakebin.join("sleeps.log") }
+
     before do
-      fakebin.join("gh").write("#!/bin/sh\necho \"$@\" >> \"$FAKE_GH_LOG\"\n[ -f \"$FAKE_GH_RESPONSE\" ] && cat \"$FAKE_GH_RESPONSE\"\n")
+      fakebin.join("gh").write(<<~'SH')
+        #!/bin/sh
+        echo "$@" >> "$FAKE_GH_LOG"
+        n=$(wc -l < "$FAKE_GH_LOG" | tr -d ' ')
+        if [ -f "$FAKE_GH_RESPONSE.$n" ]; then cat "$FAKE_GH_RESPONSE.$n"; elif [ -f "$FAKE_GH_RESPONSE" ]; then cat "$FAKE_GH_RESPONSE"; fi
+      SH
       fakebin.join("gh").chmod(0o755)
+      fakebin.join("fake_sleep.rb").write(
+        "module Kernel\n  def sleep(seconds) = File.write(ENV.fetch(\"FAKE_SLEEP_LOG\"), \"\#{seconds}\\n\", mode: \"a\")\nend\n"
+      )
     end
 
     def head
       Open3.capture2(CleanGitEnv::HASH, "git", "-C", repo.to_s, "rev-parse", "HEAD").first.chomp
     end
 
-    def ci_runs(*list)
-      runs.write({ workflow_runs: list }.to_json)
+    def ci_runs(*list, poll: nil)
+      Pathname.new([ runs, poll ].compact.join(".")).write({ workflow_runs: list }.to_json)
     end
 
-    def passed_push(sha) = { id: 7, head_sha: sha, event: "push", conclusion: "success", html_url: "https://example.test/runs/7" }
+    def passed_push(sha) = push_run(sha, "completed", "success")
 
-    def green_skip
+    def push_run(sha, status, conclusion = nil)
+      { id: 7, head_sha: sha, event: "push", status:, conclusion:, html_url: "https://example.test/runs/7" }
+    end
+
+    def slept = sleeps.exist? ? sleeps.read.lines.sum(&:to_i) : 0
+
+    def green_skip(env = {})
       test_plan("--green-skip", "--github-output", env: {
         "PATH" => "#{fakebin}:#{ENV.fetch("PATH")}", "GITHUB_REPOSITORY" => "example/app", "FAKE_GH_LOG" => gh_log.to_s,
-        "FAKE_GH_RESPONSE" => runs.to_s, "GITHUB_OUTPUT" => output.to_s, "GITHUB_STEP_SUMMARY" => summary.to_s
-      })
+        "FAKE_GH_RESPONSE" => runs.to_s, "GITHUB_OUTPUT" => output.to_s, "GITHUB_STEP_SUMMARY" => summary.to_s,
+        "RUBYOPT" => "#{ENV["RUBYOPT"]} -r#{fakebin.join("fake_sleep.rb")}", "FAKE_SLEEP_LOG" => sleeps.to_s
+      }.merge(env))
     end
 
     it "skips the tests when the commit differs from a parent CI passed on only in the changelog" do
@@ -138,7 +155,8 @@ RSpec.describe "bin/test-plan" do
       expect(output.read.lines(chomp: true)).to eq([ "full=false", "skip=true" ])
       expect(out).to include(green, "https://example.test/runs/7")
       expect(summary.read).to include(green)
-      expect(gh_log.read).to include("repos/example/app/actions/workflows/ci.yml/runs?head_sha=#{green}&event=push&status=success")
+      expect(gh_log.read).to include("repos/example/app/actions/workflows/ci.yml/runs?head_sha=#{green}&event=push")
+      expect(gh_log.read).not_to include("status=")
     end
 
     it "skips a merge whose tree is identical to its green second parent, though its first parent differs in code" do
@@ -186,7 +204,7 @@ RSpec.describe "bin/test-plan" do
 
     {
       "no run" => [],
-      "a run that failed" => [ { head_sha: :green, event: "push", conclusion: "failure" } ],
+      "a run that failed" => [ { head_sha: :green, event: "push", status: "completed", conclusion: "failure" } ],
       "a pull request's run, which tested a merge commit, not this one" => [ { head_sha: :green, event: "pull_request", conclusion: "success" } ],
       "another commit's run" => [ { head_sha: "0" * 40, event: "push", conclusion: "success" } ]
     }.each do |found, list|
@@ -200,6 +218,90 @@ RSpec.describe "bin/test-plan" do
         expect(output.read).to eq("skip=false\n")
         expect(out).to include("no passing CI push run")
       end
+    end
+
+    context "when the parent's push run has not finished" do
+      before { commit_file("CHANGELOG.md", "# Changelog\n") }
+
+      it "waits for it, then skips the tests once it passes" do
+        ci_runs(push_run(green, "queued"), poll: 1)
+        ci_runs(push_run(green, "in_progress"), poll: 2)
+        ci_runs(passed_push(green), poll: 3)
+
+        out, status = green_skip
+
+        expect(status.exitstatus).to eq(0)
+        expect(output.read).to eq("full=false\nskip=true\n")
+        expect(sleeps.read.lines(chomp: true)).to eq(%w[20 20])
+        expect(out).to include("CI passed on it (https://example.test/runs/7) after waiting 40s for that run")
+      end
+
+      it "waits for it, then runs the tests when it fails" do
+        ci_runs(push_run(green, "in_progress"), poll: 1)
+        ci_runs(push_run(green, "completed", "failure"), poll: 2)
+
+        out, _status = green_skip
+
+        expect(output.read).to eq("skip=false\n")
+        expect(slept).to eq(20)
+        expect(out).to include("no passing CI push run was found for it: its run concluded failure after waiting 20s")
+      end
+
+      it "gives up at the cap and runs the tests" do
+        ci_runs(push_run(green, "in_progress"))
+
+        out, _status = green_skip("GREEN_SKIP_WAIT_SECONDS" => "100")
+
+        expect(output.read).to eq("skip=false\n")
+        expect(slept).to eq(100)
+        expect(out).to include("its run was still in_progress after waiting 100s")
+      end
+
+      it "spends one wait across both parents of a merge" do
+        first = head
+        scratch_git(repo, "checkout", "-q", "-b", "other", green)
+        commit_file("changelog.d/fix-x.md", "- Fixed x.\n")
+        second = head
+        scratch_git(repo, "checkout", "-q", "work")
+        scratch_git(repo, "merge", "-q", "--no-ff", "-m", "merge", "other")
+        ci_runs(push_run(first, "in_progress"), push_run(second, "in_progress"))
+
+        out, _status = green_skip("GREEN_SKIP_WAIT_SECONDS" => "100")
+
+        expect(output.read).to eq("skip=false\n")
+        expect(slept).to eq(100)
+        expect(out).to include(first, second)
+      end
+
+      it "waits 8 minutes by default" do
+        ci_runs(push_run(green, "queued"))
+
+        _out, _status = green_skip
+
+        expect(slept).to eq(480)
+      end
+    end
+
+    it "gives a run that has not appeared a short grace, then runs the tests" do
+      commit_file("CHANGELOG.md", "# Changelog\n")
+      ci_runs
+
+      out, _status = green_skip
+
+      expect(output.read).to eq("skip=false\n")
+      expect(slept).to eq(60)
+      expect(out).to include("no passing CI push run was found for it: none appeared within 60s")
+    end
+
+    it "waits for a run that appears during the grace" do
+      commit_file("CHANGELOG.md", "# Changelog\n")
+      ci_runs(poll: 1)
+      ci_runs(passed_push(green), poll: 2)
+
+      _out, _status = green_skip
+
+      expect(output.read).to eq("full=false\nskip=true\n")
+      expect(slept).to eq(20)
     end
 
     it "runs the tests when GitHub can't be asked" do

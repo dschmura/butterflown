@@ -35,31 +35,60 @@ end
 
 LookupFailed = Class.new(StandardError)
 
-def passing_push_run(sha)
-  query = "repos/#{ENV.fetch("GITHUB_REPOSITORY")}/actions/workflows/ci.yml/runs?head_sha=#{sha}&event=push&status=success"
+POLL_SECONDS = 20
+GRACE_SECONDS = 60
+
+def push_runs(sha)
+  query = "repos/#{ENV.fetch("GITHUB_REPOSITORY")}/actions/workflows/ci.yml/runs?head_sha=#{sha}&event=push"
   out, err, status = Open3.capture3("gh", "api", query)
   raise LookupFailed, err.lines.first.to_s.chomp unless status.success?
 
-  JSON.parse(out).fetch("workflow_runs").find do |run|
-    run.values_at("head_sha", "event", "conclusion") == [ sha, "push", "success" ]
-  end
+  JSON.parse(out).fetch("workflow_runs").select { |run| run.values_at("head_sha", "event") == [ sha, "push" ] }
 rescue KeyError, JSON::ParserError, SystemCallError => error
   raise LookupFailed, error.message
 end
 
+# Polls the parent's push run until it passes, fails, or the wait runs out; returns [passing run or nil, why not, seconds waited].
+def await_push_run(sha, wait:)
+  waited = 0
+  loop do
+    runs = push_runs(sha)
+    passed = runs.find { |run| run["conclusion"] == "success" }
+    return [ passed, nil, waited ] if passed
+
+    pending = runs.find { |run| run["status"] != "completed" }
+    limit = runs.empty? ? [ GRACE_SECONDS, wait ].min : wait
+    if (runs.empty? || pending) && waited < limit
+      step = [ POLL_SECONDS, limit - waited ].min
+      sleep(step)
+      waited += step
+      next
+    end
+
+    why = if runs.empty? then "none appeared within #{waited}s"
+    elsif pending then "its run was still #{pending["status"]} after waiting #{waited}s"
+    else "its run concluded #{runs.first["conclusion"]}#{" after waiting #{waited}s" if waited.positive?}"
+    end
+    return [ nil, why, waited ]
+  end
+end
+
 # A commit that changes only the changelog from a parent CI passed on needs no tests; anything else, or any doubt, does.
 def green_skip(github_output:)
+  wait = Integer(ENV.fetch("GREEN_SKIP_WAIT_SECONDS", "480"))
   verdicts = git("rev-list", "--parents", "-n", "1", "HEAD").split.drop(1).map do |parent|
     next "#{parent} differs beyond the changelog" unless changelog_only?(git("diff", "--name-status", "--no-renames", parent, "HEAD"))
 
     begin
-      run = passing_push_run(parent)
+      run, why, waited = await_push_run(parent, wait:)
+      wait -= waited
     rescue LookupFailed => error
       next "the CI lookup for #{parent} failed (#{error.message})"
     end
-    next "#{parent} differs only in the changelog, but no passing CI push run was found for it" unless run
+    next "#{parent} differs only in the changelog, but no passing CI push run was found for it: #{why}" unless run
 
-    break "skip the tests: HEAD differs from #{parent} only in the changelog, and CI passed on it (#{run["html_url"]})"
+    waiting = " after waiting #{waited}s for that run" if waited.positive?
+    break "skip the tests: HEAD differs from #{parent} only in the changelog, and CI passed on it (#{run["html_url"]})#{waiting}"
   end
   skip = verdicts.is_a?(String)
   message = skip ? verdicts : "run the tests: #{verdicts.join("; ")}"
