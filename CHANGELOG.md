@@ -4,6 +4,12 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ## [Unreleased]
 
+## v2026.11.26-2
+
+### Changed
+
+- CI skips the specs on a commit that changes only the changelog from a commit CI already passed.
+
 ## v2026.11.26
 
 ### Changed

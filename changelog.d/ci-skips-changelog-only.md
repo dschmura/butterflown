@@ -1,1 +1,0 @@
-- CI skips the specs on a commit that changes only the changelog from a commit CI already passed.
