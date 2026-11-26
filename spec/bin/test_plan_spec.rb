@@ -293,6 +293,19 @@ RSpec.describe "bin/test-plan" do
       expect(out).to include("no passing CI push run was found for it: none appeared within 60s")
     end
 
+    it "gives no grace to a parent on neither next nor main, since push CI never runs on it" do
+      commit_file("CHANGELOG.md", "# Changelog\n")
+      unpushed = head
+      commit_file("changelog.d/fix-x.md", "- Fixed x.\n")
+      ci_runs
+
+      out, _status = green_skip
+
+      expect(output.read).to eq("skip=false\n")
+      expect(slept).to eq(0)
+      expect(out).to include("#{unpushed} differs only in the changelog, but no passing CI push run was found for it: none")
+    end
+
     it "waits for a run that appears during the grace" do
       commit_file("CHANGELOG.md", "# Changelog\n")
       ci_runs(poll: 1)

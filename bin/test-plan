@@ -38,6 +38,9 @@ LookupFailed = Class.new(StandardError)
 POLL_SECONDS = 20
 GRACE_SECONDS = 60
 
+# Push CI runs only on next and main, so a run for any other commit never appears.
+def pushed?(sha) = !git("branch", "-r", "--contains", sha, "--list", "origin/next", "origin/main").strip.empty?
+
 def push_runs(sha)
   query = "repos/#{ENV.fetch("GITHUB_REPOSITORY")}/actions/workflows/ci.yml/runs?head_sha=#{sha}&event=push"
   out, err, status = Open3.capture3("gh", "api", query)
@@ -49,7 +52,7 @@ rescue KeyError, JSON::ParserError, SystemCallError => error
 end
 
 # Polls the parent's push run until it passes, fails, or the wait runs out; returns [passing run or nil, why not, seconds waited].
-def await_push_run(sha, wait:)
+def await_push_run(sha, wait:, grace:)
   waited = 0
   loop do
     runs = push_runs(sha)
@@ -57,7 +60,7 @@ def await_push_run(sha, wait:)
     return [ passed, nil, waited ] if passed
 
     pending = runs.find { |run| run["status"] != "completed" }
-    limit = runs.empty? ? [ GRACE_SECONDS, wait ].min : wait
+    limit = runs.empty? ? [ grace, wait ].min : wait
     if (runs.empty? || pending) && waited < limit
       step = [ POLL_SECONDS, limit - waited ].min
       sleep(step)
@@ -65,7 +68,7 @@ def await_push_run(sha, wait:)
       next
     end
 
-    why = if runs.empty? then "none appeared within #{waited}s"
+    why = if runs.empty? then "none appeared#{" within #{waited}s" if waited.positive?}"
     elsif pending then "its run was still #{pending["status"]} after waiting #{waited}s"
     else "its run concluded #{runs.first["conclusion"]}#{" after waiting #{waited}s" if waited.positive?}"
     end
@@ -80,7 +83,7 @@ def green_skip(github_output:)
     next "#{parent} differs beyond the changelog" unless changelog_only?(git("diff", "--name-status", "--no-renames", parent, "HEAD"))
 
     begin
-      run, why, waited = await_push_run(parent, wait:)
+      run, why, waited = await_push_run(parent, wait:, grace: pushed?(parent) ? GRACE_SECONDS : 0)
       wait -= waited
     rescue LookupFailed => error
       next "the CI lookup for #{parent} failed (#{error.message})"
