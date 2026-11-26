@@ -1,1 +1,0 @@
-- CI's changelog-only skip waits up to 8 minutes for the parent commit's own CI run to finish instead of running the full suite while it is still going.

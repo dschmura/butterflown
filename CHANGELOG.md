@@ -4,6 +4,13 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ## [Unreleased]
 
+## v2026.11.26-3
+
+### Changed
+
+- CI's changelog-only skip waits up to 8 minutes for the parent commit's own CI run to finish instead of running the full suite while it is still going.
+- release_flow moves to 0.3.0: `bin/release status` shows where a release stands and what to run next, `--wait` follows a release step to the next decision, and the release workflow no longer goes red when a cut runs before CI finishes.
+
 ## v2026.11.26-2
 
 ### Changed
