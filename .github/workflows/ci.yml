@@ -98,8 +98,13 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # actions: read lets the green-skip step read CI's past runs.
+    permissions:
+      contents: read
+      actions: read
     outputs:
-      full: ${{ steps.plan.outputs.full || steps.push.outputs.full }}
+      full: ${{ steps.green.outputs.full || steps.plan.outputs.full || steps.push.outputs.full }}
+      skip: ${{ steps.green.outputs.skip }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -111,6 +116,14 @@ jobs:
         uses: ruby/setup-ruby@f9c4492e86def3e644ab32a0ef185eda5b0c20d0 # v1.342.0
         with:
           bundler-cache: false
+
+      # A commit only a changelog away from a parent CI passed on runs no tests; a failed lookup runs them.
+      - name: Skip the tests when a passing parent differs only in the changelog
+        id: green
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bin/test-plan --green-skip --github-output
 
       - name: Classify a pull request into next
         id: plan
@@ -279,7 +292,7 @@ jobs:
   # A lane-only pull request: a shard's setup on one runner, running only its lanes' specs.
   lane_specs:
     needs: changes
-    if: needs.changes.outputs.full == 'false'
+    if: needs.changes.outputs.full == 'false' && needs.changes.outputs.skip != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -337,15 +350,16 @@ jobs:
       RAILS_ENV: test
 
     steps:
-      - name: The full suite or the change's lane specs succeeded
+      - name: The full suite or the change's lane specs succeeded, or a green parent made both unnecessary
         id: shards
         env:
           FULL: ${{ needs.changes.outputs.full }}
+          SKIP: ${{ needs.changes.outputs.skip }}
           SHARDS: ${{ needs.test_shard.result }}
           LANE: ${{ needs.lane_specs.result }}
         run: |
-          if [ "$FULL" = true ]; then want="$SHARDS"; else want="$LANE"; fi
-          [ "$want" = success ] || { echo "full=$FULL shards=$SHARDS lane=$LANE"; exit 1; }
+          if [ "$SKIP" = true ]; then want=success; elif [ "$FULL" = true ]; then want="$SHARDS"; else want="$LANE"; fi
+          [ "$want" = success ] || { echo "full=$FULL skip=$SKIP shards=$SHARDS lane=$LANE"; exit 1; }
 
       - name: Checkout code
         if: needs.changes.outputs.full == 'true'
