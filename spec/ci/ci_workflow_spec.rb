@@ -98,6 +98,14 @@ RSpec.describe "the CI workflow" do
         expect(changes.dig("outputs", "skip")).to eq("${{ steps.#{green["id"]}.outputs.skip }}")
       end
 
+      it "waits for a parent's unfinished run inside the job's timeout, so a timeout falls back rather than failing the job" do
+        wait = Integer(green.dig("env", "GREEN_SKIP_WAIT_SECONDS"))
+
+        expect(wait).to eq(480)
+        expect(green["timeout-minutes"] * 60).to be >= wait + 120
+        expect(changes["timeout-minutes"]).to be > green["timeout-minutes"] + 3
+      end
+
       it "reads CI's past runs with a read-only token" do
         expect(changes["permissions"]).to eq("contents" => "read", "actions" => "read")
       end

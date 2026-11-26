@@ -97,7 +97,7 @@ jobs:
   # bin/test-plan is stdlib-only, so this runs before bundle install. /docs/developer/testing
   changes:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     # actions: read lets the green-skip step read CI's past runs.
     permissions:
       contents: read
@@ -118,11 +118,14 @@ jobs:
           bundler-cache: false
 
       # A commit only a changelog away from a parent CI passed on runs no tests; a failed lookup runs them.
+      # It waits up to GREEN_SKIP_WAIT_SECONDS for that parent's unfinished push run.
       - name: Skip the tests when a passing parent differs only in the changelog
         id: green
         continue-on-error: true
+        timeout-minutes: 10
         env:
           GH_TOKEN: ${{ github.token }}
+          GREEN_SKIP_WAIT_SECONDS: 480
         run: bin/test-plan --green-skip --github-output
 
       - name: Classify a pull request into next
