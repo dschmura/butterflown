@@ -193,8 +193,8 @@ provider gives you another user.
 - [ ] Security updates that install themselves
 - [ ] Docker from Docker's own repository
 - [ ] The host key, checked once
-- [ ] A folder for backups, `/srv/backups`, owned by uid 1000 (the app's user
-  inside its container)
+- [ ] A folder for backups, `/srv/backups/<your_app>`, owned by uid 1000 (the
+  app's user inside its container)
 
 **Your own hardware.** The same six items, and then every item in
 [Hardware you run yourself](deployment#hardware-you-run-yourself). Those are
@@ -202,9 +202,12 @@ required, not extra: no provider console or firewall stands behind a machine
 on your own network.
 
 **A host that already runs an app deployed this way.** It passed the lockdown
-when that app arrived, so skip it. Log in as that app's `ssh.user`. That app
-owns `/srv/backups`, so give this one a folder of its own (`-t` lets `sudo`
-ask for a password if it needs one):
+when that app arrived, so skip it. Log in as that app's `ssh.user`.
+
+Every server, new or shared, then needs the backup folder. `config/deploy.yml`
+already mounts `/srv/backups/<your_app>` (your app's snake name) and sets
+`BACKUP_PATH`; make the folder, owned by the app's user (`-t` lets `sudo` ask
+for a password if it needs one):
 
 ```bash
 ssh -t <user>@<server> sudo install -d -o 1000 -g 1000 /srv/backups/<your_app>
@@ -231,9 +234,7 @@ Edit `config/deploy.yml`:
 - `builder.arch`: the server's, `amd64` or `arm64`.
   `ssh <user>@<server> uname -m` prints `x86_64` for amd64, `aarch64` for arm64.
 - `ssh:`: uncomment it, with `user:`, when `<user>` isn't root.
-- `RAILS_HOST`: your domain, already set if you gave `bin/fork` one.
-- `BACKUP_PATH: /backups`, and the `/srv/backups:/backups` line under
-  `volumes:`, so the backup folder reaches the app.
+- `RAILS_HOST`: your domain.
 - `proxy:`: uncomment it, with `ssl: true` and `host:` your domain.
 - On the shared preset: `TENANCY_OWNER_EMAIL` (you) and
   `TENANCY_WORKSPACE_CREATION: disabled`.
@@ -266,9 +267,6 @@ yourdomain.com {
     reverse_proxy 127.0.0.1:8080
 }
 ```
-
-**A host that already runs an app.** The volume line is
-`/srv/backups/<your_app>:/backups`, the folder step 5 made.
 
 **A public repository.** Anyone can read `config/deploy.yml`, so keep the
 server's address in fnox instead, and replace the `servers:` block as
