@@ -117,7 +117,7 @@ RSpec.describe ProductionSetup do
     run_setup
 
     expect(output.string).to include("Next: the quickstart's step 5")
-    expect(output.string).to match(/deploy:check refuses until step 6/)
+    expect(output.string).to match(/deploy:check refuses until step 6 has run bin\/deploy-setup/)
   end
 
   it "prints its usage for --help and runs nothing" do
