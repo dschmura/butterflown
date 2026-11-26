@@ -1,0 +1,190 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "open3"
+require "optparse"
+require_relative "../lib/fork_config"
+
+class DeploySetup
+  class Stop < StandardError; end
+
+  FILE = "config/deploy.yml"
+  PLACEHOLDER_HOST = "192.168.0.1"
+  PRIVATE_HOST = %(<%= ENV.fetch("KAMAL_HOST") { `fnox get KAMAL_HOST 2>/dev/null`[/\\S+/] || "deploy-host.invalid" } %>)
+  ARCHES = { "x86_64" => "amd64", "amd64" => "amd64", "aarch64" => "arm64", "arm64" => "arm64" }.freeze
+
+  HOSTS = /^(servers:\n  web:\n    hosts:\n      - )(.+)\n(?!      -)/
+  ARCH = /^(builder:\n  arch: )(\S+)$/
+  SSH = /^(?:# )?ssh:\n#? +user: .*\n/
+  PROXY = /^# proxy:\n#   ssl: true\n#   host: \S+\n|^proxy:\n(?:  .*\n)+/
+
+  def initialize(root:, env: ENV, input: $stdin, output: $stdout)
+    @root = root
+    @env = env.to_h
+    @input = input
+    @output = output
+    @missing = []
+  end
+
+  def run
+    @text = File.read(path(FILE))
+    answers = ask_all
+    store_private_host!(answers[:server]) if answers[:private]
+    write!(answers)
+    deploy_check
+  rescue Stop => e
+    say e.message
+    1
+  end
+
+  private
+
+  def ask_all
+    server = ask("Server address?", current_server, required: true)
+    private = yes?("Keep the server address out of the repository (in fnox)?", private_by_default?)
+    user = ask("SSH user?", current_ssh_user || "root", required: true)
+    arch = detect_arch(user, server) || ask_arch
+    front = yes?("Does something in front of the server handle HTTPS (another web server or a tunnel)?", proxy_value("ssl") == "false")
+    ports = front && [ ask_port("HTTP port kamal-proxy listens on?", proxy_value("http_port") || "8080"),
+                       ask_port("HTTPS port kamal-proxy listens on?", proxy_value("https_port") || "8443") ]
+    domain = ask("Domain?", env_value("RAILS_HOST") || proxy_value("host"), required: true)
+    owner = ask("Owner's email, seeded as the shared workspace's first owner?", env_value("TENANCY_OWNER_EMAIL"), required: true) if shared?
+    { server:, private:, user:, arch:, ports:, domain:, owner: }
+  end
+
+  def write!(answers)
+    edit(HOSTS, "servers: web: hosts:", "one line, - #{answers[:server]}") { "#{it[1]}#{answers[:private] ? PRIVATE_HOST : answers[:server]}\n" }
+    edit(ARCH, "builder: arch:", "arch: #{answers[:arch]}") { "#{it[1]}#{answers[:arch]}" }
+    edit(SSH, "ssh:", "ssh: with user: #{answers[:user]}") { "ssh:\n  user: #{answers[:user]}\n" } unless answers[:user] == "root" && !current_ssh_user
+    edit(PROXY, "proxy:", "proxy: with ssl: and host: #{answers[:domain]}") { proxy_block(answers[:domain], answers[:ports]) }
+    set_env("RAILS_HOST", "#{answers[:domain]}   # required; production refuses to boot without it")
+    if answers[:owner]
+      set_env("TENANCY_OWNER_EMAIL", answers[:owner])
+      set_env("TENANCY_WORKSPACE_CREATION", "disabled")
+    end
+    File.write(path(FILE), @text)
+    say "\nWrote #{FILE}."
+    @missing.each { say it }
+    say "The front still needs its own entry for #{answers[:domain]}, passing requests to port #{answers[:ports].first}: quickstart step 6." if answers[:ports]
+  end
+
+  def proxy_block(domain, ports)
+    block = "proxy:\n  ssl: #{!ports}\n  host: #{domain}\n"
+    ports ? "#{block}  run:\n    http_port: #{ports[0]}\n    https_port: #{ports[1]}\n" : block
+  end
+
+  def set_env(key, value)
+    edit(/^    (?:# )?#{key}: .*\n/, key, "under env: clear:, #{key}: #{value[/\S+/]}") { "    #{key}: #{value}\n" }
+  end
+
+  def edit(pattern, what, hint)
+    return if @text.sub!(pattern) { yield Regexp.last_match }
+
+    @missing << "Couldn't find #{what} in #{FILE}, so it wasn't changed: set it by hand (#{hint})."
+  end
+
+  def store_private_host!(server)
+    raise Stop, "fnox isn't installed, so the server address can't be kept out of the repository. Run bin/fnox-setup first." unless installed?("fnox")
+    return if fnox_host == server
+
+    _, status = tool("fnox", "set", "KAMAL_HOST", "--provider", "age-production", stdin: server)
+    raise Stop, "fnox couldn't store KAMAL_HOST, so #{FILE} wasn't changed. Run bin/fnox-setup first, then bin/deploy-setup again." unless status.success?
+
+    say "Stored the server address in fnox as KAMAL_HOST. Commit fnox.toml."
+  end
+
+  def detect_arch(user, server)
+    out, status = tool("ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "#{user}@#{server}", "uname", "-m") if installed?("ssh")
+    arch = ARCHES[out.to_s.strip] if status&.success?
+    say(arch ? "✓ #{server} runs #{out.strip}, so builder arch is #{arch}" : "Couldn't ask #{user}@#{server} its arch over SSH.")
+    arch
+  end
+
+  def ask_arch
+    loop do
+      answer = ask("Server arch, amd64 or arm64?", @text[ARCH, 2], required: true)
+      return answer if ARCHES.value?(answer)
+    end
+  end
+
+  def ask_port(question, default)
+    loop do
+      answer = ask(question, default, required: true)
+      return answer if answer.match?(/\A\d+\z/)
+    end
+  end
+
+  def yes?(question, default)
+    loop do
+      answer = ask(question, nil, hint: default ? "(Y/n)" : "(y/N)")
+      return default if answer.empty?
+      return true if answer.match?(/\Ay/i)
+      return false if answer.match?(/\An/i)
+    end
+  end
+
+  def ask(question, default, required: false, hint: default && "[#{default}]")
+    loop do
+      @output.print [ question, hint ].compact.join(" "), " "
+      line = @input.gets
+      @output.puts line.to_s.chomp unless @input.tty?
+      answer = line.to_s.strip.then { it.empty? ? default.to_s : it }
+      return answer unless required && answer.empty?
+      raise Stop, "No answer to \"#{question}\", so nothing was changed." if line.nil?
+    end
+  end
+
+  def current_server
+    host = @text[HOSTS, 2]
+    return fnox_host || @env["KAMAL_HOST"] if host&.include?("<%")
+
+    host unless host == PLACEHOLDER_HOST
+  end
+
+  def private_by_default?
+    return true if @text[HOSTS, 2]&.include?("<%")
+
+    visibility, status = tool("gh", "repo", "view", "--json", "visibility", "-q", ".visibility") if installed?("gh")
+    !status&.success? || visibility.strip == "PUBLIC"
+  end
+
+  def fnox_host
+    out, status = tool("fnox", "get", "KAMAL_HOST") if installed?("fnox")
+    out.strip if status&.success? && !out.strip.empty?
+  end
+
+  def current_ssh_user = @text[/^ssh:\n  user: (\S+)/, 1]
+  def proxy_value(key) = @text[PROXY].to_s[/^ {2,4}#{key}: (\S+)/, 1].then { it unless @text[PROXY].to_s.start_with?("#") }
+  def env_value(key) = @text[/^    #{key}: ["']?([^"'\s]+)/, 1]
+
+  def shared?
+    recorded = { "WORKSPACE_ON_SIGNUP" => env_value("WORKSPACE_ON_SIGNUP") }.compact
+    ForkConfig.tenancy_env(@root, env: recorded, test: false)["WORKSPACE_ON_SIGNUP"] == "shared"
+  end
+
+  def deploy_check
+    say "\n== bin/rails deploy:check =="
+    system(@env, path("bin/rails"), "deploy:check", chdir: @root)
+    $?.exitstatus || 1
+  end
+
+  def tool(*command, stdin: nil)
+    out, _err, status = Open3.capture3(@env, *command, stdin_data: stdin.to_s, chdir: @root)
+    [ out, status ]
+  end
+
+  def installed?(name)
+    @env.fetch("PATH", "").split(File::PATH_SEPARATOR).any? { File.executable?(File.join(it, name)) }
+  end
+
+  def path(relative) = File.join(@root, relative)
+  def say(message) = @output.puts(message)
+end
+
+if $PROGRAM_NAME == __FILE__
+  OptionParser.new do |o|
+    o.banner = "Usage: bin/deploy-setup   (asks for the server and domain, writes #{DeploySetup::FILE}, then runs bin/rails deploy:check)"
+  end.parse!
+
+  exit DeploySetup.new(root: File.expand_path("..", __dir__)).run
+end
