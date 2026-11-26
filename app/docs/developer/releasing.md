@@ -226,14 +226,19 @@ Working alone, the flow is the same with fewer people in it. `bin/branch-rules
 `DEPLOY_STAGING` unset), and each release still gets its changelog section,
 its tag and a commit to roll back to.
 
-`bin/release` runs each step. Every command takes `--dry-run`.
+`bin/release` runs each step. Every command takes `--dry-run`. `prepare`,
+`cut`, `ship` and `merge-back` also take `--wait`: instead of returning at
+once, the command follows the PR it opened and prints a line at each stage,
+until the next step is yours.
 
 | Step | Command |
 | --- | --- |
+| See where the release stands, and what to run next | `bin/release status` |
 | Name the release in the changelog | `bin/release prepare` |
 | Cut a release | `bin/release cut` |
 | Ship the reviewed commit | `bin/release ship` |
 | Merge `main` back after a hotfix | `bin/release merge-back` |
+| Check that shipped release notes are unchanged | `bin/release check` |
 
 ## Before it merges
 
