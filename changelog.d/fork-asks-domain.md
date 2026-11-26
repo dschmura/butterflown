@@ -1,1 +1,0 @@
-- `bin/fork` asks for your domain (or takes `--domain`) and sets `RAILS_HOST` in `config/deploy.yml`, so the first deploy no longer stops on "RAILS_HOST is unset".
