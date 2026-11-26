@@ -4,6 +4,17 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ## [Unreleased]
 
+## v2026.11.26
+
+### Changed
+
+- `config/deploy.yml` ships with backups on: `BACKUP_PATH` is set and `/srv/backups/<your_app>` is mounted, so a fork's first deploy backs up once that folder exists on the server.
+- `bin/fork` asks for your domain (or takes `--domain`) and sets `RAILS_HOST` in `config/deploy.yml`, so the first deploy no longer stops on "RAILS_HOST is unset".
+
+### Added
+
+- `bin/deploy-setup` asks for the server, SSH user, domain and HTTPS front, writes `config/deploy.yml`, and runs `bin/rails deploy:check`.
+
 ## v2026.11.25-4
 
 ### Changed
