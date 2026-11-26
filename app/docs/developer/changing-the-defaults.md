@@ -27,7 +27,7 @@ linked section has the details.
 | Host | One Linux server you rent, deployed with Kamal | Your own hardware runs the same Kamal setup; another platform follows the portable contract | [Hardware you run yourself](deployment#hardware-you-run-yourself), [Deploying without Kamal](deployment#deploying-without-kamal) |
 | Image registry | A local registry: images stay on your machines | `registry:` in `config/deploy.yml`, such as GitHub's `ghcr.io` | [Changing the registry](deployment#changing-the-registry) |
 | Mail provider | Postmark | `bin/mail-setup`, which also sets up Amazon SES or any SMTP server | [Configure outbound mail](deployment#4-configure-outbound-mail) |
-| Backups | Off until you name a destination; then daily | `BACKUP_PATH` for a folder, or `OBJECT_STORAGE_BUCKET` for a bucket, under `env.clear` in `config/deploy.yml`; `BACKUP_SCHEDULE` for how often | [Backups](backups) |
+| Backups | Daily, to the folder a fork ships with set, `/srv/backups/<your_app>` | `BACKUP_PATH` for a folder, or `OBJECT_STORAGE_BUCKET` for a bucket, under `env.clear` in `config/deploy.yml`; `BACKUP_SCHEDULE` for how often; remove `BACKUP_PATH` to turn backups off | [Backups](backups) |
 
 ## How changes ship
 

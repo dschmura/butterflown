@@ -74,12 +74,13 @@ Rent a Linux server (a current Ubuntu LTS image works) and note whether it is
   `~/.ssh/known_hosts`. Keep the file: CI needs it in
   [step 6](#6-deploy-from-ci). A staging server gets its own.
 - **A folder for backups.** Once a day the app backs up its database and
-  uploaded files to a folder you name. A folder on the server's own disk is
-  enough to start; a second drive, a NAS, or later a bucket survive more
+  uploaded files to `/srv/backups/<your_app>`, the folder `config/deploy.yml`
+  ships mounted. A folder on the server's own disk is enough to start; a
+  second drive, a NAS, or later a bucket survive more
   ([Back up the database](backups)):
 
   ```bash
-  mkdir -p /srv/backups && chown 1000:1000 /srv/backups
+  install -d -o 1000 -g 1000 /srv/backups/<your_app>
   ```
 
 Check: `ssh root@<server-ip> docker version` prints the server's Docker
@@ -110,12 +111,12 @@ builder:
 
 volumes:
   - "modelrails_base_storage:/rails/storage"
-  - "/srv/backups:/backups"    # the folder from step 1
+  - "/srv/backups/modelrails_base:/backups"   # ships set; the folder from step 1
 
 env:
   clear:
     RAILS_HOST: app.yourdomain.com
-    BACKUP_PATH: /backups
+    BACKUP_PATH: /backups      # ships set
 ```
 
 - **`proxy:`** turns on HTTPS. A deploy without it reports healthy while
@@ -123,8 +124,9 @@ env:
 - **`RAILS_HOST`** is the host every email link is built from. Production
   refuses to boot without it ([Production preflight](#production-preflight)).
 - **`BACKUP_PATH`** is where the folder from step 1 appears inside the
-  container. Without it production still boots, and its log says backups are
-  off ([Back up the database](backups)).
+  container. It ships set, so backups run from the first deploy; remove it
+  and production still boots, and its log says backups are off
+  ([Back up the database](backups)).
 - **`registry:`** stays as shipped. `localhost:5555` is Kamal's local
   registry: Kamal runs a registry on the machine doing the deploy, and the
   server pulls the new image from it through the deploy's SSH connection. No
@@ -658,8 +660,8 @@ Check: `fnox check --all` passes, and `bin/kamal deploy` works as before.
 ### Keep the deploy host out of a public repository
 
 `config/deploy.yml` names your server, and anyone can read a public
-repository. Store the server's address with fnox instead, typing it at the
-hidden prompt:
+repository. `bin/deploy-setup` offers to keep the address in fnox instead, and
+does both steps below. By hand, store it, typing it at the hidden prompt:
 
 ```bash
 fnox set KAMAL_HOST --provider age-production
@@ -669,26 +671,23 @@ Then read it in `config/deploy.yml`. The template ships this `servers:` block
 (before):
 
 ```yaml
-# Deploy to these servers.
 servers:
   web:
     hosts:
       - 192.168.0.1
 ```
 
-Replace those lines with these (after). The comment line stays a comment:
+Replace the host's line with this one (after), all on one line:
 
 ```yaml
-# Deploy to these servers.
-# <% deploy_host = ENV.fetch("KAMAL_HOST") { `fnox get KAMAL_HOST 2>/dev/null`[/\S+/] || "deploy-host.invalid" } %>
 servers:
   web:
     hosts:
-      - <%= deploy_host %>
+      - <%= ENV.fetch("KAMAL_HOST") { `fnox get KAMAL_HOST 2>/dev/null`[/\S+/] || "deploy-host.invalid" } %>
 ```
 
-Kamal runs the whole file through ERB before it reads the YAML, comment lines
-included, so the second line sets `deploy_host` and adds nothing to the YAML.
+Kamal runs the whole file through ERB before it reads the YAML, so the line
+becomes the address.
 
 `KAMAL_HOST` in the environment wins over fnox, so a CI job can pass it as a
 secret instead. With neither, the name is `deploy-host.invalid`, which never
