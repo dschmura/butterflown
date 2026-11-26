@@ -40,17 +40,19 @@ brackets.
    ([Presets](presets)). Leave it blank to decide later.
 4. **Support address?** Where users write for help. Leave it blank to set it
    later.
-5. **Create the GitHub repo and push next to it?** [Y], asked when the GitHub
+5. **Domain?** Where the app will live, the hostname people will type. It
+   becomes `RAILS_HOST` in `config/deploy.yml`. Leave it blank to set it later.
+6. **Create the GitHub repo and push next to it?** [Y], asked when the GitHub
    CLI is signed in. Yes brings two more: **GitHub owner** (you, or one of your
    organizations) and **Public or private?** [public]. On GitHub's free plan,
    private also asks **Make it public instead?**, because a free private repo
    can't have branch rules. A checkout that already has an `origin` of your
    own, such as a clone of a GitHub fork, gets **Push next to origin and
    protect it?** [Y] instead.
-6. **Does a second person approve PRs?** [N]. Yes makes every PR wait for one
+7. **Does a second person approve PRs?** [N]. Yes makes every PR wait for one
    approval.
-7. **Run bin/setup now?** [Y]. That's step 2.
-8. **Start the app and open the quickstart?** [Y], asked once `bin/setup`
+8. **Run bin/setup now?** [Y]. That's step 2.
+9. **Start the app and open the quickstart?** [Y], asked once `bin/setup`
    succeeds. Yes starts `bin/dev` and opens this page in your browser.
 
 It moves `next` to the template's latest release, renames the app in one
@@ -191,8 +193,8 @@ provider gives you another user.
 - [ ] Security updates that install themselves
 - [ ] Docker from Docker's own repository
 - [ ] The host key, checked once
-- [ ] A folder for backups, `/srv/backups`, owned by uid 1000 (the app's user
-  inside its container)
+- [ ] A folder for backups, `/srv/backups/<your_app>`, owned by uid 1000 (the
+  app's user inside its container)
 
 **Your own hardware.** The same six items, and then every item in
 [Hardware you run yourself](deployment#hardware-you-run-yourself). Those are
@@ -200,9 +202,12 @@ required, not extra: no provider console or firewall stands behind a machine
 on your own network.
 
 **A host that already runs an app deployed this way.** It passed the lockdown
-when that app arrived, so skip it. Log in as that app's `ssh.user`. That app
-owns `/srv/backups`, so give this one a folder of its own (`-t` lets `sudo`
-ask for a password if it needs one):
+when that app arrived, so skip it. Log in as that app's `ssh.user`.
+
+Every server, new or shared, then needs the backup folder. `config/deploy.yml`
+already mounts `/srv/backups/<your_app>` (your app's snake name) and sets
+`BACKUP_PATH`; make the folder, owned by the app's user (`-t` lets `sudo` ask
+for a password if it needs one):
 
 ```bash
 ssh -t <user>@<server> sudo install -d -o 1000 -g 1000 /srv/backups/<your_app>
@@ -236,16 +241,13 @@ Run `bin/deploy-setup`. It asks these questions, offering what
   over SSH, and asks you only when SSH can't reach it.
 - **Does something in front of the server handle HTTPS?** No turns on
   kamal-proxy's SSL. Yes asks for kamal-proxy's two ports instead (below).
-- **Domain?** `proxy:`'s `host:` and `RAILS_HOST`.
+- **Domain?** `proxy:`'s `host:` and `RAILS_HOST`; the default is the domain
+  you gave `bin/fork`, if any.
 - On the shared preset, **Owner's email?** `TENANCY_OWNER_EMAIL`, and it sets
   `TENANCY_WORKSPACE_CREATION: disabled`.
 
 It ends by running `bin/rails deploy:check`. If your `config/deploy.yml` no
 longer has a line it expects, it names the setting to change by hand.
-Then edit `config/deploy.yml` for the backups:
-
-- `BACKUP_PATH: /backups`, and the `/srv/backups:/backups` line under
-  `volumes:`, so the backup folder reaches the app.
 
 Then whichever of these fit:
 
@@ -276,9 +278,6 @@ yourdomain.com {
     reverse_proxy 127.0.0.1:8080
 }
 ```
-
-**A host that already runs an app.** The volume line is
-`/srv/backups/<your_app>:/backups`, the folder step 5 made.
 
 **The address kept in fnox.** Commit `fnox.toml`. Then
 `bin/kamal config | grep -A1 :hosts:` prints your server's address, not

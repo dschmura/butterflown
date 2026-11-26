@@ -16,7 +16,7 @@
 #
 #   bin/fork                                   # interactive Q&A
 #   bin/fork --name my_app --preset none --origin git@github.com:me/my_app.git --yes
-#   bin/fork --name my_app --display-name "My App" --yes
+#   bin/fork --name my_app --display-name "My App" --domain app.my-app.com --yes
 #   bin/fork --preset shared                   # on a forked repo: change the preset
 #   bin/fork --dry-run                         # print the plan, mutate nothing
 #
@@ -135,6 +135,10 @@ class ForkFlow
   BLOCK_COMMENT_CLOSE = %r{\*/|%>|-->}
   # The shapes the fork_only placeholder check in template_invariants_spec.rb fails on.
   PLACEHOLDER_EMAIL = /[\w.+-]+@[\w.-]+\.example\b|[\w.+-]+@example\.com\b/
+  DEPLOY_FILE = "config/deploy.yml"
+  # The template's commented RAILS_HOST line; a fork that rewrote it is told, never guessed at.
+  RAILS_HOST_STUB = /^( *)# RAILS_HOST: app\.yourdomain\.com\b.*$/
+  PRODUCTION_PREFLIGHT = File.expand_path("../config/initializers/required_production_config.rb", __dir__)
   # ReleaseFlow::Changelog::NAME with its parts named; this script runs before bundle install.
   RELEASE_TAG = /\Av(?<date>\d{4}\.\d{2}\.\d{2})(?:-(?<n>\d+))?\z/
 
@@ -408,6 +412,23 @@ class ForkFlow
 
   def self.placeholder_email?(address) = !address.include?("@") || address.match?(PLACEHOLDER_EMAIL)
 
+  HOSTNAME = /\A[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+\z/
+
+  def self.normalize_domain(raw) = raw.to_s.strip.sub(%r{\Ahttps?://}i, "").chomp("/").chomp(".").downcase
+
+  def self.domain_refusal(domain)
+    return "has a path, port or space" if domain.match?(%r{[/:\s?#@]})
+    return "is a placeholder production refuses" if placeholder_host?(domain)
+
+    "isn't a hostname" unless domain.match?(HOSTNAME)
+  end
+
+  # A fork that deleted the production preflight deleted its placeholder refusal with it.
+  def self.placeholder_host?(domain)
+    require PRODUCTION_PREFLIGHT unless defined?(RequiredProductionConfig) || !File.exist?(PRODUCTION_PREFLIGHT)
+    defined?(RequiredProductionConfig) && RequiredProductionConfig::PLACEHOLDER_HOST.match?(domain)
+  end
+
   def initialize(options, root: Dir.pwd, input: $stdin, output: $stdout, shell: nil)
     @opts = options
     @root = File.expand_path(root)
@@ -565,6 +586,7 @@ class ForkFlow
     @preset = @opts[:preset] || (ask_preset if @console.prompts?)
     validate_preset!(@preset) if @preset
     @support_email = collect_support_email
+    @domain = collect_domain
     check_github_flags!
     if @opts[:github] && current_branch != "next"
       abort("bin/fork: --github pushes next, but this checkout is on #{current_branch}. " \
@@ -653,6 +675,43 @@ class ForkFlow
   end
 
   def support_email = @support_email || "support@#{snake}.example"
+
+  DOMAIN_QUESTION = "Domain? (where the app will live; blank to set later)"
+
+  def collect_domain
+    if (given = @opts[:domain])
+      domain = self.class.normalize_domain(given)
+      return nil if domain.empty?
+
+      refusal = self.class.domain_refusal(domain) or return domain
+      abort("bin/fork: #{domain.inspect} #{refusal} — pass --domain the bare hostname people will type.")
+    end
+
+    loop do
+      domain = self.class.normalize_domain(ask(DOMAIN_QUESTION, ""))
+      return nil if domain.empty?
+
+      refusal = self.class.domain_refusal(domain) or return domain
+      say("  ! #{domain.inspect} #{refusal}; type the bare hostname people will type.")
+    end
+  end
+
+  # Truthy only when it wrote the file, so a caller commits only a real change.
+  def set_rails_host!
+    path = path_to(DEPLOY_FILE)
+    content = File.exist?(path) ? File.read(path) : ""
+    return skip("RAILS_HOST is #{@domain}") if content.match?(/^ *RAILS_HOST: #{Regexp.escape(@domain)} *$/)
+
+    unless content.match?(RAILS_HOST_STUB)
+      say("  ! #{DEPLOY_FILE} has no commented RAILS_HOST line, so bin/fork left RAILS_HOST alone.")
+      @todos << "Set RAILS_HOST: #{@domain} under env.clear in #{DEPLOY_FILE} by hand."
+      return false
+    end
+
+    act("#{DEPLOY_FILE}: RAILS_HOST: #{@domain}")
+    atomic_write(path, content.sub(RAILS_HOST_STUB) { "#{Regexp.last_match(1)}RAILS_HOST: #{@domain}" }) unless dry_run?
+    true
+  end
 
   def step_release!
     say("\n== Starting point ==")
@@ -836,6 +895,7 @@ class ForkFlow
     act("start #{CHANGELOG} clean (the template's releases stay on its releases page; bin/sync links each one it brings in)")
     atomic_write(path_to(CHANGELOG), "# Changelog\n\nAll notable changes to #{title} are documented here.\n\n## [Unreleased]\n") unless dry_run?
 
+    set_rails_host! if @domain
     commit!("Rename identity: #{title}", FORK_FILE, CHANGELOG, *RENAME_FILES)
   end
 
@@ -896,6 +956,7 @@ class ForkFlow
     @snake = fork_config.name
     check_github_flags!
     set_support_address_on_fork!
+    set_domain_on_fork!
     _, status = capture("git", "-C", @root, "remote", "get-url", "origin")
     @github = github_repo(status.zero?)
     @github.add_origin(@opts[:origin]) if !@github.origin_present? && @opts[:origin]
@@ -924,6 +985,19 @@ class ForkFlow
 
     atomic_write(path_to(path), content.gsub(placeholder, address))
     commit!("Set the support address", path)
+  end
+
+  def set_domain_on_fork!
+    stub_left = File.exist?(path_to(DEPLOY_FILE)) && File.read(path_to(DEPLOY_FILE)).match?(RAILS_HOST_STUB)
+    return unless (@opts[:domain] || stub_left) && (@domain = collect_domain)
+
+    dirty, = capture("git", "-C", @root, "status", "--porcelain", "--", DEPLOY_FILE)
+    if stub_left && !dirty.empty?
+      say("  ! #{DEPLOY_FILE} has uncommitted edits, so RAILS_HOST wasn't set.")
+      return @todos << "Commit or stash your edits to #{DEPLOY_FILE}, then: bin/fork --domain #{@domain}"
+    end
+
+    commit!("Set RAILS_HOST to #{@domain}", DEPLOY_FILE) if set_rails_host!
   end
 
   def report_already_forked!
@@ -1138,6 +1212,7 @@ if $PROGRAM_NAME == __FILE__
     o.on("--origin URL", "Your repository's git URL (becomes the origin remote)") { |v| options[:origin] = v }
     o.on("--template URL", "The template's git URL when it is a mirror under another name (recorded in .fork.yml; an origin or upstream equal to it counts as the template)") { |v| options[:template] = v }
     o.on("--support-email ADDRESS", "Where users write for help (default: a placeholder CI refuses)") { |v| options[:support_email] = v }
+    o.on("--domain DOMAIN", "Where the app will live: its bare hostname (sets RAILS_HOST in config/deploy.yml)") { |v| options[:domain] = v }
     o.on("--github [OWNER[/NAME]]", "Create the GitHub repo (default owner: you; name: the project), push next, protect it") { |v| options[:github] = v || true }
     o.on("--no-github", "Skip GitHub; print the steps instead") { options[:github] = false }
     o.on("--public", "New GitHub repo is public (default)") { options[:visibility] = "public" }

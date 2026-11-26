@@ -74,12 +74,13 @@ Rent a Linux server (a current Ubuntu LTS image works) and note whether it is
   `~/.ssh/known_hosts`. Keep the file: CI needs it in
   [step 6](#6-deploy-from-ci). A staging server gets its own.
 - **A folder for backups.** Once a day the app backs up its database and
-  uploaded files to a folder you name. A folder on the server's own disk is
-  enough to start; a second drive, a NAS, or later a bucket survive more
+  uploaded files to `/srv/backups/<your_app>`, the folder `config/deploy.yml`
+  ships mounted. A folder on the server's own disk is enough to start; a
+  second drive, a NAS, or later a bucket survive more
   ([Back up the database](backups)):
 
   ```bash
-  mkdir -p /srv/backups && chown 1000:1000 /srv/backups
+  install -d -o 1000 -g 1000 /srv/backups/<your_app>
   ```
 
 Check: `ssh root@<server-ip> docker version` prints the server's Docker
@@ -110,12 +111,12 @@ builder:
 
 volumes:
   - "modelrails_base_storage:/rails/storage"
-  - "/srv/backups:/backups"    # the folder from step 1
+  - "/srv/backups/modelrails_base:/backups"   # ships set; the folder from step 1
 
 env:
   clear:
     RAILS_HOST: app.yourdomain.com
-    BACKUP_PATH: /backups
+    BACKUP_PATH: /backups      # ships set
 ```
 
 - **`proxy:`** turns on HTTPS. A deploy without it reports healthy while
@@ -123,8 +124,9 @@ env:
 - **`RAILS_HOST`** is the host every email link is built from. Production
   refuses to boot without it ([Production preflight](#production-preflight)).
 - **`BACKUP_PATH`** is where the folder from step 1 appears inside the
-  container. Without it production still boots, and its log says backups are
-  off ([Back up the database](backups)).
+  container. It ships set, so backups run from the first deploy; remove it
+  and production still boots, and its log says backups are off
+  ([Back up the database](backups)).
 - **`registry:`** stays as shipped. `localhost:5555` is Kamal's local
   registry: Kamal runs a registry on the machine doing the deploy, and the
   server pulls the new image from it through the deploy's SSH connection. No

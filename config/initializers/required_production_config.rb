@@ -233,6 +233,6 @@ module RequiredProductionConfig
   private_class_method :host_refusal, :host_inputs, :encryption_refusal, :encryption_inputs
 end
 
-# SECRET_KEY_BASE_DUMMY marks build-time boots (the Dockerfile's
-# assets:precompile), where deployment ENV is legitimately absent.
-RequiredProductionConfig.check! if Rails.env.production? && !ENV["SECRET_KEY_BASE_DUMMY"]
+# SECRET_KEY_BASE_DUMMY marks build-time boots (assets:precompile), where deployment ENV is absent;
+# bin/fork loads this file without Rails, for PLACEHOLDER_HOST.
+RequiredProductionConfig.check! if defined?(Rails) && Rails.env.production? && !ENV["SECRET_KEY_BASE_DUMMY"]
