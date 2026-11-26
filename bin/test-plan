@@ -33,16 +33,18 @@ def changelog_only?(diff)
   end
 end
 
+LookupFailed = Class.new(StandardError)
+
 def passing_push_run(sha)
   query = "repos/#{ENV.fetch("GITHUB_REPOSITORY")}/actions/workflows/ci.yml/runs?head_sha=#{sha}&event=push&status=success"
-  out, status = Open3.capture2("gh", "api", query)
-  return unless status.success?
+  out, err, status = Open3.capture3("gh", "api", query)
+  raise LookupFailed, err.lines.first.to_s.chomp unless status.success?
 
   JSON.parse(out).fetch("workflow_runs").find do |run|
     run.values_at("head_sha", "event", "conclusion") == [ sha, "push", "success" ]
   end
-rescue KeyError, JSON::ParserError, SystemCallError
-  nil
+rescue KeyError, JSON::ParserError, SystemCallError => error
+  raise LookupFailed, error.message
 end
 
 # A commit that changes only the changelog from a parent CI passed on needs no tests; anything else, or any doubt, does.
@@ -50,7 +52,11 @@ def green_skip(github_output:)
   verdicts = git("rev-list", "--parents", "-n", "1", "HEAD").split.drop(1).map do |parent|
     next "#{parent} differs beyond the changelog" unless changelog_only?(git("diff", "--name-status", "--no-renames", parent, "HEAD"))
 
-    run = passing_push_run(parent)
+    begin
+      run = passing_push_run(parent)
+    rescue LookupFailed => error
+      next "the CI lookup for #{parent} failed (#{error.message})"
+    end
     next "#{parent} differs only in the changelog, but no passing CI push run was found for it" unless run
 
     break "skip the tests: HEAD differs from #{parent} only in the changelog, and CI passed on it (#{run["html_url"]})"

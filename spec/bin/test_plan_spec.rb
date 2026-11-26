@@ -209,7 +209,7 @@ RSpec.describe "bin/test-plan" do
 
       expect(status.exitstatus).to eq(0)
       expect(output.read).to eq("skip=false\n")
-      expect(out).to include("no passing CI push run")
+      expect(out).to include("the CI lookup for #{green} failed")
     end
   end
 
