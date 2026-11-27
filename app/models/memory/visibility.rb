@@ -38,6 +38,23 @@ class Memory < ApplicationRecord
                         AND roles.slug <> :guest))
     SQL
 
+    # A block in the memory's community, or an everywhere block from anywhere, beats every grant.
+    NOT_BLOCKED_BY_AUTHOR = <<~SQL.squish
+      NOT EXISTS (SELECT 1 FROM blocks
+                  WHERE blocks.blocker_id = memories.author_id
+                    AND blocks.blocked_id = :viewer
+                    AND (blocks.workspace_id = memories.workspace_id OR blocks.everywhere))
+    SQL
+
+    # Anonymous memories stay, or blocking someone and watching what vanishes would unmask them.
+    AUTHOR_NOT_BLOCKED_BY_VIEWER = <<~SQL.squish
+      memories.anonymous
+      OR NOT EXISTS (SELECT 1 FROM blocks
+                  WHERE blocks.blocker_id = :viewer
+                    AND blocks.blocked_id = memories.author_id
+                    AND (blocks.workspace_id = memories.workspace_id OR blocks.everywhere))
+    SQL
+
     # Any one grant is enough.
     GRANTS = [ AUTHORED, NAMED, REACHED_THROUGH_COMMUNITY ].map { |grant| "(#{grant})" }.join(" OR ").freeze
 
@@ -50,7 +67,13 @@ class Memory < ApplicationRecord
         kept
           .where(OPEN_COMMUNITY)
           .where(VIEWER_IS_A_MEMBER, viewer: user.id)
+          .where(NOT_BLOCKED_BY_AUTHOR, viewer: user.id)
           .where(GRANTS, viewer: user.id, guest: Membership::Preset::GUEST_ROLE_SLUG)
+      }
+
+      # For the blocker's feed only; elsewhere the blocked person's content is collapsed, not hidden.
+      scope :hiding_authors_blocked_by, ->(user) {
+        user ? where(AUTHOR_NOT_BLOCKED_BY_VIEWER, viewer: user.id) : all
       }
     end
   end

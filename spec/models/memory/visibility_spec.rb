@@ -28,10 +28,11 @@ RSpec.describe Memory, ".visible_to", type: :model do
   let!(:named_guest) { join(community, :viewer) }
   let!(:named_admin) { join(community, :admin) }
   let!(:leaver) { join(community) }
+  let!(:blocked) { join(community) }
   let!(:stranger) { join(elsewhere) }
 
   let!(:only_me) { remember(author, visibility: "only_me") }
-  let!(:specific) { name(remember(author, visibility: "specific_people"), named_member, named_guest, named_admin, leaver) }
+  let!(:specific) { name(remember(author, visibility: "specific_people"), named_member, named_guest, named_admin, leaver, blocked) }
   let!(:shared) { name(remember(author), named_guest) }
   let!(:open_to_guests) { remember(author, visible_to_guests: true) }
   let!(:withdrawn) { name(remember(author, visibility: "only_me"), named_member) }
@@ -39,7 +40,10 @@ RSpec.describe Memory, ".visible_to", type: :model do
   let!(:left_behind) { remember(leaver) }
   let!(:decoy) { remember(stranger, workspace: elsewhere, visible_to_guests: true) }
 
-  before { community.memberships.find_by!(user: leaver).update_columns(discarded_at: Time.current) }
+  before do
+    Block.create!(workspace: community, blocker: author, blocked: blocked)
+    community.memberships.find_by!(user: leaver).update_columns(discarded_at: Time.current)
+  end
 
   def seen_by(viewer)
     Memory.visible_to(viewer)
@@ -55,6 +59,7 @@ RSpec.describe Memory, ".visible_to", type: :model do
     named_guest: %i[specific shared open_to_guests],
     named_admin: %i[specific shared open_to_guests left_behind],
     leaver: %i[],
+    blocked: %i[left_behind],
     stranger: %i[decoy]
   }
 
