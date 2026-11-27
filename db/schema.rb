@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_11_27_220953) do
+ActiveRecord::Schema[8.2].define(version: 2026_11_27_223947) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.string "name", null: false
     t.text "body"
@@ -167,6 +167,41 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_27_220953) do
     t.index ["user_id", "workspace_id"], name: "index_memberships_on_user_id_and_workspace_id", unique: true
     t.index ["workspace_id"], name: "index_memberships_on_workspace_id"
     t.check_constraint "preset IN ('contributor','participant','reader')", name: "memberships_preset_valid"
+  end
+
+  create_table "memories", force: :cascade do |t|
+    t.integer "workspace_id", null: false
+    t.integer "author_id", null: false
+    t.boolean "anonymous", default: false, null: false
+    t.string "visibility", default: "only_me", null: false
+    t.string "comment_rule", default: "viewers", null: false
+    t.string "reflect_rule", default: "viewers", null: false
+    t.string "tag_rule", default: "viewers", null: false
+    t.boolean "visible_to_guests", default: false, null: false
+    t.datetime "discarded_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["author_id"], name: "index_memories_on_author_id"
+    t.index ["discarded_at"], name: "index_memories_on_discarded_at"
+    t.index ["workspace_id", "visibility"], name: "index_memories_on_workspace_id_and_visibility"
+    t.index ["workspace_id"], name: "index_memories_on_workspace_id"
+    t.check_constraint "comment_rule IN ('viewers','author')", name: "memories_comment_rule_valid"
+    t.check_constraint "reflect_rule IN ('viewers','author')", name: "memories_reflect_rule_valid"
+    t.check_constraint "tag_rule IN ('viewers','author')", name: "memories_tag_rule_valid"
+    t.check_constraint "visibility IN ('only_me','specific_people','community')", name: "memories_visibility_valid"
+  end
+
+  create_table "memory_resources", force: :cascade do |t|
+    t.integer "memory_id", null: false
+    t.integer "contributor_id", null: false
+    t.string "kind", null: false
+    t.text "body"
+    t.string "content_warning"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["contributor_id"], name: "index_memory_resources_on_contributor_id"
+    t.index ["memory_id"], name: "index_memory_resources_on_memory_id"
+    t.check_constraint "kind IN ('written_reflection','photo')", name: "memory_resources_kind_valid"
   end
 
   create_table "noticed_events", force: :cascade do |t|
@@ -391,6 +426,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_27_220953) do
     t.datetime "archived_at"
     t.datetime "suspended_at"
     t.string "default_member_preset", default: "contributor", null: false
+    t.boolean "anonymous_posting", default: false, null: false
     t.index ["archived_at"], name: "index_workspaces_on_archived_at"
     t.index ["discarded_at"], name: "index_workspaces_on_discarded_at"
     t.index ["join_policy"], name: "index_workspaces_on_join_policy"
@@ -412,6 +448,10 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_27_220953) do
   add_foreign_key "memberships", "roles"
   add_foreign_key "memberships", "users"
   add_foreign_key "memberships", "workspaces"
+  add_foreign_key "memories", "users", column: "author_id", on_delete: :restrict
+  add_foreign_key "memories", "workspaces"
+  add_foreign_key "memory_resources", "memories"
+  add_foreign_key "memory_resources", "users", column: "contributor_id", on_delete: :restrict
   add_foreign_key "noticed_notifications", "noticed_events", column: "event_id", on_delete: :cascade
   add_foreign_key "operatorships", "users"
   add_foreign_key "operatorships", "users", column: "granted_by_id"

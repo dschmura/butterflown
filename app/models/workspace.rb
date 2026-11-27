@@ -9,6 +9,7 @@ class Workspace < ApplicationRecord
   include Sluggable
   include Branding
   include Admission
+  include Memories
 
   # Defense in depth behind WorkspacePolicy — covers console/direct-call paths the policy never sees.
   HomeWorkspaceProtectedError = Class.new(StandardError)

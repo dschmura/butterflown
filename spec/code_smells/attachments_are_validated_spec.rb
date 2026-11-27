@@ -68,6 +68,7 @@ RSpec.describe "Code smell: attachments are validated" do
     expect(attachments.call(sources.call).map { |a| "#{a[:file]}##{a[:name]}" }).to match_array(%w[
       app/models/project.rb#logo app/models/user/avatar.rb#avatar app/models/user/avatar.rb#avatar_original
       app/models/workspace/branding.rb#logo app/models/workspace/branding.rb#logo_original
+      app/models/memory_resource.rb#photo
     ])
   end
 
