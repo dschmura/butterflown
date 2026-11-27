@@ -61,6 +61,12 @@ RSpec.describe CommentBlockCheck do
     expect(violations(erb, path: "spec/components/previews/ui/skeleton_component_preview/default.html.erb", added: 1..3)).to eq([ 1..3 ])
   end
 
+  it "skips file fixtures, which copy another file's comments verbatim" do
+    yaml = "# one\n# two\n# three\nkey: value\n"
+    expect(violations(yaml, path: "spec/fixtures/files/template_deploy.yml", added: 1..4)).to be_empty
+    expect(violations(yaml, path: "spec/fixtures/vocabulary.course.yml", added: 1..4)).to eq([ 1..3 ])
+  end
+
   describe ".added_lines" do
     it "reads the new-side line numbers from a zero-context diff" do
       diff = "@@ -3,0 +4,3 @@\n+a\n+b\n+c\n@@ -10 +13 @@\n-x\n+y\n@@ -20,2 +22,0 @@\n-p\n-q\n"
