@@ -1,0 +1,25 @@
+en:
+  activerecord:
+    attributes:
+      memory:
+        anonymous: "Post anonymously"
+        author: "Author"
+      memory_resource:
+        body: "Words"
+        photo: "Photo"
+        content_warning: "Content warning"
+    errors:
+      models:
+        memory:
+          attributes:
+            author:
+              not_a_member: "must be a member of this community"
+            anonymous:
+              not_allowed_here: "isn't allowed in this community"
+            base:
+              community_read_only: "This community is read-only, so new memories can't be added"
+              needs_a_resource: "A memory needs at least one photo or reflection"
+        memory_resource:
+          attributes:
+            photo:
+              only_on_a_photo: "belongs on a photo, not a written reflection"
