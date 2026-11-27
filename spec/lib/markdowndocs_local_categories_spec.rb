@@ -14,8 +14,8 @@ RSpec.describe MarkdowndocsLocalCategories do
     end
   end
 
-  it "returns the template map untouched when no local file exists (this repo)" do
-    missing = Rails.root.join("config/markdowndocs_categories.local.yml")
+  it "returns the template map untouched when no local file exists" do
+    missing = Rails.root.join("tmp/no-such-dir/markdowndocs_categories.local.yml")
     expect(File.exist?(missing)).to be(false)
     expect(described_class.merge(template, missing)).to eq(template)
   end

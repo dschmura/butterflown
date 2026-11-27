@@ -21,6 +21,10 @@ class MembershipPolicy < ApplicationPolicy
     can?("manage_workspace")
   end
 
+  def change_preset?
+    can?("manage_members") && record.kept? && record.governed_by_preset?
+  end
+
   private
 
   def self_leave?
