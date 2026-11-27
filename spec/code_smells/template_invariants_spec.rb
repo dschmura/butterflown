@@ -451,6 +451,7 @@ RSpec.describe "Template invariants" do
       "CI"                      => "set by the CI runner",
       "DEPLOY_CHECK_COMPACT"    => "set by .kamal/hooks/pre-build",
       "DEV_SERVER_PORT"         => "exported by bin/dev from PORT, the knob .env.example documents",
+      "KAMAL_HOST"              => "read by the deploy.yml host line bin/deploy-setup writes; kept in fnox, and Kamal never reads .env",
       "PIDFILE"                 => "set by bin/dev / Foreman",
       "SECRET_KEY_BASE_DUMMY"   => "set by the Dockerfile's assets:precompile RUN (build-time boot marker), never by a human editing .env",
       "SOLID_QUEUE_IN_PUMA"     => "set in config/deploy.yml env.clear, not .env (documented in deployment.md)",
