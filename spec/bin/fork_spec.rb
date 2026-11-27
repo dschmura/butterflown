@@ -1749,7 +1749,8 @@ RSpec.describe ForkFlow do
       expect(deploy_yml).to include("# RAILS_HOST: app.yourdomain.com")
     end
 
-    it "matches the commented line the template's own deploy.yml carries" do
+    # bin/fork --domain replaces this line, so a fork's own file no longer has it.
+    it "matches the commented line the template's own deploy.yml carries", :template_only do
       expect(Rails.root.join("config/deploy.yml").read).to match(ForkFlow::RAILS_HOST_STUB)
     end
   end
