@@ -8,6 +8,8 @@ class CommentBlockCheck
   # A preview class's comments are the notes Lookbook renders, so the commenting
   # standard's limit does not apply to them (#1313).
   RENDERED_NOTES = %r{\Aspec/components/previews/.*_preview\.rb\z}
+  # A file fixture copies another file verbatim, its comments included.
+  COPIES = %r{\Aspec/fixtures/files/}
 
   def self.added_lines(zero_context_diff)
     zero_context_diff.scan(/^@@ -\S+ \+(\d+)(?:,(\d+))? @@/).flat_map do |start, count|
@@ -21,7 +23,7 @@ class CommentBlockCheck
   end
 
   def violations(path:, source:, added_lines:)
-    return [] unless PARSED.include?(File.extname(path)) && !vendored?(path) && !path.match?(RENDERED_NOTES)
+    return [] unless PARSED.include?(File.extname(path)) && !vendored?(path) && !path.match?(RENDERED_NOTES) && !path.match?(COPIES)
 
     added = added_lines.to_a
     blocks(comment_line_numbers(source, File.extname(path)))
