@@ -21,13 +21,14 @@ and at least one of these grants it:
 
 - They wrote it.
 - They were named on it (`MemoryAccess`), and it is shared beyond its author: `specific_people` or `community`. Setting a memory back to `only_me` hides it from everyone named on it, without deleting the names, so sharing it again restores them (the spec's "Sharing again"). A screen that re-shares should show the author who that brings back.
+- They are tagged on one of its resources, and it is shared beyond its author ([Tags](tags)).
 - It is shared with the community and they are a member or admin, or it is also opened to guests.
 
 Admins and the owner have no override. They see a private memory only when its author names them.
 
 Names outlive a membership. Someone who leaves sees nothing, but their names stay on the memories, so if they are invited back everything reconnects, as the spec's leaving rules ask.
 
-In code the three grants are named constants in `Memory::Visibility` (`AUTHORED`, `NAMED`, `REACHED_THROUGH_COMMUNITY`) joined by `OR`; a new grant is a new constant in that list.
+In code the four grants are named constants in `Memory::Visibility` (`AUTHORED`, `NAMED`, `TAGGED`, `REACHED_THROUGH_COMMUNITY`) joined by `OR`; a new grant is a new constant in that list.
 
 A guest is a membership with the template's `viewer` role; see [Member Presets](member-presets).
 
@@ -47,8 +48,4 @@ Answer 404, never 403, for a memory the viewer can't see, so the response doesn'
 
 ## Proving the rules
 
-`spec/models/memory/visibility_spec.rb` builds one world: an author with a memory at each visibility, a withdrawn one, a deleted one, ten kinds of viewer and a decoy community. It checks each viewer against the exact set they may see, so a query that returns nothing or everything fails. Removing any one clause of the relation fails at least one example. `spec/policies/memory_policy_visibility_spec.rb` checks `show?` against the scope for every viewer and memory.
-
-## Still to come
-
-Tags grant sight to the person tagged: a further grant in the same relation, with its own rows in the world.
+`spec/models/memory/visibility_spec.rb` builds one world: an author with a memory at each visibility, a withdrawn one, a deleted one, thirteen kinds of viewer (including a blocked member and two tagged people) and a decoy community. It checks each viewer against the exact set they may see, so a query that returns nothing or everything fails. Removing any one clause of the relation fails at least one example. `spec/policies/memory_policy_visibility_spec.rb` checks `show?` against the scope for every viewer and memory.
