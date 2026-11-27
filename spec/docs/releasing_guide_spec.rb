@@ -15,6 +15,14 @@ RSpec.describe "The releasing guide" do
     end
   end
 
+  it "lists every bin/release command in its command table, and the --wait that follows one" do
+    commands = ReleaseFlow::Release::USAGE.split("bin/release ").last.split("|").map { |part| part[/[a-z-]+/] }
+    table = source[/^\| Step \| Command \|\n(?:\|.*\n)+/]
+
+    commands.each { |command| expect(table).to include("`bin/release #{command}"), "#{command} is missing" }
+    expect(source).to include("`--wait`")
+  end
+
   it "asks for the PR's changelog line before it merges, not only at release time" do
     expect(before_it_merges).to include("changelog.d/")
   end

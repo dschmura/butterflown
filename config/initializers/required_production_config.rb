@@ -107,7 +107,7 @@ module RequiredProductionConfig
       Fix: point SMTP_ADDRESS at your provider and put its login in credentials
         - SMTP_ADDRESS: under env.clear in config/deploy.yml (Kamal), or the environment
         - smtp.user_name and smtp.password: bin/rails credentials:edit --environment production
-          (staging: RAILS_ENV=production RAILS_CREDENTIALS_ENV=staging bin/rails credentials:edit), then redeploy
+          (staging: RAILS_ENV=production RAILS_CREDENTIALS_ENV=staging bin/rails credentials:edit), then deploy
 
       Details: /docs/developer/deployment (Configure outbound mail section).
       Opting out for good: git rm config/initializers/required_production_config.rb
@@ -198,7 +198,7 @@ module RequiredProductionConfig
       sign in — the failure is invisible from the outside.
 
       Fix: set RAILS_HOST to this deployment's public hostname (e.g. app.yourdomain.com)
-        - Kamal: add RAILS_HOST under env.clear in config/deploy.yml, then redeploy
+        - Kamal: add RAILS_HOST under env.clear in config/deploy.yml, then deploy
         - Anything else: set the RAILS_HOST environment variable
 
       Details: /docs/developer/deployment (Production preflight section).
@@ -233,6 +233,6 @@ module RequiredProductionConfig
   private_class_method :host_refusal, :host_inputs, :encryption_refusal, :encryption_inputs
 end
 
-# SECRET_KEY_BASE_DUMMY marks build-time boots (the Dockerfile's
-# assets:precompile), where deployment ENV is legitimately absent.
-RequiredProductionConfig.check! if Rails.env.production? && !ENV["SECRET_KEY_BASE_DUMMY"]
+# SECRET_KEY_BASE_DUMMY marks build-time boots (assets:precompile), where deployment ENV is absent;
+# bin/fork loads this file without Rails, for PLACEHOLDER_HOST.
+RequiredProductionConfig.check! if defined?(Rails) && Rails.env.production? && !ENV["SECRET_KEY_BASE_DUMMY"]

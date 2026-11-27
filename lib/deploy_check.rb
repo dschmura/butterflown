@@ -131,7 +131,7 @@ class DeployCheck
     return if paths.empty?
 
     "BACKUP_PATH is #{paths.join(' and ')}, but no volume in config/deploy.yml mounts it, so backups stay inside the container " \
-      "and go with it on the next deploy. Uncomment the \"/srv/backups:/backups\" line under volumes:, " \
+      "and go with it on the next deploy. Add a volume such as \"/srv/backups/<your_app>:/backups\" under volumes:, " \
       "or mount your own folder there: /docs/developer/backups."
   end
 
