@@ -1,0 +1,194 @@
+# Name of your application. Used to uniquely configure containers.
+service: modelrails_base
+
+# Name of the container image (use your-user/app-name on external registries).
+image: modelrails_base
+
+# === SQLite single-host constraint ===
+# This template defaults to SQLite (with Solid Queue/Cache/Cable in-process).
+# SQLite is single-writer and single-host by design — it cannot be shared
+# across machines. That shapes everything below:
+#   - servers.web lists exactly one host; a second host would be a second
+#     SQLite file, not a replica (scale out only after the Graduation checklist)
+#   - The commented `job:` role below is a TRAP for SQLite users; only enable
+#     it after migrating to a network-attached database
+# On that one host, Kamal's normal rollover (boot the new container, wait for
+# healthy, stop the old) briefly runs two containers against the same volume.
+# That is the situation Puma's own workers are already in — SQLite serializes
+# same-host access with file locks — so nothing here fights the rollover.
+# When you outgrow SQLite, see the "Graduation checklist" in the env block.
+
+# Deploy to these servers.
+servers:
+  web:
+    hosts:
+      - 192.168.0.1
+
+  # === TRAP for SQLite users ===
+  # The job: role below runs a separate `bin/jobs` Solid Queue supervisor.
+  # It is intentionally commented out because it CANNOT share a SQLite file
+  # across hosts — SQLite is single-host by design. Uncomment ONLY after:
+  #   (1) Adding a database accessory (Postgres/MySQL) — see `accessories:` below
+  #   (2) Setting DB_HOST in env.clear to point at the accessory
+  #   (3) Flipping SOLID_QUEUE_IN_PUMA: false in env.clear
+  #
+  # job:
+  #   hosts:
+  #     - 192.168.0.1
+  #   cmd: bin/jobs
+
+# Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
+# If used with Cloudflare, set encryption mode in SSL/TLS setting to "Full" to enable CF-to-app encryption.
+#
+# Using an SSL proxy like this requires turning on config.assume_ssl and config.force_ssl in production.rb!
+#
+# Don't use this when deploying to multiple web servers (then you have to terminate SSL at your load balancer).
+#
+# proxy:
+#   ssl: true
+#   host: app.example.com
+
+# Where you keep your container images.
+registry:
+  # Alternatives: hub.docker.com / registry.digitalocean.com / ghcr.io / ...
+  server: localhost:5555
+
+  # Needed for authenticated registries.
+  # username: your-user
+
+  # Always use an access token rather than real password when possible.
+  # password:
+  #   - KAMAL_REGISTRY_PASSWORD
+
+# Give Solid Queue's in-Puma supervisor time to drain in-flight jobs on deploy.
+# Docker's SIGTERM→SIGKILL grace for a proxied role is 10s; a job still running
+# at that point is SIGKILL'd mid-execution. 45s covers typical drain time.
+stop_timeout: 45
+
+# Inject ENV variables into containers (secrets come from .kamal/secrets).
+env:
+  secret:
+    - RAILS_MASTER_KEY
+  clear:
+    # RAILS_HOST: app.yourdomain.com   # required; production refuses to boot without it
+
+    # Daily backups of the database and uploads, to a folder or a bucket: /docs/developer/backups
+    BACKUP_PATH: /backups               # the folder mounted under volumes: below
+
+    # BACKUP_SCHEDULE: every day at 2am   # any Solid Queue schedule
+
+    # OBJECT_STORAGE_BUCKET: yourapp-backups   # or a bucket, its key in credentials (object_storage.*)
+    # OBJECT_STORAGE_REGION: eu-central-003
+
+    # SIGNUP_MODE: open   # default: invite_only. Read Open sign-up in /docs/developer/deployment first
+
+    # WORKSPACE_ON_SIGNUP: shared   # default: the preset bin/fork recorded in .fork.yml
+    # TENANCY_SHARED_WORKSPACE_SLUG: your_app   # default on shared: the name in .fork.yml
+
+    # TENANCY_OWNER_EMAIL: you@yourdomain.com   # required on shared: the first deploy seeds this owner
+    # TENANCY_WORKSPACE_CREATION: disabled      # usual on shared: no workspaces beyond the one
+
+    # Outbound mail: the server here, its login in credentials (smtp.user_name, smtp.password).
+    # Production refuses to boot without both. Recipes: /docs/developer/deployment.
+    SMTP_ADDRESS: smtp.postmarkapp.com
+    SMTP_PORT: 587
+    # MAIL_FROM: hello@app.yourdomain.com   # default: noreply@RAILS_HOST
+
+    # === Solid Queue topology ===
+    # Run the Solid Queue Supervisor inside the web server's Puma process.
+    # This is the right default for the SQLite/one-box deploy this template
+    # ships with. The supervisor + worker share GVL with HTTP requests — fine
+    # for low/moderate job volume; problematic at scale.
+    #
+    # Graduation checklist (when you outgrow this default):
+    #   (1) Add a database accessory (uncomment the `accessories:` block at
+    #       the bottom of this file — Postgres or MySQL) and migrate data.
+    #   (2) Set DB_HOST below to point at the accessory.
+    #   (3) Flip SOLID_QUEUE_IN_PUMA to false.
+    #   (4) Uncomment the `servers.job:` block above and deploy a separate
+    #       bin/jobs supervisor on its own host.
+    SOLID_QUEUE_IN_PUMA: true
+
+    # Set number of processes dedicated to Solid Queue (default: 1).
+    # Only meaningful when SOLID_QUEUE_IN_PUMA is false (separate `bin/jobs` host).
+    # JOB_CONCURRENCY: 3
+
+    # Set number of cores available to the application on each server (default: 1).
+    # Note: with SOLID_QUEUE_IN_PUMA=true, only one Puma worker should host the
+    # supervisor — confirm puma-plugin-solid_queue's behavior before raising this.
+    # WEB_CONCURRENCY: 2
+
+    # Your database server, or modelrails_base-db for an accessory on this machine's kamal network.
+    # DB_HOST: 192.168.0.2
+
+    # Log everything from Rails
+    # RAILS_LOG_LEVEL: debug
+
+# Aliases are triggered with "bin/kamal <alias>". You can overwrite arguments on invocation:
+# "bin/kamal logs -r job" will tail logs from the first server in the job section.
+aliases:
+  console: app exec --interactive --reuse "bin/rails console"
+  shell: app exec --interactive --reuse "bash"
+  logs: app logs -f
+  dbc: app exec --interactive --reuse "bin/rails dbconsole --include-password"
+
+# Use a persistent storage volume for sqlite database files and local Active Storage files.
+# Recommended to change this to a mounted volume path that is backed up off server.
+volumes:
+  - "modelrails_base_storage:/rails/storage"
+  - "/srv/backups/modelrails_base:/backups"   # the BACKUP_PATH folder, writable by uid 1000
+
+# Bridge fingerprinted assets, like JS and CSS, between versions to avoid
+# hitting 404 on in-flight requests. Combines all files from new and old
+# version inside the asset_path.
+asset_path: /rails/public/assets
+
+# Configure the image builder.
+builder:
+  arch: amd64
+
+  # # Build image via remote server (useful for faster amd64 builds on arm64 computers)
+  # remote: ssh://docker@docker-builder-server
+
+  # The production image builds on the Ruby that .tool-versions pins, the one the Gemfile enforces.
+  args:
+    RUBY_VERSION: '<%= File.read(".tool-versions")[/^ruby (\S+)/, 1] || raise(".tool-versions names no ruby") %>'
+
+  # secrets:
+  #   - GITHUB_TOKEN
+  #   - RAILS_MASTER_KEY
+
+# Prints bin/rails deploy:check's warnings on every deploy; Kamal hides a passing hook's output.
+hooks_output:
+  pre-build: verbose
+
+# Use a different ssh user than root
+# ssh:
+#   user: app
+
+# Hot Cell (sandboxed image processing) is an accessory too, shipped off; its full block, the
+# group-add, volume and env lines, and the order to boot them in: /docs/developer/hot-cell.
+
+# Use accessory services (secrets come from .kamal/secrets).
+# accessories:
+#   db:
+#     image: mysql:8.0
+#     host: 192.168.0.2
+#     # Change to 3306 to expose port to the world instead of just local network.
+#     port: "127.0.0.1:3306:3306"
+#     env:
+#       clear:
+#         MYSQL_ROOT_HOST: '%'
+#       secret:
+#         - MYSQL_ROOT_PASSWORD
+#     files:
+#       - config/mysql/production.cnf:/etc/mysql/my.cnf
+#       - db/production.sql:/docker-entrypoint-initdb.d/setup.sql
+#     directories:
+#       - data:/var/lib/mysql
+#   redis:
+#     image: valkey/valkey:8
+#     host: 192.168.0.2
+#     port: 6379
+#     directories:
+#       - data:/data
