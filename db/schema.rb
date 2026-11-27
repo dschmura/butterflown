@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_11_27_230432) do
+ActiveRecord::Schema[8.2].define(version: 2026_11_27_232459) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.string "name", null: false
     t.text "body"
@@ -85,6 +85,19 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_27_230432) do
     t.index ["provider", "uid"], name: "index_authentications_on_provider_and_uid", unique: true
     t.index ["user_id", "provider"], name: "index_authentications_on_user_id_and_provider", unique: true
     t.index ["user_id"], name: "index_authentications_on_user_id"
+  end
+
+  create_table "blocks", force: :cascade do |t|
+    t.integer "workspace_id", null: false
+    t.integer "blocker_id", null: false
+    t.integer "blocked_id", null: false
+    t.boolean "everywhere", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["blocked_id"], name: "index_blocks_on_blocked_id"
+    t.index ["blocker_id"], name: "index_blocks_on_blocker_id"
+    t.index ["workspace_id", "blocker_id", "blocked_id"], name: "index_blocks_on_workspace_id_and_blocker_id_and_blocked_id", unique: true
+    t.check_constraint "blocker_id <> blocked_id", name: "blocks_not_yourself"
   end
 
   create_table "client_accesses", force: :cascade do |t|
@@ -448,6 +461,9 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_27_230432) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "activity_logs", "workspaces"
   add_foreign_key "authentications", "users"
+  add_foreign_key "blocks", "users", column: "blocked_id", on_delete: :cascade
+  add_foreign_key "blocks", "users", column: "blocker_id", on_delete: :cascade
+  add_foreign_key "blocks", "workspaces", on_delete: :cascade
   add_foreign_key "client_accesses", "projects"
   add_foreign_key "client_accesses", "users"
   add_foreign_key "invitation_blocks", "users", column: "inviter_id"

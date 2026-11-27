@@ -15,6 +15,7 @@ A viewer sees a memory when all of these hold:
 1. The memory hasn't been deleted (`kept`).
 2. Its community isn't deleted or suspended. An archived community stays readable.
 3. The viewer is a current member of the memory's community. Someone who has left sees nothing there, including what they wrote.
+4. The author hasn't blocked the viewer, in this community or everywhere ([Blocks](blocks)).
 
 and at least one of these grants it:
 
@@ -50,4 +51,4 @@ Answer 404, never 403, for a memory the viewer can't see, so the response doesn'
 
 ## Still to come
 
-Tags grant sight to the person tagged, and blocks take it away from the person blocked. Both arrive as further clauses in the same relation, with their own rows in the world.
+Tags grant sight to the person tagged: a further grant in the same relation, with its own rows in the world.
