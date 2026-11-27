@@ -9,13 +9,20 @@ load Rails.root.join("bin/deploy-setup")
 
 RSpec.describe DeploySetup do
   let(:output) { StringIO.new }
+  let(:template_deploy_yml) { file_fixture("template_deploy.yml").read }
+
+  # A fork has already run bin/deploy-setup on its own file, so these start from the template's.
+  it "starts from an exact copy of the template's config/deploy.yml", :template_only do
+    expect(template_deploy_yml).to eq(Rails.root.join("config/deploy.yml").read),
+      "copy config/deploy.yml over spec/fixtures/files/template_deploy.yml"
+  end
 
   around do |example|
     Dir.mktmpdir do |dir|
       @tmp = Pathname.new(dir)
       @root = @tmp.join("root")
       %w[root/bin root/config stubs].each { |name| @tmp.join(name).mkpath }
-      @root.join("config/deploy.yml").write(Rails.root.join("config/deploy.yml").read)
+      @root.join("config/deploy.yml").write(template_deploy_yml)
       stub("ssh", 'echo "ssh $*" >> LOG; echo x86_64')
       stub("fnox", 'echo "fnox $* <$(cat)>" >> LOG')
       stub("gh", "echo PRIVATE")
@@ -44,7 +51,7 @@ RSpec.describe DeploySetup do
     described_class.new(root: @root.to_s, env:, input: StringIO.new(answers.map { "#{it}\n" }.join), output:).run
   end
 
-  def deploy(kamal_host: nil)
+  def deploy(kamal_host: "deploy-host.invalid")
     previous = ENV.fetch("KAMAL_HOST", nil)
     ENV["KAMAL_HOST"] = kamal_host
     YAML.safe_load(ERB.new(deploy_yml).result)
