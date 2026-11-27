@@ -1,0 +1,103 @@
+require "rails_helper"
+
+# A read that skips Memory.visible_to can leak a private memory; parsed, so a comment can't pass it.
+# See /docs/developer/memory-visibility.
+RSpec.describe "Code smell: memories are read through visible_to" do
+  constants = %i[Memory MemoryResource MemoryAccess]
+  calls = %i[memories accesses]
+  gates = %i[visible_to policy_scope]
+
+  # Files that define the rule, or only build new memories. Reviewed; add with a reason.
+  allowed = {
+    "app/models/memory.rb" => "defines the model and its associations",
+    "app/models/memory/visibility.rb" => "defines visible_to",
+    "app/models/memory_access.rb" => "defines the model",
+    "app/models/memory_resource.rb" => "defines the model",
+    "app/models/workspace/memories.rb" => "declares the association and builds new memories"
+  }
+
+  ruby_of = lambda do |file, source|
+    file.end_with?(".erb") ? ActionView::Template::Handlers::ERB::Erubi.new(source).src : source
+  end
+
+  # A mention is gated when it is the receiver of visible_to, or sits anywhere inside policy_scope(...).
+  offenders = lambda do |sources|
+    sources.flat_map do |file, source|
+      next [] if allowed.key?(file)
+
+      found = []
+      visit = lambda do |node, ancestors|
+        mention =
+          case node
+          when Prism::ConstantReadNode then constants.include?(node.name)
+          when Prism::SymbolNode then calls.include?(node.unescaped.to_sym)
+          when Prism::CallNode then calls.include?(node.name)
+          end
+        if mention
+          parent = ancestors.last
+          gated = (parent.is_a?(Prism::CallNode) && parent.name == :visible_to && parent.receiver.equal?(node)) ||
+            ancestors.any? { |a| a.is_a?(Prism::CallNode) && a.name == :policy_scope && a.receiver.nil? }
+          found << "#{file}:#{node.location.start_line}" unless gated
+        end
+        node.compact_child_nodes.each { |child| visit.call(child, ancestors + [ node ]) }
+      end
+      visit.call(Prism.parse(ruby_of.call(file, source)).value, [])
+      found
+    end
+  end
+
+  watched_sources = lambda do
+    Dir[Rails.root.join("{app,lib}/**/*.{rb,erb}")].sort.to_h { |file| [ file.delete_prefix("#{Rails.root}/"), File.read(file) ] }
+  end
+
+  it "finds no read of memories that skips visible_to" do
+    found = offenders.call(watched_sources.call)
+
+    expect(found).to be_empty,
+      "These lines read memories without Memory.visible_to or policy_scope:\n  #{found.join("\n  ")}\n" \
+      "Read through `@workspace.memories.visible_to(Current.user)` or `policy_scope(...)`, or add the file " \
+      "to `allowed` here with a reason."
+  end
+
+  it "catches every read it is written against, including ones dressed up to look gated" do
+    planted = [
+      "Memory.find(params[:id])",
+      "Memory.unscoped.find(id) # visible_to",
+      "Memory.find(1); label = \"visible_to\"",
+      "@workspace.memories.visible_to(user).or(@workspace.memories)",
+      "Workspace.includes(:memories)",
+      "Workspace.joins(:memories)",
+      "memories.count",
+      "workspace.method(:memories).call",
+      "model = Memory",
+      "MemoryResource.where(memory_id: ids)",
+      "MemoryAccess.where(user: user)",
+      "memory.accesses.pluck(:user_id)"
+    ]
+    files = planted.each_with_index.to_h { |line, i| [ "app/models/x#{i}.rb", "#{line}\n" ] }
+    files["app/views/x/index.html.erb"] = "<% @workspace.memories.each do |memory| %><% end %>\n"
+
+    caught = offenders.call(files).map { |offender| offender.split(":").first }.uniq
+
+    expect(caught).to match_array(files.keys)
+  end
+
+  it "lets the sanctioned reads through" do
+    sanctioned = {
+      "app/controllers/x_controller.rb" => <<~RUBY,
+        @memories = @workspace.memories.visible_to(Current.user)
+        @memory = policy_scope(@workspace.memories).find(params[:id])
+        Memory.visible_to(user).exists?(id)
+        @workspace.memories
+          .visible_to(Current.user)
+      RUBY
+      "app/views/x/index.html.erb" => "<% @workspace.memories.visible_to(Current.user).each do |memory| %><% end %>\n"
+    }
+
+    expect(offenders.call(sanctioned)).to be_empty
+  end
+
+  it "lists only files that exist" do
+    expect(allowed.keys.reject { |file| Rails.root.join(file).exist? }).to be_empty
+  end
+end

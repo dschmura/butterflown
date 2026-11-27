@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_11_27_223947) do
+ActiveRecord::Schema[8.2].define(version: 2026_11_27_230432) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.string "name", null: false
     t.text "body"
@@ -189,6 +189,15 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_27_223947) do
     t.check_constraint "reflect_rule IN ('viewers','author')", name: "memories_reflect_rule_valid"
     t.check_constraint "tag_rule IN ('viewers','author')", name: "memories_tag_rule_valid"
     t.check_constraint "visibility IN ('only_me','specific_people','community')", name: "memories_visibility_valid"
+  end
+
+  create_table "memory_accesses", force: :cascade do |t|
+    t.integer "memory_id", null: false
+    t.integer "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["memory_id", "user_id"], name: "index_memory_accesses_on_memory_id_and_user_id", unique: true
+    t.index ["user_id"], name: "index_memory_accesses_on_user_id"
   end
 
   create_table "memory_resources", force: :cascade do |t|
@@ -450,6 +459,8 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_27_223947) do
   add_foreign_key "memberships", "workspaces"
   add_foreign_key "memories", "users", column: "author_id", on_delete: :restrict
   add_foreign_key "memories", "workspaces"
+  add_foreign_key "memory_accesses", "memories", on_delete: :cascade
+  add_foreign_key "memory_accesses", "users", on_delete: :cascade
   add_foreign_key "memory_resources", "memories"
   add_foreign_key "memory_resources", "users", column: "contributor_id", on_delete: :restrict
   add_foreign_key "noticed_notifications", "noticed_events", column: "event_id", on_delete: :cascade

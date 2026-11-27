@@ -1,4 +1,14 @@
 class MemoryPolicy < ApplicationPolicy
+  class Scope < ApplicationPolicy::Scope
+    def resolve
+      scope.visible_to(user)
+    end
+  end
+
+  def show?
+    record_in_current_workspace? && Memory.visible_to(user).exists?(record.id)
+  end
+
   def create?
     membership.present? && membership.may_post_memories? && record.workspace.accepts_new_memories?
   end
