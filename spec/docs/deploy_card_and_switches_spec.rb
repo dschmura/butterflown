@@ -26,7 +26,7 @@ RSpec.describe "the deployment card and where the CI switches live" do
     expect(section.("releasing", "When a release starts")).to include("](changing-the-defaults#how-changes-ship)")
   end
 
-  it "credits bin/fork, which really renames them, with the deploy names" do
+  it "credits bin/fork, which really renames them, with the deploy names", :template_only do
     expect(Rails.root.join("config/deploy.yml").read).to include("service: modelrails_base")
     expect(section.("deployment", "2. Configure `config/deploy.yml`")).to include("`bin/fork` already renamed")
   end

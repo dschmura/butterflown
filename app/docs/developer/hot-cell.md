@@ -62,6 +62,7 @@ These steps are for a fork's production host. Run them in order.
          group-add: 10001                              # the cell's gid; admits the app to its sockets
    volumes:
      - "modelrails_base_storage:/rails/storage"        # already there: keep it
+     - "/srv/backups/modelrails_base:/backups"         # already there: keep it
      - modelrails_base_hotcell_sockets:/run/hotcell/active_storage  # $HOTCELL_ROOT/<cell name>
    env:
      clear:

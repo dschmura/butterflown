@@ -113,6 +113,13 @@ RSpec.describe ProductionSetup do
     expect(output.string).not_to include("localhost")
   end
 
+  it "sends a fork on to step 5, warning that deploy:check refuses until step 6" do
+    run_setup
+
+    expect(output.string).to include("Next: the quickstart's step 5")
+    expect(output.string).to match(/deploy:check refuses until step 6 has run bin\/deploy-setup/)
+  end
+
   it "prints its usage for --help and runs nothing" do
     @root.join("bin/production-setup").write(Rails.root.join("bin/production-setup").read)
     @root.join("bin/production-setup").chmod(0o755)
