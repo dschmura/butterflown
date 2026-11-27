@@ -59,7 +59,7 @@ RSpec.describe "the CI workflow" do
       lane = jobs["lane_specs"]
       runs = lane["steps"].map { |step| step["run"].to_s }
 
-      expect(lane["if"]).to eq("needs.changes.outputs.full == 'false'")
+      expect(lane["if"]).to start_with("needs.changes.outputs.full == 'false'")
       expect(step_running("lane_specs", "bin/test-plan --run")["run"]).to include('--base "origin/${BASE_REF}"')
       expect(runs).to include(match(/google-chrome --version/), match(%r{bin/rails assets:precompile}))
       expect(lane["steps"].find { |step| step["if"] == "failure()" }&.dig("with", "path")).to eq("tmp/capybara/")
@@ -72,11 +72,48 @@ RSpec.describe "the CI workflow" do
       expect(Array(test["needs"])).to include("changes", "test_shard", "lane_specs")
       expect(guard["env"]).to include(
         "FULL" => "${{ needs.changes.outputs.full }}",
+        "SKIP" => "${{ needs.changes.outputs.skip }}",
         "SHARDS" => "${{ needs.test_shard.result }}",
         "LANE" => "${{ needs.lane_specs.result }}"
       )
-      expect(guard["run"]).to include('if [ "$FULL" = true ]; then want="$SHARDS"; else want="$LANE"; fi')
+      expect(guard["run"]).to include(
+        'if [ "$SKIP" = true ]; then want=success; elif [ "$FULL" = true ]; then want="$SHARDS"; else want="$LANE"; fi'
+      )
       expect(guard["run"]).to include("exit 1")
+    end
+
+    describe "a commit that differs from a green parent only in the changelog" do
+      let(:changes) { jobs["changes"] }
+      let(:green) { step_running("changes", "bin/test-plan --green-skip") }
+
+      it "is looked up on every pull request and push, before the lanes, and a failed lookup falls back to them" do
+        steps = changes["steps"]
+
+        expect(green["run"]).to eq("bin/test-plan --green-skip --github-output")
+        expect(green["if"]).to be_nil
+        expect(green["continue-on-error"]).to be(true)
+        expect(green.dig("env", "GH_TOKEN")).to eq("${{ github.token }}")
+        expect(steps.index(green)).to be < steps.index(step_running("changes", "bin/test-plan --github-output"))
+        expect(changes.dig("outputs", "full")).to start_with("${{ steps.#{green["id"]}.outputs.full || ")
+        expect(changes.dig("outputs", "skip")).to eq("${{ steps.#{green["id"]}.outputs.skip }}")
+      end
+
+      it "waits for a parent's unfinished run inside the job's timeout, so a timeout falls back rather than failing the job" do
+        wait = Integer(green.dig("env", "GREEN_SKIP_WAIT_SECONDS"))
+
+        expect(wait).to eq(480)
+        expect(green["timeout-minutes"] * 60).to be >= wait + 120
+        expect(changes["timeout-minutes"]).to be > green["timeout-minutes"] + 3
+      end
+
+      it "reads CI's past runs with a read-only token" do
+        expect(changes["permissions"]).to eq("contents" => "read", "actions" => "read")
+      end
+
+      it "runs neither the shards nor the lane specs" do
+        expect(jobs.dig("lane_specs", "if")).to eq("needs.changes.outputs.full == 'false' && needs.changes.outputs.skip != 'true'")
+        expect(jobs.dig("test_shard", "if")).to eq(full)
+      end
     end
 
     it "merges coverage and saves runtimes only after a full run" do
