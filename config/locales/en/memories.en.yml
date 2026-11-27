@@ -19,6 +19,10 @@ en:
             base:
               community_read_only: "This community is read-only, so new memories can't be added"
               needs_a_resource: "A memory needs at least one photo or reflection"
+        memory_access:
+          attributes:
+            user:
+              not_a_member: "must be a member of this community"
         memory_resource:
           attributes:
             photo:

@@ -3,6 +3,7 @@
 class Memory < ApplicationRecord
   include Tenanted
   include Discardable
+  include Visibility
 
   AUDIENCES = %w[only_me specific_people community].freeze
   RULES = %w[viewers author].freeze
