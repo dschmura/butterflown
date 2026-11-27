@@ -4,6 +4,12 @@ All notable changes to ModelRails are documented here, organized by phase.
 
 ## [Unreleased]
 
+## v2026.11.27
+
+### Fixed
+
+- A fork that has run `bin/fork` and `bin/deploy-setup` no longer fails the template's deploy-setup, deploy-card and ENV-documentation specs.
+
 ## v2026.11.26-3
 
 ### Changed
