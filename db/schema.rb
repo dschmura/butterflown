@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_11_25_180000) do
+ActiveRecord::Schema[8.2].define(version: 2026_11_27_220953) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.string "name", null: false
     t.text "body"
@@ -160,11 +160,13 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_25_180000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "last_accessed_at"
+    t.string "preset", default: "contributor", null: false
     t.index ["discarded_at"], name: "index_memberships_on_discarded_at"
     t.index ["role_id"], name: "index_memberships_on_role_id"
     t.index ["user_id", "last_accessed_at"], name: "index_memberships_on_user_id_and_last_accessed_at"
     t.index ["user_id", "workspace_id"], name: "index_memberships_on_user_id_and_workspace_id", unique: true
     t.index ["workspace_id"], name: "index_memberships_on_workspace_id"
+    t.check_constraint "preset IN ('contributor','participant','reader')", name: "memberships_preset_valid"
   end
 
   create_table "noticed_events", force: :cascade do |t|
@@ -388,11 +390,13 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_25_180000) do
     t.string "join_policy", default: "invite", null: false
     t.datetime "archived_at"
     t.datetime "suspended_at"
+    t.string "default_member_preset", default: "contributor", null: false
     t.index ["archived_at"], name: "index_workspaces_on_archived_at"
     t.index ["discarded_at"], name: "index_workspaces_on_discarded_at"
     t.index ["join_policy"], name: "index_workspaces_on_join_policy"
     t.index ["slug"], name: "index_workspaces_on_slug", unique: true
     t.index ["suspended_at"], name: "index_workspaces_on_suspended_at"
+    t.check_constraint "default_member_preset IN ('contributor','participant','reader')", name: "workspaces_default_member_preset_valid"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"

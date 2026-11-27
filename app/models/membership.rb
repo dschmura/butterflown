@@ -8,6 +8,7 @@ class Membership < ApplicationRecord
   include Provenance
   include Ownership
   include Announcements
+  include Preset
 
   # Removal has one door: bare discard!/undiscard! skip their guards (#1120).
   private :discard!, :undiscard!
@@ -146,7 +147,8 @@ class Membership < ApplicationRecord
   end
 
   def activity_visibility(action)
-    (action == "membership.updated" && saved_change_to_role_id?) ? "admin" : "workspace"
+    privilege_change = saved_change_to_role_id? || saved_change_to_preset?
+    (action == "membership.updated" && privilege_change) ? "admin" : "workspace"
   end
 
   # Discarded → kept. Direction matters: the same column change in the other

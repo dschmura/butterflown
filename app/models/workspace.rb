@@ -39,6 +39,8 @@ class Workspace < ApplicationRecord
   # Composes with the instance-level SignupPolicy.permits_strategy? allowlist. See /docs/developer/presets.
   enum :join_policy, { invite: "invite", open_link: "open_link" }, default: "invite"
 
+  enum :default_member_preset, Membership::Preset::PRESETS.index_by(&:itself), instance_methods: false, scopes: false, validate: true
+
   has_many :join_links, class_name: "WorkspaceJoinLink", dependent: :destroy
 
   # Gate for the created notification: .create_owned sets it; seeds, fixtures and signup-time creation stay silent.
