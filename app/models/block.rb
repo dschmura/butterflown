@@ -16,6 +16,11 @@ class Block < ApplicationRecord
       .merge(where(workspace: workspace).or(where(everywhere: true)))
   }
 
+  # Telling the admins is the blocker's choice, made after blocking.
+  def report!(reason:, note: nil)
+    BlockReport.create!(workspace: workspace, reporter: blocker, reported: blocked, reason: reason, note: note)
+  end
+
   private
 
   def not_yourself

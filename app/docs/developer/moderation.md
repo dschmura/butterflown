@@ -1,7 +1,7 @@
 ---
 title: Moderation
-description: Removal requests, who answers them, urgent hides, and how moderation routes around an admin with a block involved
-keywords: moderation removal request remove change keep hide urgent relay anonymous admin block routing audit log 3 days
+description: Removal requests, flags, block reports and the block signal, the moderation queue, urgent hides, and how moderation routes around an admin with a block involved
+keywords: moderation removal request remove change keep hide urgent relay anonymous admin block routing audit log 3 days flag report block report signal queue
 ---
 
 # Moderation
@@ -35,9 +35,31 @@ If the only admin is part of it, nobody handles it.
 
 A hidden resource (`memory_resources.hidden_at`) is out of everyone's sight but its author's, who can still download it.
 
+## Flags
+
+`Flag` is a member asking the admins to look at a memory or one of its resources, with a reason (encrypted). Comments don't exist yet; they will be flaggable too.
+
+- **Who can flag:** any member who can see it, except its author. Once per person per item.
+- **The flagger keeps seeing it.** Unlike a removal request, a flag takes nothing out of sight.
+- **Who handles it:** `Moderation.admins_for`, with the flagger and the item's author involved. On an anonymous memory the author is still involved, so a blocked admin is routed around without anyone being told who wrote it.
+- **Urgent hide:** `hide_now!(by:)` hides the flagged resource, or every resource of a flagged memory, from everyone but its author.
+- **Resolving:** `resolve!(outcome, by:)`, once, with `acted` or `dismissed`. Dismissing brings back what an urgent hide took, unless a removal request on it was answered removed.
+
+## Block reports
+
+After blocking, the blocker may tell the admins: `Block#report!(reason:, note:)`. The reason is one of harassment, unwanted contact, something they posted, or other; the note is optional and encrypted. Without a report no reason is stored and admins never learn who blocked whom. A report outlives the block, since the admins were told. A handling admin closes it with `resolve!(by:)`.
+
+## The moderation queue
+
+`Moderation::Queue.new(workspace, admin)` is what one admin has to handle in one community, each list holding only items routed to them:
+
+- `removal_requests`: open requests that reach the admins.
+- `flags` and `block_reports`: open ones.
+- `block_signals`: each member blocked by three or more current members of this community (blocks made here, or everywhere blocks), as a person and a count, never the names of who blocked. A signal is routed like any item with that person involved, so it is never shown to the admin it is about, and a signal about the only admin isn't shown at all.
+
 ## What is logged
 
-Decisions, urgent hides and relays are written to the activity log at admin visibility, with who did it and the outcome, never the reason. Asking is not logged: the request itself is the record.
+Decisions, urgent hides, relays and resolutions are written to the activity log at admin visibility, with who did it and the outcome, never the reason or note. Raising an item is not logged: the item itself is the record.
 
 ## Reading resources
 

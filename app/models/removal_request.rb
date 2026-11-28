@@ -54,7 +54,7 @@ class RemovalRequest < ApplicationRecord
       raise AlreadyDecided unless open?
 
       update!(outcome: outcome, decided_by: by, decided_at: Time.current)
-      outcome_removed? ? memory_resource.hide! : bring_back_unless_removed_elsewhere
+      outcome_removed? ? memory_resource.hide! : memory_resource.bring_back!
       create_activity("removal_request.decided", { "outcome" => outcome, "decided_by" => by.id })
     end
   end
@@ -99,9 +99,5 @@ class RemovalRequest < ApplicationRecord
 
   def not_their_own
     errors.add(:memory_resource, :your_own) if requester_id.present? && requester_id == memory_resource&.contributor_id
-  end
-
-  def bring_back_unless_removed_elsewhere
-    memory_resource.unhide! unless memory_resource.removal_requests.outcome_removed.exists?
   end
 end

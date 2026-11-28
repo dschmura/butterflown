@@ -11,6 +11,7 @@ class Memory < ApplicationRecord
 
   belongs_to :author, class_name: "User"
   has_many :resources, -> { order(:id) }, class_name: "MemoryResource", inverse_of: :memory, dependent: :destroy
+  has_many :flags, as: :flaggable, dependent: :delete_all
 
   enum :visibility, AUDIENCES.index_by(&:itself), instance_methods: false, scopes: false, validate: true
   enum :comment_rule, RULES.index_by(&:itself), instance_methods: false, scopes: false, validate: true

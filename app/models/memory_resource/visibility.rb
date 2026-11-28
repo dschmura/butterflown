@@ -15,6 +15,7 @@ class MemoryResource < ApplicationRecord
 
     included do
       has_many :removal_requests, dependent: :delete_all
+      has_many :flags, as: :flaggable, dependent: :delete_all
 
       scope :visible_to, ->(user) {
         next none if user.nil?
@@ -27,7 +28,10 @@ class MemoryResource < ApplicationRecord
 
     def hide! = update!(hidden_at: hidden_at || Time.current)
 
-    def unhide! = update!(hidden_at: nil)
+    # Back in sight, unless a removal request on it was answered "removed".
+    def bring_back!
+      update!(hidden_at: nil) unless removal_requests.outcome_removed.exists?
+    end
 
     def hidden? = hidden_at.present?
 
