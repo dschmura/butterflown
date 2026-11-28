@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_11_28_035433) do
+ActiveRecord::Schema[8.2].define(version: 2026_11_28_042548) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.string "name", null: false
     t.text "body"
@@ -409,6 +409,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_28_035433) do
     t.string "webauthn_handle"
     t.datetime "passkey_prompt_seen_at"
     t.datetime "suspended_at"
+    t.datetime "deleted_at"
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
     t.index ["pending_email_token"], name: "index_users_on_pending_email_token", unique: true
     t.index ["personal_workspace_id"], name: "index_users_on_personal_workspace_id"

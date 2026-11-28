@@ -1,4 +1,7 @@
 en:
+  users:
+    deleted_account:
+      workspace_name: "A deleted account"
   activerecord:
     attributes:
       memory:

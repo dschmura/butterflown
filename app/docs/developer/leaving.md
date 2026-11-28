@@ -6,7 +6,7 @@ keywords: leave leaving left removed removal former member name removed remove m
 
 # Leaving
 
-When someone goes from a community, the memories they shared stay with it. This page covers leaving, removal by an admin and removal for cause. Account deletion is not built yet.
+When someone goes from a community, the memories they shared stay with it. This page covers leaving, removal by an admin, removal for cause and deleting an account.
 
 ## How a departure is recorded
 
@@ -64,3 +64,25 @@ Both rules read the membership as it is now, not a copy taken when the person le
 - **They can download but not delete.** Their memories are on their exit page for 90 days, but `MemoryPolicy#destroy?` refuses them. An admin (anyone who may manage members) may delete them instead. Finding them belongs to the moderation screens, since `visible_to` hides them from admins too.
 - **Only one of this community's admins brings them back,** by reactivating them or through an invitation they sent. A self-join, or an invitation from anyone else (a project editor, say), is refused. Pending invitations addressed to them are revoked at removal, so an old one can't be used. Coming back clears the cause and their memories reappear.
 - **An admin can't remove someone whose role they couldn't grant,** such as the owner.
+
+## Deleting an account
+
+`User#delete_account!(remove_name: false)` follows the same rule in every community at once. The users row stays as a tombstone, because shared memories, approved tags and the tags the person made all point at it; destroying it would cascade those tags away. The model refuses to destroy a deleted account.
+
+In one transaction, in this order:
+
+1. **Leave every community** through `Membership#leave!`, so pending tags unname and shared memories stay credited exactly as on leaving. With `remove_name: true`, communities they had already left lose their name too. A removal for cause stays as it was, so those memories stay hidden.
+2. **Delete their private memories** in every community now, with their resources and photos. No 90-day hold: the account is gone.
+3. **Scrub the account.**
+   - Sessions, OAuth links, passkeys, challenges, notifications, preferences and the picture go.
+   - So does what the account was granted: operator status (revoked, with its audit row), client access, and being named on memories.
+   - Pending invitations and magic links sent to the old email are revoked or deleted, so the address can't later join a new account to what this one left.
+   - The email becomes a random placeholder, unrelated to the old address. No sign-in route (password, magic link, reset, passkey, OAuth) finds it, and the old address can register a new account.
+   - The password goes. The name stays for the credit unless they removed it, in which case their personal workspace's name goes too.
+   - `deleted_at` is stamped.
+
+A deleted account also answers `suspended?` true. The template's sign-in and session guards ask exactly that, so a sign-in already under way when the account is deleted can't land.
+
+While they are a community's only owner, deletion is refused with `Membership::LastOwner` and nothing changes. They transfer ownership first. Their personal workspace stays with the tombstone, unreachable.
+
+The advisory panel's reasoning, and why the row isn't deleted, is in the decisions record.
