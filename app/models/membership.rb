@@ -150,6 +150,8 @@ class Membership < ApplicationRecord
   end
 
   def activity_visibility(action)
+    return "admin" if action == "membership.removed_for_cause"
+
     privilege_change = saved_change_to_role_id? || saved_change_to_preset?
     (action == "membership.updated" && privilege_change) ? "admin" : "workspace"
   end

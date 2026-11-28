@@ -5,12 +5,19 @@ class Membership
     extend ActiveSupport::Concern
 
     included do
-      enum :departure, { left: "left", removed: "removed" },
+      # Non-persisted: the reason lives in the admin-only audit row, not on the membership.
+      attr_accessor :removal_reason
+
+      enum :departure, { left: "left", removed: "removed", removed_for_cause: "removed_for_cause" },
         prefix: :departure, validate: { allow_nil: true }
+
+      validate :removal_reason_given, if: -> { departure_removed_for_cause? && will_save_change_to_departure? }
+      validate :readmitted_only_by_an_admin, if: :reactivating?
 
       before_save :record_departure, if: :deactivating?
       before_save :forget_departure, if: :reactivating?
       after_update :unname_pending_tags, if: :just_deactivated?
+      after_update :log_removal_for_cause, :revoke_pending_invitations, if: -> { just_deactivated? && departure_removed_for_cause? }
     end
 
     def leave!(remove_name: false)
@@ -18,6 +25,14 @@ class Membership
 
       self.name_removed = remove_name
       deactivate!(removed_by: user)
+    end
+
+    def remove_for_cause!(by:, reason:)
+      return if discarded?
+
+      self.departure = "removed_for_cause"
+      self.removal_reason = reason
+      deactivate!(removed_by: by)
     end
 
     private
@@ -28,6 +43,17 @@ class Membership
 
     def reactivating?
       will_save_change_to_discarded_at? && discarded_at.nil?
+    end
+
+    def removal_reason_given
+      errors.add(:base, :removal_reason_required) if removal_reason.blank?
+    end
+
+    # Someone removed for cause comes back only when one of this community's admins brings them.
+    def readmitted_only_by_an_admin
+      return unless departure_in_database == "removed_for_cause"
+
+      errors.add(:base, :removed_for_cause) unless workspace.memberships.kept.find_by(user: granted_by)&.admin?
     end
 
     def record_departure
@@ -44,6 +70,18 @@ class Membership
       Tag.pending.where(tagged_user_id: user_id)
         .where(memory_resource_id: MemoryResource.joins(:memory).where(memories: { workspace_id: workspace_id }))
         .update_all(state: "unnamed", state_changed_at: now, expires_at: nil, updated_at: now)
+    end
+
+    # An invitation sent before the removal mustn't become a way back in.
+    def revoke_pending_invitations
+      projects = Project.where(workspace_id: workspace_id)
+      Invitation.pending.where(email: user.email_address)
+        .where(invitable: workspace).or(Invitation.pending.where(email: user.email_address, invitable: projects))
+        .find_each(&:revoke!)
+    end
+
+    def log_removal_for_cause
+      create_activity("membership.removed_for_cause", { "reason" => removal_reason.strip, "removed_by" => removed_by&.id }.compact)
     end
   end
 end

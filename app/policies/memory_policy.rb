@@ -18,10 +18,23 @@ class MemoryPolicy < ApplicationPolicy
   end
 
   def destroy?
-    authored_by_current_member? || Memory.on_exit_page_of(user).exists?(record.id)
+    authored_by_current_member? || deletable_from_exit_page? || clearing_a_removal_for_cause?
   end
 
   private
+
+  def deletable_from_exit_page?
+    Memory.on_exit_page_of(user).exists?(record.id) && !author_removed_for_cause?
+  end
+
+  # Someone removed for cause can't delete what they posted; only an admin can.
+  def clearing_a_removal_for_cause?
+    can?("manage_members") && author_removed_for_cause?
+  end
+
+  def author_removed_for_cause?
+    record.workspace.memberships.exists?(user_id: record.author_id, departure: "removed_for_cause")
+  end
 
   def authored_by_current_member?
     membership.present? && record.author_id == user.id

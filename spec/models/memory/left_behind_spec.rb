@@ -97,6 +97,17 @@ RSpec.describe Memory, type: :model do
       expect(Memory.exists?(private_memory.id)).to be(true)
     end
 
+    it "keeps shared memories in sight of the community, whether the author left or was removed" do
+      reader = create(:membership, workspace: community).user
+      shared = memory("community")
+      other_membership = create(:membership, workspace: community)
+      removed_ones = create(:memory, workspace: community, author: other_membership.user, visibility: "community")
+      author_membership.leave!
+      other_membership.deactivate!(removed_by: admin)
+
+      expect(Memory.visible_to(reader)).to contain_exactly(shared, removed_ones)
+    end
+
     it "keeps shared memories, which stay with the community" do
       shared = [ memory("community"), memory("specific_people") ]
       author_membership.leave!

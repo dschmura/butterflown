@@ -21,6 +21,10 @@ class MembershipPolicy < ApplicationPolicy
     can?("manage_workspace")
   end
 
+  def remove_for_cause?
+    can?("manage_members") && may_grant?(record.role) && record.kept? && !self_leave? && !record.workspace.discarded?
+  end
+
   def change_preset?
     can?("manage_members") && record.kept? && record.governed_by_preset?
   end
