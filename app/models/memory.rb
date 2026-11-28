@@ -4,6 +4,7 @@ class Memory < ApplicationRecord
   include Tenanted
   include Discardable
   include Visibility
+  include LeftBehind
 
   AUDIENCES = %w[only_me specific_people community].freeze
   RULES = %w[viewers author].freeze
@@ -21,6 +22,10 @@ class Memory < ApplicationRecord
   validate :anonymity_allowed_by_community
   validate :has_a_resource, on: :create
   validate :anonymous_only_without_tags, on: :update
+
+  def credit
+    Credit.of(author, community: workspace, anonymous: anonymous?)
+  end
 
   private
 

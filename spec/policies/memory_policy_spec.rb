@@ -57,9 +57,25 @@ RSpec.describe MemoryPolicy do
 
     it "refuses the author once they have left the community" do
       memory
-      workspace.memberships.find_by(user: author).update_columns(discarded_at: Time.current)
+      workspace.memberships.find_by(user: author).leave!
 
       expect(policy(author, memory)).to have_attributes(update?: false, destroy?: false)
+    end
+
+    context "when an admin has removed the author, who now reaches it from outside the community" do
+      before do
+        memory
+        workspace.memberships.find_by(user: author).deactivate!(removed_by: member(:admin))
+        Current.workspace = nil
+      end
+
+      it "lets them delete it from their exit page, but not change it" do
+        travel(89.days) { expect(policy(author, memory)).to have_attributes(update?: false, destroy?: true) }
+      end
+
+      it "stops once the 90 days are up" do
+        travel(91.days) { expect(policy(author, memory).destroy?).to be(false) }
+      end
     end
 
     it "refuses the author from inside a different community" do

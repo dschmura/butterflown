@@ -48,8 +48,8 @@ Not yet built from the spec's data model: video, audio and document resources; t
 
 ## When an account is deleted
 
-The foreign keys from `memories.author_id` and `memory_resources.contributor_id` to `users` are `on_delete: :restrict`, so an account with memories can't be deleted yet. The product's rule (shared memories stay, credited to a former member; private ones go) needs its own change; until then, refusing is the posture that loses nothing.
+The foreign keys from `memories.author_id` and `memory_resources.contributor_id` to `users` are `on_delete: :restrict`, so an account with memories can't be deleted yet. Leaving a community already follows the product's rule ([Leaving](leaving)); account deletion needs its own change, because the user row goes. Until then, refusing is the posture that loses nothing.
 
 ## Who may post, change and delete
 
-`MemoryPolicy`: posting needs `Membership#may_post_memories?` in a community that accepts new memories. Only the author, while still a member, may change or delete their memory; admins and the owner may not. Who may see a memory is a separate question, answered by the visibility rules.
+`MemoryPolicy`: posting needs `Membership#may_post_memories?` in a community that accepts new memories. Only the author, while still a member, may change or delete their memory; admins and the owner may not. A removed author may also delete it from their exit page for 90 days ([Leaving](leaving)). Who may see a memory is a separate question, answered by the visibility rules.

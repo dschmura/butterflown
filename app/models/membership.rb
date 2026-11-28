@@ -10,6 +10,7 @@ class Membership < ApplicationRecord
   include Announcements
   include Preset
   include TagSetting
+  include Departure
 
   # Removal has one door: bare discard!/undiscard! skip their guards (#1120).
   private :discard!, :undiscard!
@@ -141,6 +142,7 @@ class Membership < ApplicationRecord
   # SEC-1 audit: a role change is a privilege event. Record the role slugs by
   # value (not the mutable role_id FK) and route it to the admin-only feed.
   def enrich_tracked_changes(changes)
+    changes = changes.except("departure", "name_removed") # how someone left, and their name choice, are not the community's
     return changes unless changes.key?("role_id")
     from_id, to_id = changes["role_id"]
     slugs = Role.where(id: [ from_id, to_id ].compact).pluck(:id, :slug).to_h

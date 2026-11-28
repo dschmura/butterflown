@@ -22,6 +22,10 @@ class MemoryResource < ApplicationRecord
     contributor_id != memory.author_id
   end
 
+  def credit
+    Memory::Credit.of(contributor, community: memory.workspace, anonymous: memory.anonymous? && !perspective?)
+  end
+
   private
 
   def photo_attached_to_a_photo
