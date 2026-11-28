@@ -78,6 +78,31 @@ RSpec.describe MemoryPolicy do
       end
     end
 
+    context "when an admin has removed the author for cause" do
+      before do
+        memory
+        workspace.memberships.find_by(user: author).remove_for_cause!(by: member(:admin), reason: "Threats in reflections")
+      end
+
+      it "doesn't let them delete it, even from their exit page" do
+        Current.workspace = nil
+
+        expect(policy(author, memory).destroy?).to be(false)
+      end
+
+      it "lets an admin delete it, and nobody else" do
+        expect(policy(member(:admin), memory).destroy?).to be(true)
+        expect(policy(member, memory).destroy?).to be(false)
+      end
+    end
+
+    it "doesn't let an admin delete the memory of someone who simply left" do
+      memory
+      workspace.memberships.find_by(user: author).leave!
+
+      expect(policy(member(:admin), memory).destroy?).to be(false)
+    end
+
     it "refuses the author from inside a different community" do
       memory
       Current.workspace = create(:workspace)

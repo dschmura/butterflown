@@ -65,6 +65,14 @@ class Memory < ApplicationRecord
                     AND (blocks.workspace_id = memories.workspace_id OR blocks.everywhere))
     SQL
 
+    # Hidden from everyone, admins too, until an admin's invitation brings the author back.
+    AUTHOR_NOT_REMOVED_FOR_CAUSE = <<~SQL.squish
+      NOT EXISTS (SELECT 1 FROM memberships
+                  WHERE memberships.workspace_id = memories.workspace_id
+                    AND memberships.user_id = memories.author_id
+                    AND memberships.departure = 'removed_for_cause')
+    SQL
+
     # Any one grant is enough.
     GRANTS = [ AUTHORED, NAMED, TAGGED, REACHED_THROUGH_COMMUNITY ].map { |grant| "(#{grant})" }.join(" OR ").freeze
 
@@ -78,6 +86,7 @@ class Memory < ApplicationRecord
           .where(OPEN_COMMUNITY)
           .where(VIEWER_IS_A_MEMBER, viewer: user.id)
           .where(NOT_BLOCKED_BY_AUTHOR, viewer: user.id)
+          .where(AUTHOR_NOT_REMOVED_FOR_CAUSE)
           .where(GRANTS, viewer: user.id, guest: Membership::Preset::GUEST_ROLE_SLUG)
       }
 

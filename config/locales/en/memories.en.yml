@@ -34,6 +34,11 @@ en:
               anonymous_memory: "Anonymous memories can't carry tags"
             tagged_user:
               not_taggable: "can't be tagged here"
+        membership:
+          attributes:
+            base:
+              removal_reason_required: "Give a reason for removing someone for cause"
+              removed_for_cause: "Someone removed for cause can come back only by an admin's invitation"
         memory_access:
           attributes:
             user:

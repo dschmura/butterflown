@@ -6,7 +6,7 @@ keywords: leave leaving left removed removal former member name removed remove m
 
 # Leaving
 
-When someone goes from a community, the memories they shared stay with it. This page covers leaving and removal by an admin. Removal for cause and account deletion are not built yet; each adds rules of its own.
+When someone goes from a community, the memories they shared stay with it. This page covers leaving, removal by an admin and removal for cause. Account deletion is not built yet.
 
 ## How a departure is recorded
 
@@ -14,10 +14,8 @@ The template ends a membership one way, `Membership#deactivate!(removed_by:)`, a
 
 | Column | Values | Set by |
 | --- | --- | --- |
-| `departure` | `left`, `removed`; null while a member | Every deactivation: `left` when the member ended it themselves, `removed` otherwise |
+| `departure` | `left`, `removed`, `removed_for_cause`; null while a member | Every deactivation: `left` when the member ended it themselves, `removed` otherwise; `removed_for_cause` only through `remove_for_cause!` |
 | `name_removed` | true or false | `Membership#leave!(remove_name: true)` |
-
-Removal for cause will add a third value with its own rules.
 
 Because the departure is worked out on every deactivation, the template's own leave and remove screens record it with no change. `leave!` adds only the name choice. The database refuses a departure on a row that is still a member.
 
@@ -56,3 +54,13 @@ It is the one read besides `visible_to` that the memory read guard allows.
 ## Coming back
 
 Both rules read the membership as it is now, not a copy taken when the person left. Someone invited back inside the 90 days finds their private memories where they left them, and their access returns with the membership. Tags that became unnamed stay unnamed until they restore them.
+
+## Removal for cause
+
+`Membership#remove_for_cause!(by:, reason:)` ends the membership as `removed_for_cause`. `MembershipPolicy#remove_for_cause?` allows it for whoever may manage members, on someone else who is still a member. Everything above still applies, with these additions:
+
+- **A reason is required.** It goes in the audit log as a `membership.removed_for_cause` row only admins see, and nowhere else. The community's feed shows the person went, not why.
+- **Their memories are hidden from everyone, admins included,** in every audience, anonymous ones too ([Memory visibility](memory-visibility), rule 5). Their private memories are purged after 90 days like anyone's. The shared ones are held, not purged.
+- **They can download but not delete.** Their memories are on their exit page for 90 days, but `MemoryPolicy#destroy?` refuses them. An admin (anyone who may manage members) may delete them instead. Finding them belongs to the moderation screens, since `visible_to` hides them from admins too.
+- **Only one of this community's admins brings them back,** by reactivating them or through an invitation they sent. A self-join, or an invitation from anyone else (a project editor, say), is refused. Pending invitations addressed to them are revoked at removal, so an old one can't be used. Coming back clears the cause and their memories reappear.
+- **An admin can't remove someone whose role they couldn't grant,** such as the owner.

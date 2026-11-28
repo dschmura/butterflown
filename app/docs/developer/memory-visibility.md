@@ -16,6 +16,7 @@ A viewer sees a memory when all of these hold:
 2. Its community isn't deleted or suspended. An archived community stays readable.
 3. The viewer is a current member of the memory's community. Someone who has left sees nothing there, including what they wrote.
 4. The author hasn't blocked the viewer, in this community or everywhere ([Blocks](blocks)).
+5. The author hasn't been removed from this community for cause. This hides their memories from everyone, admins included, until an admin's invitation brings them back ([Leaving](leaving)). A member who simply left or was removed keeps their shared memories in sight.
 
 and at least one of these grants it:
 
@@ -44,7 +45,7 @@ Answer 404, never 403, for a memory the viewer can't see, so the response doesn'
 
 ## The guard
 
-`spec/code_smells/memories_are_read_through_visible_to_spec.rb` parses every Ruby and ERB file under `app/` and `lib/` and fails on any mention of `Memory`, `MemoryResource` or `MemoryAccess`, a `memories` or `accesses` call, or a `:memories` or `:accesses` symbol (as in `includes(:memories)`), unless it is the receiver of `visible_to` or sits inside `policy_scope(...)`. It parses rather than greps, so a comment or a string that mentions `visible_to` doesn't satisfy it. Files that define the rule or only build new memories are on its reviewed allow-list, each with a reason. Add to that list with a reason, never to get past it.
+`spec/code_smells/memories_are_read_through_visible_to_spec.rb` parses every Ruby and ERB file under `app/` and `lib/` and fails on any mention of `Memory`, `MemoryResource` or `MemoryAccess`, a `memories` or `accesses` call, or a `:memories` or `:accesses` symbol (as in `includes(:memories)`), unless it is the receiver of `visible_to` or `on_exit_page_of` (a removed member's own memories, see [Leaving](leaving)) or sits inside `policy_scope(...)`. It parses rather than greps, so a comment or a string that mentions `visible_to` doesn't satisfy it. Files that define the rule or only build new memories are on its reviewed allow-list, each with a reason. Add to that list with a reason, never to get past it.
 
 ## Proving the rules
 
