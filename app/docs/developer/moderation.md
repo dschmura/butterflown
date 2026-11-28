@@ -1,7 +1,7 @@
 ---
 title: Moderation
-description: Removal requests, flags, block reports and the block signal, the moderation queue, urgent hides, and how moderation routes around an admin with a block involved
-keywords: moderation removal request remove change keep hide urgent relay anonymous admin block routing audit log 3 days flag report block report signal queue
+description: Removal requests, flags, block reports and the block signal, the moderation queue, admin tools, urgent hides, and how moderation routes around an admin with a block involved
+keywords: moderation removal request remove change keep hide urgent relay anonymous admin block routing audit log 3 days flag report block report signal queue reveal anonymous author history clear removed for cause
 ---
 
 # Moderation
@@ -57,9 +57,15 @@ After blocking, the blocker may tell the admins: `Block#report!(reason:, note:)`
 - `flags` and `block_reports`: open ones.
 - `block_signals`: each member blocked by three or more current members of this community (blocks made here, or everywhere blocks), as a person and a count, never the names of who blocked. A signal is routed like any item with that person involved, so it is never shown to the admin it is about, and a signal about the only admin isn't shown at all.
 
+## Admin tools
+
+- **Revealing an anonymous author:** `Memory#reveal_author_to!(admin, reason:)` returns the author and records an `AuthorReveal` with the reason (encrypted). `MemoryPolicy#reveal_author?` allows any admin, on an anonymous memory. Every reveal is logged with who, when and which memory.
+- **Clearing the memories of someone removed for cause:** `Membership#clear_memories_for_cause!(by:)` deletes every memory they posted in this community, anonymous ones too, without listing which, so it never points at who wrote an anonymous one. It is logged with a count. `MembershipPolicy#clear_memories_for_cause?` allows any admin, only after a removal for cause. Deleting one named memory of theirs stays as before (`MemoryPolicy#destroy?`).
+- **A member's moderation history:** `Moderation::History.new(membership)` holds the flags against what they posted, the removal requests upheld against their resources (removed or changed), block reports about them, and how many members block them once it reaches three. What they posted anonymously is left out, since counting it would say who wrote it. `MembershipPolicy#moderation_history?` allows any admin, never on their own record.
+
 ## What is logged
 
-Decisions, urgent hides, relays and resolutions are written to the activity log at admin visibility, with who did it and the outcome, never the reason or note. Raising an item is not logged: the item itself is the record.
+Decisions, urgent hides, relays, resolutions, author reveals and clearings are written to the activity log at admin visibility, with who did it and the outcome, never the reason or note. Raising an item is not logged: the item itself is the record.
 
 ## Reading resources
 

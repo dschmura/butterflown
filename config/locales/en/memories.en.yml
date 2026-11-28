@@ -4,12 +4,18 @@ en:
       removal_request: "Removal requests"
       flag: "Flags"
       block_report: "Block reports"
+      author_reveal: "Author reveals"
     actions:
       flag:
         created: "flagged something"
         updated: "updated a flag"
         hidden: "hid something that was flagged"
         resolved: "resolved a flag"
+      author_reveal:
+        created: "revealed who wrote an anonymous memory"
+        updated: "updated an author reveal"
+      membership:
+        memories_cleared: "deleted the memories of someone removed for cause"
       block_report:
         created: "reported a block"
         updated: "updated a block report"
@@ -76,6 +82,10 @@ en:
             memory_resource:
               not_visible: "isn't one you can see"
               your_own: "is yours; change or remove it yourself"
+        author_reveal:
+          attributes:
+            memory:
+              not_anonymous: "has its author's name on it already"
         flag:
           attributes:
             flaggable:

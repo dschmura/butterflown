@@ -17,6 +17,8 @@ RSpec.describe "Code smell: memories are read through visible_to" do
     "app/models/memory_resource/tagging.rb" => "declares the association and creates tags",
     "app/models/memory_resource/visibility.rb" => "defines MemoryResource.visible_to",
     "app/models/flag.rb" => "routes, hides and brings back what was flagged; never shows",
+    "app/models/memory/moderated.rb" => "declares the flag and reveal associations",
+    "app/models/moderation/history.rb" => "finds a member's named memories to count their record; never shows",
     "app/models/memory/credit.rb" => "only opens the Memory namespace",
     "app/models/memory/left_behind.rb" => "defines on_exit_page_of and the purge of private memories left behind",
     "app/models/user/account_deletion.rb" => "deletes the departing author's own private memories; never shows",

@@ -26,6 +26,15 @@ class MembershipPolicy < ApplicationPolicy
       !record.workspace.discarded?
   end
 
+  # An admin can't open their own record.
+  def moderation_history?
+    can?("manage_members") && record.user_id != user.id
+  end
+
+  def clear_memories_for_cause?
+    can?("manage_members") && record.departure_removed_for_cause?
+  end
+
   def change_preset?
     can?("manage_members") && record.kept? && record.governed_by_preset?
   end
