@@ -16,12 +16,12 @@ class Memory
     AUTHOR_GONE_PAST_THE_HOLD = "#{AUTHOR_GONE} AND memberships.discarded_at <= :cutoff)".freeze
 
     included do
-      # A removed member's own memories, to download for 90 days; deleting them is MemoryPolicy's call.
+      # A former member's own memories, to download for 90 days; deleting them is MemoryPolicy's call.
       scope :on_exit_page_of, ->(user, now: Time.current) {
         kept
           .where(author: user)
           .where(Visibility::OPEN_COMMUNITY)
-          .where(AUTHOR_GONE_WITHIN_THE_HOLD, departures: %w[removed removed_for_cause], cutoff: now - HELD_FOR)
+          .where(AUTHOR_GONE_WITHIN_THE_HOLD, departures: %w[left removed removed_for_cause], cutoff: now - HELD_FOR)
       }
 
       # Shared memories stay with the community; private ones go once the hold is up.

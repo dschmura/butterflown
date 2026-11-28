@@ -31,10 +31,19 @@ RSpec.describe MembershipPolicy, "#remove_for_cause?", community_members: true d
     expect(permitted?(admin, community.memberships.find_by(user: admin))).to be false
   end
 
-  it "refuses someone already gone" do
-    gone = create(:membership, workspace: community).tap(&:leave!)
+  it "lets an admin apply it to someone who left or was removed, so going first can't dodge it" do
+    admin = community_member(:admin)
+    left = create(:membership, workspace: community).tap(&:leave!)
+    removed = create(:membership, workspace: community).tap { |membership| membership.deactivate!(removed_by: admin) }
 
-    expect(permitted?(community_member(:admin), gone)).to be false
+    expect([ left, removed ].map { |membership| permitted?(admin, membership) }).to all(be true)
+  end
+
+  it "refuses someone already removed for cause" do
+    admin = community_member(:admin)
+    gone = create(:membership, workspace: community).tap { |membership| membership.remove_for_cause!(by: admin, reason: "Threats") }
+
+    expect(permitted?(admin, gone)).to be false
   end
 
   it "refuses an admin from another community" do

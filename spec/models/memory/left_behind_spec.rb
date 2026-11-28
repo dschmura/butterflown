@@ -171,11 +171,12 @@ RSpec.describe Memory, type: :model do
       expect(Memory.on_exit_page_of(author, now: 90.days.from_now + 1.minute)).to be_empty
     end
 
-    it "isn't there for someone who left on their own; they take theirs on the way out" do
-      memory
+    it "holds the memories of someone who left on their own too, for 90 days" do
+      own = memory
       author_membership.leave!
 
-      expect(Memory.on_exit_page_of(author)).to be_empty
+      expect(Memory.on_exit_page_of(author)).to contain_exactly(own)
+      expect(Memory.on_exit_page_of(author, now: 90.days.from_now + 1.minute)).to be_empty
     end
 
     it "isn't there for someone still a member" do

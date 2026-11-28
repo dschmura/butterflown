@@ -83,6 +83,19 @@ production:
     # plenty for a 12-month horizon.
     schedule: every sunday at 3:30am
 
+  account_deletion_sweep:
+    class: AccountDeletionSweepJob
+    queue: low
+    # Completes the deletions whose 30-day hold is up. Daily is plenty: the
+    # hold is the promise, a few hours past it changes nothing.
+    schedule: every day at 2:30am
+
+  left_behind_memories_sweep:
+    class: LeftBehindMemoriesSweepJob
+    queue: low
+    # Purges private memories 90 days after their author left or was removed.
+    schedule: every day at 2:45am
+
   notification_cleanup:
     class: NotificationCleanupJob
     queue: low
