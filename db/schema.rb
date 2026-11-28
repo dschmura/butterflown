@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_11_27_233916) do
+ActiveRecord::Schema[8.2].define(version: 2026_11_28_030659) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.string "name", null: false
     t.text "body"
@@ -175,11 +175,15 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_27_233916) do
     t.datetime "last_accessed_at"
     t.string "preset", default: "contributor", null: false
     t.string "tag_setting", default: "approve", null: false
+    t.string "departure"
+    t.boolean "name_removed", default: false, null: false
     t.index ["discarded_at"], name: "index_memberships_on_discarded_at"
     t.index ["role_id"], name: "index_memberships_on_role_id"
     t.index ["user_id", "last_accessed_at"], name: "index_memberships_on_user_id_and_last_accessed_at"
     t.index ["user_id", "workspace_id"], name: "index_memberships_on_user_id_and_workspace_id", unique: true
     t.index ["workspace_id"], name: "index_memberships_on_workspace_id"
+    t.check_constraint "departure IN ('left','removed')", name: "memberships_departure_valid"
+    t.check_constraint "departure IS NULL OR discarded_at IS NOT NULL", name: "memberships_departure_only_when_gone"
     t.check_constraint "preset IN ('contributor','participant','reader')", name: "memberships_preset_valid"
     t.check_constraint "tag_setting IN ('approve','okay')", name: "memberships_tag_setting_valid"
   end

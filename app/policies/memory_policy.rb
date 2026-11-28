@@ -18,7 +18,7 @@ class MemoryPolicy < ApplicationPolicy
   end
 
   def destroy?
-    authored_by_current_member?
+    authored_by_current_member? || Memory.on_exit_page_of(user).exists?(record.id)
   end
 
   private

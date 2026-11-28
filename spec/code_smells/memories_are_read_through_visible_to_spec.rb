@@ -5,7 +5,8 @@ require "rails_helper"
 RSpec.describe "Code smell: memories are read through visible_to" do
   constants = %i[Memory MemoryResource MemoryAccess Tag]
   calls = %i[memories accesses tags]
-  gates = %i[visible_to policy_scope]
+  # The exit page is the one other door: a removed member's own memories, for 90 days.
+  readers = %i[visible_to on_exit_page_of]
 
   # Files that define the rule, or only build new memories. Reviewed; add with a reason.
   allowed = {
@@ -14,6 +15,9 @@ RSpec.describe "Code smell: memories are read through visible_to" do
     "app/models/memory_access.rb" => "defines the model",
     "app/models/memory_resource.rb" => "defines the model",
     "app/models/memory_resource/tagging.rb" => "declares the association and creates tags",
+    "app/models/memory/credit.rb" => "only opens the Memory namespace",
+    "app/models/memory/left_behind.rb" => "defines on_exit_page_of and the purge of private memories left behind",
+    "app/models/membership/departure.rb" => "unnames pending tags when someone goes; writes, never shows",
     "app/models/tag.rb" => "defines the model and Tag.visible_to",
     "app/models/workspace/memories.rb" => "declares the association and builds new memories"
   }
@@ -22,7 +26,7 @@ RSpec.describe "Code smell: memories are read through visible_to" do
     file.end_with?(".erb") ? ActionView::Template::Handlers::ERB::Erubi.new(source).src : source
   end
 
-  # A mention is gated when it is the receiver of visible_to, or sits anywhere inside policy_scope(...).
+  # A mention is gated when it is the receiver of a reader, or sits anywhere inside policy_scope(...).
   offenders = lambda do |sources|
     sources.flat_map do |file, source|
       next [] if allowed.key?(file)
@@ -37,7 +41,7 @@ RSpec.describe "Code smell: memories are read through visible_to" do
           end
         if mention
           parent = ancestors.last
-          gated = (parent.is_a?(Prism::CallNode) && parent.name == :visible_to && parent.receiver.equal?(node)) ||
+          gated = (parent.is_a?(Prism::CallNode) && readers.include?(parent.name) && parent.receiver.equal?(node)) ||
             ancestors.any? { |a| a.is_a?(Prism::CallNode) && a.name == :policy_scope && a.receiver.nil? }
           found << "#{file}:#{node.location.start_line}" unless gated
         end
@@ -93,6 +97,7 @@ RSpec.describe "Code smell: memories are read through visible_to" do
         @memory = policy_scope(@workspace.memories).find(params[:id])
         Memory.visible_to(user).exists?(id)
         Tag.visible_to(user).where(tagged_user: user)
+        Memory.on_exit_page_of(user).exists?(id)
         @workspace.memories
           .visible_to(Current.user)
       RUBY
