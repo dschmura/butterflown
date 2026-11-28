@@ -10,6 +10,12 @@ class Block < ApplicationRecord
   validate :not_yourself
   validate :both_are_members, on: :create
 
+  # A block either way between one person and any of the others, in this community or everywhere.
+  scope :between, ->(person_id, other_ids, workspace:) {
+    where(blocker_id: person_id, blocked_id: other_ids).or(where(blocker_id: other_ids, blocked_id: person_id))
+      .merge(where(workspace: workspace).or(where(everywhere: true)))
+  }
+
   private
 
   def not_yourself

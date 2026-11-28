@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_11_28_135806) do
+ActiveRecord::Schema[8.2].define(version: 2026_11_28_152028) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.string "name", null: false
     t.text "body"
@@ -227,6 +227,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_28_135806) do
     t.string "content_warning"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "hidden_at"
     t.index ["contributor_id"], name: "index_memory_resources_on_contributor_id"
     t.index ["memory_id"], name: "index_memory_resources_on_memory_id"
     t.check_constraint "kind IN ('written_reflection','photo')", name: "memory_resources_kind_valid"
@@ -311,6 +312,30 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_28_135806) do
     t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_active_reauth_challenge_per_user", unique: true, where: "consumed_at IS NULL"
     t.index ["user_id"], name: "index_reauthentication_challenges_on_user_id"
+  end
+
+  create_table "removal_requests", force: :cascade do |t|
+    t.integer "workspace_id", null: false
+    t.integer "memory_resource_id", null: false
+    t.integer "requester_id", null: false
+    t.string "recipients", null: false
+    t.text "reason", null: false
+    t.datetime "due_at", null: false
+    t.datetime "relayed_at"
+    t.string "outcome"
+    t.integer "decided_by_id"
+    t.datetime "decided_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["decided_by_id"], name: "index_removal_requests_on_decided_by_id"
+    t.index ["memory_resource_id", "requester_id"], name: "index_removal_requests_on_memory_resource_id_and_requester_id", unique: true
+    t.index ["memory_resource_id"], name: "index_removal_requests_on_memory_resource_id"
+    t.index ["requester_id"], name: "index_removal_requests_on_requester_id"
+    t.index ["workspace_id", "due_at"], name: "index_removal_requests_open_by_due", where: "decided_at IS NULL"
+    t.index ["workspace_id"], name: "index_removal_requests_on_workspace_id"
+    t.check_constraint "(outcome IS NULL) = (decided_at IS NULL)", name: "removal_requests_decided_with_outcome"
+    t.check_constraint "outcome IS NULL OR outcome IN ('removed','changed','kept')", name: "removal_requests_outcome_valid"
+    t.check_constraint "recipients IN ('author','admins','both')", name: "removal_requests_recipients_valid"
   end
 
   create_table "resources", force: :cascade do |t|
@@ -516,6 +541,10 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_28_135806) do
   add_foreign_key "projects", "users", column: "created_by_id"
   add_foreign_key "projects", "workspaces"
   add_foreign_key "reauthentication_challenges", "users"
+  add_foreign_key "removal_requests", "memory_resources", on_delete: :cascade
+  add_foreign_key "removal_requests", "users", column: "decided_by_id", on_delete: :restrict
+  add_foreign_key "removal_requests", "users", column: "requester_id", on_delete: :restrict
+  add_foreign_key "removal_requests", "workspaces", on_delete: :cascade
   add_foreign_key "resources", "projects"
   add_foreign_key "resources", "users", column: "created_by_id"
   add_foreign_key "roles", "workspaces"
