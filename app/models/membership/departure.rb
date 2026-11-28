@@ -4,6 +4,8 @@ class Membership
   module Departure
     extend ActiveSupport::Concern
 
+    class NotRemovedForCause < StandardError; end
+
     included do
       # Non-persisted: the reason lives in the admin-only audit row, not on the membership.
       attr_accessor :removal_reason
@@ -39,6 +41,17 @@ class Membership
         save!
       else
         deactivate!(removed_by: by)
+      end
+    end
+
+    # Deletes every memory they posted here, anonymous ones too, without listing which.
+    def clear_memories_for_cause!(by:)
+      raise NotRemovedForCause unless departure_removed_for_cause?
+
+      transaction do
+        cleared = Memory.kept.where(workspace: workspace, author: user)
+        count = cleared.update_all(discarded_at: Time.current, updated_at: Time.current)
+        create_activity("membership.memories_cleared", { "count" => count, "cleared_by" => by.id })
       end
     end
 

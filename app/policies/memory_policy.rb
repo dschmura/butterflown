@@ -21,6 +21,11 @@ class MemoryPolicy < ApplicationPolicy
     authored_by_current_member? || deletable_from_exit_page? || clearing_a_removal_for_cause?
   end
 
+  # Every reveal is logged; see AuthorReveal.
+  def reveal_author?
+    can?("manage_members") && record.anonymous?
+  end
+
   private
 
   def deletable_from_exit_page?

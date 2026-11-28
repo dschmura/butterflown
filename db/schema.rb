@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_11_28_154719) do
+ActiveRecord::Schema[8.2].define(version: 2026_11_28_160058) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.string "name", null: false
     t.text "body"
@@ -85,6 +85,18 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_28_154719) do
     t.index ["provider", "uid"], name: "index_authentications_on_provider_and_uid", unique: true
     t.index ["user_id", "provider"], name: "index_authentications_on_user_id_and_provider", unique: true
     t.index ["user_id"], name: "index_authentications_on_user_id"
+  end
+
+  create_table "author_reveals", force: :cascade do |t|
+    t.integer "workspace_id", null: false
+    t.integer "memory_id", null: false
+    t.integer "revealed_by_id", null: false
+    t.text "reason", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["memory_id"], name: "index_author_reveals_on_memory_id"
+    t.index ["revealed_by_id"], name: "index_author_reveals_on_revealed_by_id"
+    t.index ["workspace_id"], name: "index_author_reveals_on_workspace_id"
   end
 
   create_table "block_reports", force: :cascade do |t|
@@ -555,6 +567,9 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_28_154719) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "activity_logs", "workspaces"
   add_foreign_key "authentications", "users"
+  add_foreign_key "author_reveals", "memories", on_delete: :cascade
+  add_foreign_key "author_reveals", "users", column: "revealed_by_id", on_delete: :restrict
+  add_foreign_key "author_reveals", "workspaces", on_delete: :cascade
   add_foreign_key "block_reports", "users", column: "reported_id", on_delete: :restrict
   add_foreign_key "block_reports", "users", column: "reporter_id", on_delete: :restrict
   add_foreign_key "block_reports", "users", column: "resolved_by_id", on_delete: :restrict
