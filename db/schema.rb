@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_11_28_152028) do
+ActiveRecord::Schema[8.2].define(version: 2026_11_28_154719) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.string "name", null: false
     t.text "body"
@@ -87,6 +87,24 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_28_152028) do
     t.index ["user_id"], name: "index_authentications_on_user_id"
   end
 
+  create_table "block_reports", force: :cascade do |t|
+    t.integer "workspace_id", null: false
+    t.integer "reporter_id", null: false
+    t.integer "reported_id", null: false
+    t.string "reason", null: false
+    t.text "note"
+    t.integer "resolved_by_id"
+    t.datetime "resolved_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["reported_id"], name: "index_block_reports_on_reported_id"
+    t.index ["reporter_id"], name: "index_block_reports_on_reporter_id"
+    t.index ["resolved_by_id"], name: "index_block_reports_on_resolved_by_id"
+    t.index ["workspace_id"], name: "index_block_reports_on_workspace_id"
+    t.index ["workspace_id"], name: "index_block_reports_open", where: "resolved_at IS NULL"
+    t.check_constraint "reason IN ('harassment','unwanted_contact','something_they_posted','other')", name: "block_reports_reason_valid"
+  end
+
   create_table "blocks", force: :cascade do |t|
     t.integer "workspace_id", null: false
     t.integer "blocker_id", null: false
@@ -114,6 +132,28 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_28_152028) do
   create_table "documents", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "flags", force: :cascade do |t|
+    t.integer "workspace_id", null: false
+    t.string "flaggable_type", null: false
+    t.integer "flaggable_id", null: false
+    t.integer "flagger_id", null: false
+    t.text "reason", null: false
+    t.string "outcome"
+    t.integer "resolved_by_id"
+    t.datetime "resolved_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["flaggable_type", "flaggable_id", "flagger_id"], name: "index_flags_one_per_flagger", unique: true
+    t.index ["flaggable_type", "flaggable_id"], name: "index_flags_on_flaggable"
+    t.index ["flagger_id"], name: "index_flags_on_flagger_id"
+    t.index ["resolved_by_id"], name: "index_flags_on_resolved_by_id"
+    t.index ["workspace_id"], name: "index_flags_on_workspace_id"
+    t.index ["workspace_id"], name: "index_flags_open", where: "resolved_at IS NULL"
+    t.check_constraint "(outcome IS NULL) = (resolved_at IS NULL)", name: "flags_resolved_with_outcome"
+    t.check_constraint "flaggable_type IN ('Memory','MemoryResource')", name: "flags_flaggable_type_valid"
+    t.check_constraint "outcome IS NULL OR outcome IN ('acted','dismissed')", name: "flags_outcome_valid"
   end
 
   create_table "invitation_blocks", force: :cascade do |t|
@@ -515,11 +555,18 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_28_152028) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "activity_logs", "workspaces"
   add_foreign_key "authentications", "users"
+  add_foreign_key "block_reports", "users", column: "reported_id", on_delete: :restrict
+  add_foreign_key "block_reports", "users", column: "reporter_id", on_delete: :restrict
+  add_foreign_key "block_reports", "users", column: "resolved_by_id", on_delete: :restrict
+  add_foreign_key "block_reports", "workspaces", on_delete: :cascade
   add_foreign_key "blocks", "users", column: "blocked_id", on_delete: :cascade
   add_foreign_key "blocks", "users", column: "blocker_id", on_delete: :cascade
   add_foreign_key "blocks", "workspaces", on_delete: :cascade
   add_foreign_key "client_accesses", "projects"
   add_foreign_key "client_accesses", "users"
+  add_foreign_key "flags", "users", column: "flagger_id", on_delete: :restrict
+  add_foreign_key "flags", "users", column: "resolved_by_id", on_delete: :restrict
+  add_foreign_key "flags", "workspaces", on_delete: :cascade
   add_foreign_key "invitation_blocks", "users", column: "inviter_id"
   add_foreign_key "invitations", "roles"
   add_foreign_key "invitations", "users", column: "accepted_by_id"
