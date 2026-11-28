@@ -48,7 +48,7 @@ Not yet built from the spec's data model: video, audio and document resources; t
 
 ## When an account is deleted
 
-The foreign keys from `memories.author_id` and `memory_resources.contributor_id` to `users` are `on_delete: :restrict`, so an account with memories can't be deleted yet. Leaving a community already follows the product's rule ([Leaving](leaving)); account deletion needs its own change, because the user row goes. Until then, refusing is the posture that loses nothing.
+The foreign keys from `memories.author_id` and `memory_resources.contributor_id` to `users` are `on_delete: :restrict`, so a user row with memories can't be destroyed. That stays: deleting an account keeps the users row as a tombstone, so nothing is refused and nothing cascades ([Leaving](leaving)). `User#destroy` is for accounts with nothing to keep.
 
 ## Who may post, change and delete
 

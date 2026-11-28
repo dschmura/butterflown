@@ -6,6 +6,7 @@ class User < ApplicationRecord
   include Password
   include KnownDevices
   include Suspension
+  include AccountDeletion
 
   # Raised by Authenticatable's sign-in funnel when a suspended user attempts
   # to start a session; rescued centrally in ApplicationController. Declared
