@@ -17,7 +17,8 @@ class Membership
       before_save :record_departure, if: :deactivating?
       before_save :forget_departure, if: :reactivating?
       after_update :unname_pending_tags, if: :just_deactivated?
-      after_update :log_removal_for_cause, :revoke_pending_invitations, if: -> { just_deactivated? && departure_removed_for_cause? }
+      after_update :log_removal_for_cause, :revoke_pending_invitations,
+        if: -> { departure_removed_for_cause? && saved_change_to_departure? }
     end
 
     def leave!(remove_name: false)
@@ -27,12 +28,18 @@ class Membership
       deactivate!(removed_by: user)
     end
 
+    # Someone who already left or was removed can still be marked, or leaving first would dodge it.
     def remove_for_cause!(by:, reason:)
-      return if discarded?
+      return if departure_removed_for_cause?
 
       self.departure = "removed_for_cause"
       self.removal_reason = reason
-      deactivate!(removed_by: by)
+      if discarded?
+        self.removed_by = by
+        save!
+      else
+        deactivate!(removed_by: by)
+      end
     end
 
     private

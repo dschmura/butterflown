@@ -55,26 +55,25 @@ RSpec.describe MemoryPolicy do
       end
     end
 
-    it "refuses the author once they have left the community" do
-      memory
-      workspace.memberships.find_by(user: author).leave!
+    {
+      "when the author left, and now reaches it from outside the community" => ->(membership, _) { membership.leave! },
+      "when an admin removed the author, who now reaches it from outside the community" =>
+        ->(membership, admin) { membership.deactivate!(removed_by: admin) }
+    }.each do |description, departure|
+      context description do
+        before do
+          memory
+          departure.call(workspace.memberships.find_by(user: author), member(:admin))
+          Current.workspace = nil
+        end
 
-      expect(policy(author, memory)).to have_attributes(update?: false, destroy?: false)
-    end
+        it "lets them delete it from their exit page, but not change it" do
+          travel(89.days) { expect(policy(author, memory)).to have_attributes(update?: false, destroy?: true) }
+        end
 
-    context "when an admin has removed the author, who now reaches it from outside the community" do
-      before do
-        memory
-        workspace.memberships.find_by(user: author).deactivate!(removed_by: member(:admin))
-        Current.workspace = nil
-      end
-
-      it "lets them delete it from their exit page, but not change it" do
-        travel(89.days) { expect(policy(author, memory)).to have_attributes(update?: false, destroy?: true) }
-      end
-
-      it "stops once the 90 days are up" do
-        travel(91.days) { expect(policy(author, memory).destroy?).to be(false) }
+        it "stops once the 90 days are up" do
+          travel(91.days) { expect(policy(author, memory).destroy?).to be(false) }
+        end
       end
     end
 
@@ -93,6 +92,12 @@ RSpec.describe MemoryPolicy do
       it "lets an admin delete it, and nobody else" do
         expect(policy(member(:admin), memory).destroy?).to be(true)
         expect(policy(member, memory).destroy?).to be(false)
+      end
+
+      it "doesn't let an admin delete an anonymous one, which would point at its author" do
+        memory.update_column(:anonymous, true)
+
+        expect(policy(member(:admin), memory).destroy?).to be(false)
       end
     end
 

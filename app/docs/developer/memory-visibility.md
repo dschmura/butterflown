@@ -16,7 +16,7 @@ A viewer sees a memory when all of these hold:
 2. Its community isn't deleted or suspended. An archived community stays readable.
 3. The viewer is a current member of the memory's community. Someone who has left sees nothing there, including what they wrote.
 4. The author hasn't blocked the viewer, in this community or everywhere ([Blocks](blocks)).
-5. The author hasn't been removed from this community for cause. This hides their memories from everyone, admins included, until an admin's invitation brings them back ([Leaving](leaving)). A member who simply left or was removed keeps their shared memories in sight.
+5. The author hasn't been removed from this community for cause, unless the memory is anonymous. This hides their other memories from everyone, admins included, until an admin's invitation brings them back ([Leaving](leaving)). Anonymous ones stay, since their vanishing at the removal would say who wrote them. A member who simply left or was removed keeps their shared memories in sight.
 
 and at least one of these grants it:
 

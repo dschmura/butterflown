@@ -106,6 +106,8 @@ module Authenticatable
         user_agent: request.user_agent, ip_address: request.remote_ip,
         last_active_at: Time.current, reauthenticated_at: Time.current
       ).tap do |session|
+        # After the session exists and under the row lock, so a deletion requested meanwhile still sees it.
+        user.cancel_deletion!
         Current.session = session
         cookies.signed[:session_id] = {
           value: session.id, httponly: true, same_site: :lax,

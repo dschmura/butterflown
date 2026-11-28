@@ -27,9 +27,10 @@ class MemoryPolicy < ApplicationPolicy
     Memory.on_exit_page_of(user).exists?(record.id) && !author_removed_for_cause?
   end
 
-  # Someone removed for cause can't delete what they posted; only an admin can.
+  # Someone removed for cause can't delete what they posted; only an admin can, and not an anonymous
+  # one, where the offer alone would say who wrote it.
   def clearing_a_removal_for_cause?
-    can?("manage_members") && author_removed_for_cause?
+    can?("manage_members") && !record.anonymous? && author_removed_for_cause?
   end
 
   def author_removed_for_cause?

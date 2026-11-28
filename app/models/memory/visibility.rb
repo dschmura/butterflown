@@ -65,9 +65,11 @@ class Memory < ApplicationRecord
                     AND (blocks.workspace_id = memories.workspace_id OR blocks.everywhere))
     SQL
 
-    # Hidden from everyone, admins too, until an admin's invitation brings the author back.
+    # Hidden from everyone, admins too, until an admin's invitation brings the author back. Anonymous
+    # ones stay, or their vanishing would point at who wrote them.
     AUTHOR_NOT_REMOVED_FOR_CAUSE = <<~SQL.squish
-      NOT EXISTS (SELECT 1 FROM memberships
+      memories.anonymous
+      OR NOT EXISTS (SELECT 1 FROM memberships
                   WHERE memberships.workspace_id = memories.workspace_id
                     AND memberships.user_id = memories.author_id
                     AND memberships.departure = 'removed_for_cause')

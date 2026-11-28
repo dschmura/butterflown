@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_11_28_042548) do
+ActiveRecord::Schema[8.2].define(version: 2026_11_28_135806) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.string "name", null: false
     t.text "body"
@@ -410,6 +410,9 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_28_042548) do
     t.datetime "passkey_prompt_seen_at"
     t.datetime "suspended_at"
     t.datetime "deleted_at"
+    t.datetime "deletion_requested_at"
+    t.boolean "deletion_removes_name", default: false, null: false
+    t.index ["deletion_requested_at"], name: "index_users_on_deletion_requested_at", where: "deletion_requested_at IS NOT NULL AND deleted_at IS NULL"
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
     t.index ["pending_email_token"], name: "index_users_on_pending_email_token", unique: true
     t.index ["personal_workspace_id"], name: "index_users_on_personal_workspace_id"

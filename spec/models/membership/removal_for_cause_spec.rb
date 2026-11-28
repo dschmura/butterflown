@@ -37,12 +37,34 @@ RSpec.describe Membership, type: :model do
       expect(membership.reload).to have_attributes(kept?: true, departure: nil)
     end
 
-    it "changes nothing for someone already gone" do
+    it "applies to someone who already left, so leaving first can't dodge it" do
+      shared = create(:memory, workspace: community, author: person, visibility: "community")
+      invitation = create(:invitation, invitable: community, email: person.email_address, invited_by: admin)
       membership.leave!
 
       remove_for_cause
 
-      expect(membership).to have_attributes(departure: "left", changed?: false)
+      expect(membership.reload).to have_attributes(discarded?: true, departure: "removed_for_cause")
+      expect(ActivityLog.where(trackable: membership, action: "membership.removed_for_cause")).to exist
+      expect(Memory.visible_to(onlooker)).not_to include(shared)
+      expect(invitation.reload.status).to eq("revoked")
+    end
+
+    it "keeps someone who asked to delete their account from cancelling their way back in" do
+      person.request_deletion!
+      membership.reload
+      remove_for_cause
+
+      person.cancel_deletion!
+
+      expect(membership.reload).to have_attributes(discarded?: true, departure: "removed_for_cause")
+    end
+
+    it "changes nothing the second time" do
+      remove_for_cause
+
+      expect { remove_for_cause(reason: "Something else") }
+        .not_to(change { ActivityLog.where(trackable: membership, action: "membership.removed_for_cause").count })
     end
   end
 
@@ -105,12 +127,16 @@ RSpec.describe Membership, type: :model do
     let!(:private_memory) { create(:memory, workspace: community, author: person, visibility: "only_me") }
     let!(:someone_elses) { create(:memory, workspace: community, author: onlooker, visibility: "community") }
 
-    it "hides every one of them from the community, admins included" do
+    it "hides the ones with their name on from the community, admins included" do
       remove_for_cause
 
       [ onlooker, admin ].each do |viewer|
-        expect(Memory.visible_to(viewer)).to contain_exactly(someone_elses)
+        expect(Memory.visible_to(viewer)).to contain_exactly(anonymous, someone_elses)
       end
+    end
+
+    it "keeps an anonymous one where it was, or its vanishing would point at its author" do
+      expect { remove_for_cause }.not_to(change { Memory.visible_to(onlooker).include?(anonymous) }.from(true))
     end
 
     it "shows them again once an admin brings the person back" do
