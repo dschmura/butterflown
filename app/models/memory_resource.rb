@@ -3,6 +3,7 @@ class MemoryResource < ApplicationRecord
   KINDS = %w[written_reflection photo].freeze
 
   include Tagging
+  include Visibility
 
   belongs_to :memory, inverse_of: :resources
   belongs_to :contributor, class_name: "User"

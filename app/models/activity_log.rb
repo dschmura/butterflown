@@ -77,7 +77,7 @@ class ActivityLog < ApplicationRecord
 
   # Only rows the viewer may open (#1154). A Trackable type in neither list is dropped
   # on purpose; activity_log_feed_scope_spec fails on an unclassified one.
-  WORKSPACE_LEVEL_TRACKABLES = %w[Workspace Membership].freeze
+  WORKSPACE_LEVEL_TRACKABLES = %w[Workspace Membership RemovalRequest].freeze
   PROJECT_LEVEL_TRACKABLES = %w[Project Resource].freeze
   # Classified by what they hang off, so they appear in both partitions.
   POLYMORPHIC_TRACKABLES = %w[Invitation].freeze
@@ -101,7 +101,7 @@ class ActivityLog < ApplicationRecord
 
   # One entry per action family (activity_log_filters_spec). The prefix filter walks
   # the created_at index; re-EXPLAIN past ~5M rows, in-memory measure (#1165).
-  KINDS = %w[workspace membership invitation project resource user operatorship].freeze
+  KINDS = %w[workspace membership invitation project resource user operatorship removal_request].freeze
 
   scope :of_kind, ->(kind) { where(arel_table[:action].matches("#{kind}.%")) }
   # Actor, User trackable, or a Membership of theirs; widening on purpose, since a rule-out

@@ -1,4 +1,14 @@
 en:
+  activity:
+    kinds:
+      removal_request: "Removal requests"
+    actions:
+      removal_request:
+        created: "asked for something to be removed"
+        updated: "updated a removal request"
+        decided: "answered a removal request"
+        hidden: "hid something while a removal request is open"
+        relayed: "passed a removal request on to its author"
   users:
     deleted_account:
       workspace_name: "A deleted account"
@@ -50,3 +60,8 @@ en:
           attributes:
             photo:
               only_on_a_photo: "belongs on a photo, not a written reflection"
+        removal_request:
+          attributes:
+            memory_resource:
+              not_visible: "isn't one you can see"
+              your_own: "is yours; change or remove it yourself"
