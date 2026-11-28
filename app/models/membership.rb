@@ -9,6 +9,7 @@ class Membership < ApplicationRecord
   include Ownership
   include Announcements
   include Preset
+  include TagSetting
 
   # Removal has one door: bare discard!/undiscard! skip their guards (#1120).
   private :discard!, :undiscard!

@@ -38,6 +38,16 @@ class Memory < ApplicationRecord
                         AND roles.slug <> :guest))
     SQL
 
+    # Only the author's tags grant sight, like naming; anyone else's could hold an audience the author narrowed.
+    TAGGED = <<~SQL.squish
+      memories.visibility <> 'only_me'
+      AND EXISTS (SELECT 1 FROM tags
+                  JOIN memory_resources ON memory_resources.id = tags.memory_resource_id
+                  WHERE memory_resources.memory_id = memories.id
+                    AND tags.tagged_user_id = :viewer
+                    AND tags.tagger_id = memories.author_id)
+    SQL
+
     # A block in the memory's community, or an everywhere block from anywhere, beats every grant.
     NOT_BLOCKED_BY_AUTHOR = <<~SQL.squish
       NOT EXISTS (SELECT 1 FROM blocks
@@ -56,7 +66,7 @@ class Memory < ApplicationRecord
     SQL
 
     # Any one grant is enough.
-    GRANTS = [ AUTHORED, NAMED, REACHED_THROUGH_COMMUNITY ].map { |grant| "(#{grant})" }.join(" OR ").freeze
+    GRANTS = [ AUTHORED, NAMED, TAGGED, REACHED_THROUGH_COMMUNITY ].map { |grant| "(#{grant})" }.join(" OR ").freeze
 
     included do
       has_many :accesses, class_name: "MemoryAccess", dependent: :delete_all

@@ -20,6 +20,7 @@ class Memory < ApplicationRecord
   validate :community_accepts_new_memories, on: :create
   validate :anonymity_allowed_by_community
   validate :has_a_resource, on: :create
+  validate :anonymous_only_without_tags, on: :update
 
   private
 
@@ -36,6 +37,11 @@ class Memory < ApplicationRecord
   def anonymity_allowed_by_community
     return unless anonymous? && workspace
     errors.add(:anonymous, :not_allowed_here) unless workspace.anonymous_posting?
+  end
+
+  def anonymous_only_without_tags
+    return unless anonymous? && will_save_change_to_anonymous?
+    errors.add(:anonymous, :has_tags) if Tag.joins(:memory_resource).exists?(memory_resources: { memory_id: id })
   end
 
   def has_a_resource

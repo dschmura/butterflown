@@ -3,8 +3,8 @@ require "rails_helper"
 # A read that skips Memory.visible_to can leak a private memory; parsed, so a comment can't pass it.
 # See /docs/developer/memory-visibility.
 RSpec.describe "Code smell: memories are read through visible_to" do
-  constants = %i[Memory MemoryResource MemoryAccess]
-  calls = %i[memories accesses]
+  constants = %i[Memory MemoryResource MemoryAccess Tag]
+  calls = %i[memories accesses tags]
   gates = %i[visible_to policy_scope]
 
   # Files that define the rule, or only build new memories. Reviewed; add with a reason.
@@ -13,6 +13,8 @@ RSpec.describe "Code smell: memories are read through visible_to" do
     "app/models/memory/visibility.rb" => "defines visible_to",
     "app/models/memory_access.rb" => "defines the model",
     "app/models/memory_resource.rb" => "defines the model",
+    "app/models/memory_resource/tagging.rb" => "declares the association and creates tags",
+    "app/models/tag.rb" => "defines the model and Tag.visible_to",
     "app/models/workspace/memories.rb" => "declares the association and builds new memories"
   }
 
@@ -72,7 +74,9 @@ RSpec.describe "Code smell: memories are read through visible_to" do
       "model = Memory",
       "MemoryResource.where(memory_id: ids)",
       "MemoryAccess.where(user: user)",
-      "memory.accesses.pluck(:user_id)"
+      "memory.accesses.pluck(:user_id)",
+      "Tag.where(tagged_user: user)",
+      "resource.tags.pending"
     ]
     files = planted.each_with_index.to_h { |line, i| [ "app/models/x#{i}.rb", "#{line}\n" ] }
     files["app/views/x/index.html.erb"] = "<% @workspace.memories.each do |memory| %><% end %>\n"
@@ -88,6 +92,7 @@ RSpec.describe "Code smell: memories are read through visible_to" do
         @memories = @workspace.memories.visible_to(Current.user)
         @memory = policy_scope(@workspace.memories).find(params[:id])
         Memory.visible_to(user).exists?(id)
+        Tag.visible_to(user).where(tagged_user: user)
         @workspace.memories
           .visible_to(Current.user)
       RUBY

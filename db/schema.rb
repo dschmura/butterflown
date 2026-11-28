@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_11_27_232459) do
+ActiveRecord::Schema[8.2].define(version: 2026_11_27_233916) do
   create_table "action_text_rich_texts", force: :cascade do |t|
     t.string "name", null: false
     t.text "body"
@@ -174,12 +174,14 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_27_232459) do
     t.datetime "updated_at", null: false
     t.datetime "last_accessed_at"
     t.string "preset", default: "contributor", null: false
+    t.string "tag_setting", default: "approve", null: false
     t.index ["discarded_at"], name: "index_memberships_on_discarded_at"
     t.index ["role_id"], name: "index_memberships_on_role_id"
     t.index ["user_id", "last_accessed_at"], name: "index_memberships_on_user_id_and_last_accessed_at"
     t.index ["user_id", "workspace_id"], name: "index_memberships_on_user_id_and_workspace_id", unique: true
     t.index ["workspace_id"], name: "index_memberships_on_workspace_id"
     t.check_constraint "preset IN ('contributor','participant','reader')", name: "memberships_preset_valid"
+    t.check_constraint "tag_setting IN ('approve','okay')", name: "memberships_tag_setting_valid"
   end
 
   create_table "memories", force: :cascade do |t|
@@ -348,6 +350,25 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_27_232459) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "tags", force: :cascade do |t|
+    t.integer "memory_resource_id", null: false
+    t.integer "tagged_user_id"
+    t.string "typed_name"
+    t.integer "tagger_id", null: false
+    t.string "state", null: false
+    t.datetime "state_changed_at", null: false
+    t.datetime "expires_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["memory_resource_id", "tagged_user_id"], name: "index_tags_on_memory_resource_id_and_tagged_user_id", unique: true, where: "tagged_user_id IS NOT NULL"
+    t.index ["memory_resource_id"], name: "index_tags_on_memory_resource_id"
+    t.index ["state", "expires_at"], name: "index_tags_on_state_and_expires_at"
+    t.index ["tagged_user_id"], name: "index_tags_on_tagged_user_id"
+    t.index ["tagger_id"], name: "index_tags_on_tagger_id"
+    t.check_constraint "(tagged_user_id IS NULL) <> (typed_name IS NULL)", name: "tags_person_or_name"
+    t.check_constraint "state IN ('pending','approved','unnamed')", name: "tags_state_valid"
+  end
+
   create_table "user_preferences", force: :cascade do |t|
     t.integer "user_id", null: false
     t.string "theme", default: "system"
@@ -491,6 +512,9 @@ ActiveRecord::Schema[8.2].define(version: 2026_11_27_232459) do
   add_foreign_key "resources", "users", column: "created_by_id"
   add_foreign_key "roles", "workspaces"
   add_foreign_key "sessions", "users"
+  add_foreign_key "tags", "memory_resources", on_delete: :cascade
+  add_foreign_key "tags", "users", column: "tagged_user_id", on_delete: :cascade
+  add_foreign_key "tags", "users", column: "tagger_id", on_delete: :cascade
   add_foreign_key "user_preferences", "users"
   add_foreign_key "users", "workspaces", column: "personal_workspace_id", on_delete: :nullify
   add_foreign_key "webauthn_challenges", "users"

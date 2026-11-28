@@ -29,6 +29,8 @@ RSpec.describe Memory, ".visible_to", type: :model do
   let!(:named_admin) { join(community, :admin) }
   let!(:leaver) { join(community) }
   let!(:blocked) { join(community) }
+  let!(:tagged) { join(community) }
+  let!(:tagged_guest) { join(community, :viewer) }
   let!(:stranger) { join(elsewhere) }
 
   let!(:only_me) { remember(author, visibility: "only_me") }
@@ -40,7 +42,14 @@ RSpec.describe Memory, ".visible_to", type: :model do
   let!(:left_behind) { remember(leaver) }
   let!(:decoy) { remember(stranger, workspace: elsewhere, visible_to_guests: true) }
 
+  def tag(memory, person)
+    memory.resources.first.tag(person: person, by: author).tap { |t| raise t.errors.full_messages.to_sentence unless t.persisted? }
+  end
+
   before do
+    tag(specific, tagged)
+    tag(withdrawn, tagged)
+    tag(shared, tagged_guest)
     Block.create!(workspace: community, blocker: author, blocked: blocked)
     community.memberships.find_by!(user: leaver).update_columns(discarded_at: Time.current)
   end
@@ -60,6 +69,8 @@ RSpec.describe Memory, ".visible_to", type: :model do
     named_admin: %i[specific shared open_to_guests left_behind],
     leaver: %i[],
     blocked: %i[left_behind],
+    tagged: %i[specific shared open_to_guests left_behind],
+    tagged_guest: %i[shared open_to_guests],
     stranger: %i[decoy]
   }
 

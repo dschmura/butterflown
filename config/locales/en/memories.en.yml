@@ -16,6 +16,7 @@ en:
               not_a_member: "must be a member of this community"
             anonymous:
               not_allowed_here: "isn't allowed in this community"
+              has_tags: "can't be chosen once people are tagged in this memory"
             base:
               community_read_only: "This community is read-only, so new memories can't be added"
               needs_a_resource: "A memory needs at least one photo or reflection"
@@ -26,6 +27,13 @@ en:
               not_a_member: "must be a member of this community"
             blocker:
               not_a_member: "must be a member of this community"
+        tag:
+          attributes:
+            base:
+              person_or_name: "Tag a person or type a name, not both"
+              anonymous_memory: "Anonymous memories can't carry tags"
+            tagged_user:
+              not_taggable: "can't be tagged here"
         memory_access:
           attributes:
             user:
